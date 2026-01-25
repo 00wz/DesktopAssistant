@@ -1,5 +1,7 @@
 using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Interfaces;
+using DesktopAssistant.Infrastructure.AI;
 using DesktopAssistant.Infrastructure.Persistence;
 using DesktopAssistant.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -19,11 +21,14 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // Database
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
-            ?? "Data Source=desktopassistant.db";
+        var connectionString = configuration["Database:ConnectionString"]
+            ?? "Data Source=desktop_assistant.db";
         
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));
+
+        // LLM Options
+        services.Configure<LlmOptions>(configuration.GetSection("LlmOptions"));
 
         // Repositories
         services.AddScoped<IConversationRepository, ConversationRepository>();
@@ -31,6 +36,13 @@ public static class DependencyInjection
         services.AddScoped<IConversationBranchRepository, ConversationBranchRepository>();
         services.AddScoped<IAssistantProfileRepository, AssistantProfileRepository>();
         services.AddScoped<IAppSettingsRepository, AppSettingsRepository>();
+
+        // Application Services
+        services.AddScoped<ConversationService>();
+
+        // AI Services
+        services.AddSingleton<IKernelFactory, KernelFactory>();
+        services.AddScoped<IChatService, ChatService>();
 
         // Logging
         services.AddLogging(loggingBuilder =>
@@ -53,6 +65,7 @@ public static class DependencyInjection
         using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        await dbContext.Database.MigrateAsync();
+        // Создаём базу данных если её нет
+        await dbContext.Database.EnsureCreatedAsync();
     }
 }

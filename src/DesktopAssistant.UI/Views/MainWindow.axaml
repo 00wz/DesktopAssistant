@@ -1,20 +1,84 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:DesktopAssistant.UI.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+        xmlns:views="using:DesktopAssistant.UI.Views"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
         x:Class="DesktopAssistant.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="DesktopAssistant.UI">
-
-    <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
-
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
+        Title="Desktop Assistant"
+        Width="900"
+        Height="700"
+        MinWidth="600"
+        MinHeight="400"
+        WindowStartupLocation="CenterScreen">
+    
+    <Grid RowDefinitions="Auto,*">
+        <!-- Панель инструментов -->
+        <Border Grid.Row="0" 
+                Background="#F0F0F0" 
+                Padding="10,5">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="Desktop Assistant"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"/>
+                
+                <Button Grid.Column="1"
+                        Command="{Binding CreateNewChatCommand}"
+                        Content="+ Новый чат"
+                        Padding="15,8"/>
+            </Grid>
+        </Border>
+        
+        <!-- TabControl с чатами -->
+        <TabControl Grid.Row="1"
+                    ItemsSource="{Binding Chats}"
+                    SelectedIndex="{Binding SelectedTabIndex}"
+                    SelectedItem="{Binding SelectedChat}"
+                    TabStripPlacement="Top">
+            <TabControl.ItemTemplate>
+                <DataTemplate DataType="vm:ChatViewModel">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="{Binding ConversationTitle}"
+                                   VerticalAlignment="Center"/>
+                        <Button Content="×"
+                                FontSize="14"
+                                Padding="5,0"
+                                Background="Transparent"
+                                Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).CloseChatCommand}"
+                                CommandParameter="{Binding}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate DataType="vm:ChatViewModel">
+                    <views:ChatView DataContext="{Binding}"/>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
+        
+        <!-- Пустое состояние -->
+        <Border Grid.Row="1"
+                IsVisible="{Binding !Chats.Count}"
+                Background="#FAFAFA">
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="20">
+                <TextBlock Text="Добро пожаловать в Desktop Assistant!"
+                           FontSize="24"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Нажмите 'Новый чат' чтобы начать диалог с AI"
+                           FontSize="14"
+                           Foreground="Gray"
+                           HorizontalAlignment="Center"/>
+                <Button Content="Начать новый чат"
+                        Command="{Binding CreateNewChatCommand}"
+                        HorizontalAlignment="Center"
+                        Padding="20,10"/>
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>

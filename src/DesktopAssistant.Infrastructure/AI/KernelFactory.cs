@@ -15,13 +15,8 @@ public class KernelFactory : IKernelFactory
 
     public KernelFactory(IOptions<LlmOptions> options)
     {
-        _defaultOptions = options?.Value ?? throw new ArgumentNullException(nameof(options));
-        
-        if (!_defaultOptions.IsValid())
-        {
-            throw new InvalidOperationException(
-                "LlmOptions are not properly configured. Required: BaseUrl, ApiKey, Model");
-        }
+        _defaultOptions = options?.Value ?? new LlmOptions();
+        // Валидация отложена до момента создания Kernel
     }
 
     /// <summary>

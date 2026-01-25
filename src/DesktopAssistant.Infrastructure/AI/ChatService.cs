@@ -1,0 +1,286 @@
+using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Application.Services;
+using DesktopAssistant.Domain.Entities;
+using DesktopAssistant.Domain.Enums;
+using DesktopAssistant.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+
+namespace DesktopAssistant.Infrastructure.AI;
+
+/// <summary>
+/// Сервис для взаимодействия с LLM через Semantic Kernel
+/// </summary>
+public class ChatService : IChatService
+{
+    private readonly IKernelFactory _kernelFactory;
+    private readonly LlmOptions _llmOptions;
+    private readonly ConversationService _conversationService;
+    private readonly IConversationRepository _conversationRepository;
+    private readonly IMessageNodeRepository _messageNodeRepository;
+    private readonly IConversationBranchRepository _branchRepository;
+    private readonly IAssistantProfileRepository _assistantRepository;
+    private readonly ILogger<ChatService> _logger;
+
+    public ChatService(
+        IKernelFactory kernelFactory,
+        IOptions<LlmOptions> llmOptions,
+        ConversationService conversationService,
+        IConversationRepository conversationRepository,
+        IMessageNodeRepository messageNodeRepository,
+        IConversationBranchRepository branchRepository,
+        IAssistantProfileRepository assistantRepository,
+        ILogger<ChatService> logger)
+    {
+        _kernelFactory = kernelFactory;
+        _llmOptions = llmOptions.Value;
+        _conversationService = conversationService;
+        _conversationRepository = conversationRepository;
+        _messageNodeRepository = messageNodeRepository;
+        _branchRepository = branchRepository;
+        _assistantRepository = assistantRepository;
+        _logger = logger;
+    }
+
+    /// <inheritdoc />
+    public async Task<Conversation> CreateConversationAsync(
+        string title,
+        string? systemPrompt = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Получаем профиль ассистента по умолчанию или создаём его
+        var assistant = await _assistantRepository.GetDefaultAsync(cancellationToken);
+        
+        if (assistant == null)
+        {
+            assistant = new AssistantProfile(
+                name: "Default Assistant",
+                systemPrompt: systemPrompt ?? "You are a helpful AI assistant.",
+                baseUrl: _llmOptions.BaseUrl,
+                modelId: _llmOptions.Model,
+                isDefault: true);
+            await _assistantRepository.AddAsync(assistant, cancellationToken);
+            _logger.LogInformation("Created default assistant profile");
+        }
+        else if (!string.IsNullOrEmpty(systemPrompt))
+        {
+            // Если передан системный промпт, создаём новый профиль
+            assistant = new AssistantProfile(
+                name: $"Assistant for {title}",
+                systemPrompt: systemPrompt,
+                baseUrl: _llmOptions.BaseUrl,
+                modelId: _llmOptions.Model,
+                isDefault: false);
+            await _assistantRepository.AddAsync(assistant, cancellationToken);
+        }
+
+        var conversation = await _conversationService.CreateConversationAsync(
+            title,
+            assistant.Id,
+            cancellationToken);
+
+        _logger.LogInformation("Created conversation {ConversationId}: {Title}", conversation.Id, title);
+        return conversation;
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _conversationService.GetActiveConversationsAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<MessageNode>> GetConversationHistoryAsync(
+        Guid conversationId, 
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+        if (conversation == null)
+        {
+            _logger.LogWarning("Conversation {ConversationId} not found", conversationId);
+            return Enumerable.Empty<MessageNode>();
+        }
+
+        if (!conversation.ActiveBranchId.HasValue)
+        {
+            _logger.LogWarning("Conversation {ConversationId} has no active branch", conversationId);
+            return Enumerable.Empty<MessageNode>();
+        }
+
+        var branch = await _branchRepository.GetByIdAsync(conversation.ActiveBranchId.Value, cancellationToken);
+        if (branch == null || branch.HeadNodeId == Guid.Empty)
+        {
+            return Enumerable.Empty<MessageNode>();
+        }
+
+        return await _conversationService.BuildContextAsync(branch.HeadNodeId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<MessageNode> SendMessageAsync(
+        Guid conversationId, 
+        string userMessage, 
+        CancellationToken cancellationToken = default)
+    {
+        return await SendMessageInternalAsync(conversationId, userMessage, null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<MessageNode> SendMessageStreamingAsync(
+        Guid conversationId, 
+        string userMessage, 
+        Action<string> onChunkReceived, 
+        CancellationToken cancellationToken = default)
+    {
+        return await SendMessageInternalAsync(conversationId, userMessage, onChunkReceived, cancellationToken);
+    }
+
+    private async Task<MessageNode> SendMessageInternalAsync(
+        Guid conversationId,
+        string userMessage,
+        Action<string>? onChunkReceived,
+        CancellationToken cancellationToken)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        // Получаем текущую ветку и head
+        var branch = conversation.ActiveBranchId.HasValue
+            ? await _branchRepository.GetByIdAsync(conversation.ActiveBranchId.Value, cancellationToken)
+            : await _branchRepository.GetDefaultBranchAsync(conversationId, cancellationToken);
+
+        if (branch == null)
+        {
+            throw new InvalidOperationException($"No active branch found for conversation {conversationId}");
+        }
+
+        // Определяем родительский узел для нового сообщения
+        Guid parentNodeId;
+        if (branch.HeadNodeId != Guid.Empty)
+        {
+            parentNodeId = branch.HeadNodeId;
+        }
+        else
+        {
+            // Если head не задан, ищем корневое сообщение (system)
+            var messages = await _messageNodeRepository.GetByConversationIdAsync(conversationId, cancellationToken);
+            var rootMessage = messages.FirstOrDefault(m => m.NodeType == MessageNodeType.System);
+            parentNodeId = rootMessage?.Id ?? throw new InvalidOperationException("No root message found");
+        }
+
+        // Добавляем сообщение пользователя
+        var userNode = await _conversationService.AddMessageAsync(
+            conversationId,
+            parentNodeId,
+            MessageNodeType.User,
+            userMessage,
+            cancellationToken: cancellationToken);
+
+        _logger.LogDebug("Added user message {MessageId}", userNode.Id);
+
+        // Собираем контекст для LLM
+        var contextMessages = await _conversationService.BuildContextAsync(userNode.Id, cancellationToken);
+        var chatHistory = BuildChatHistory(contextMessages);
+
+        // Получаем ответ от LLM
+        string assistantResponse;
+        if (onChunkReceived != null)
+        {
+            assistantResponse = await GetStreamingResponseAsync(chatHistory, onChunkReceived, cancellationToken);
+        }
+        else
+        {
+            assistantResponse = await GetResponseAsync(chatHistory, cancellationToken);
+        }
+
+        // Добавляем ответ ассистента
+        var assistantNode = await _conversationService.AddMessageAsync(
+            conversationId,
+            userNode.Id,
+            MessageNodeType.Assistant,
+            assistantResponse,
+            cancellationToken: cancellationToken);
+
+        _logger.LogDebug("Added assistant message {MessageId}", assistantNode.Id);
+
+        return assistantNode;
+    }
+
+    private ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages)
+    {
+        var chatHistory = new ChatHistory();
+
+        foreach (var message in messages)
+        {
+            switch (message.NodeType)
+            {
+                case MessageNodeType.System:
+                    chatHistory.AddSystemMessage(message.Content);
+                    break;
+                case MessageNodeType.User:
+                    chatHistory.AddUserMessage(message.Content);
+                    break;
+                case MessageNodeType.Assistant:
+                    chatHistory.AddAssistantMessage(message.Content);
+                    break;
+                case MessageNodeType.Summary:
+                    // Summary nodes содержат сжатый контекст - передаём как системное сообщение
+                    chatHistory.AddSystemMessage($"[Previous conversation summary]: {message.Content}");
+                    break;
+            }
+        }
+
+        return chatHistory;
+    }
+
+    private async Task<string> GetResponseAsync(ChatHistory chatHistory, CancellationToken cancellationToken)
+    {
+        var kernel = _kernelFactory.Create();
+        var chatService = kernel.GetRequiredService<IChatCompletionService>();
+
+        try
+        {
+            var response = await chatService.GetChatMessageContentAsync(chatHistory, cancellationToken: cancellationToken);
+            return response.Content ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting response from LLM");
+            throw;
+        }
+    }
+
+    private async Task<string> GetStreamingResponseAsync(
+        ChatHistory chatHistory, 
+        Action<string> onChunkReceived, 
+        CancellationToken cancellationToken)
+    {
+        var kernel = _kernelFactory.Create();
+        var chatService = kernel.GetRequiredService<IChatCompletionService>();
+
+        try
+        {
+            var fullResponse = new System.Text.StringBuilder();
+
+            await foreach (var chunk in chatService.GetStreamingChatMessageContentsAsync(
+                chatHistory, 
+                cancellationToken: cancellationToken))
+            {
+                if (!string.IsNullOrEmpty(chunk.Content))
+                {
+                    fullResponse.Append(chunk.Content);
+                    onChunkReceived(chunk.Content);
+                }
+            }
+
+            return fullResponse.ToString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting streaming response from LLM");
+            throw;
+        }
+    }
+}

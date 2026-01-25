@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:converters="using:DesktopAssistant.UI.Converters"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
+             x:Class="DesktopAssistant.UI.Views.ChatView"
+             x:DataType="vm:ChatViewModel">
+    
+    <UserControl.Resources>
+        <converters:UserMessageForegroundConverter x:Key="UserMessageForegroundConverter"/>
+        <converters:UserMessageBackgroundConverter x:Key="UserMessageBackgroundConverter"/>
+        <converters:UserMessageAlignmentConverter x:Key="UserMessageAlignmentConverter"/>
+    </UserControl.Resources>
+    
+    <Grid RowDefinitions="*,Auto,Auto">
+        <!-- Список сообщений -->
+        <ScrollViewer Grid.Row="0" 
+                      Name="MessagesScrollViewer"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Messages}"
+                          Margin="10">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="models:ChatMessageModel">
+                        <Border Margin="5"
+                                Padding="12"
+                                CornerRadius="12"
+                                MaxWidth="500"
+                                Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
+                                HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
+                            
+                            <StackPanel>
+                                <TextBlock Text="{Binding Content}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
+                                
+                                <!-- Индикатор загрузки при стриминге -->
+                                <ProgressBar IsIndeterminate="True"
+                                             IsVisible="{Binding IsStreaming}"
+                                             Height="3"
+                                             Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        
+        <!-- Сообщение об ошибке -->
+        <Border Grid.Row="1" 
+                Background="#FFE0E0"
+                Padding="10"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="#CC0000"
+                       TextWrapping="Wrap"/>
+        </Border>
+        
+        <!-- Панель ввода -->
+        <Border Grid.Row="2" 
+                Background="#F5F5F5"
+                Padding="10">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBox Grid.Column="0"
+                         Text="{Binding InputMessage, Mode=TwoWay}"
+                         Watermark="Введите сообщение..."
+                         AcceptsReturn="False"
+                         TextWrapping="Wrap"
+                         MinHeight="40"
+                         MaxHeight="120"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
+                    </TextBox.KeyBindings>
+                </TextBox>
+                
+                <Button Grid.Column="1"
+                        Command="{Binding SendMessageCommand}"
+                        IsEnabled="{Binding !IsLoading}"
+                        Width="80"
+                        Height="40"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center">
+                    <Panel>
+                        <TextBlock Text="Отправить"
+                                   IsVisible="{Binding !IsLoading}"/>
+                        <ProgressBar IsIndeterminate="True"
+                                     IsVisible="{Binding IsLoading}"
+                                     Width="40"
+                                     Height="4"/>
+                    </Panel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

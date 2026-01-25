@@ -5,11 +5,14 @@ using System.Linq;
 using Avalonia.Markup.Xaml;
 using DesktopAssistant.UI.ViewModels;
 using DesktopAssistant.UI.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DesktopAssistant.UI;
 
 public partial class App : Avalonia.Application
 {
+    public static IServiceProvider? ServiceProvider { get; private set; }
+    
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -22,13 +25,29 @@ public partial class App : Avalonia.Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
+            
+            if (ServiceProvider == null)
+            {
+                throw new InvalidOperationException("ServiceProvider not initialized. Call App.SetServiceProvider() first.");
+            }
+            
+            var mainWindowViewModel = ServiceProvider.GetRequiredService<MainWindowViewModel>();
+            
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = mainWindowViewModel,
             };
+            
+            // Инициализируем MainWindow асинхронно
+            _ = mainWindowViewModel.InitializeAsync();
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+    
+    public static void SetServiceProvider(IServiceProvider serviceProvider)
+    {
+        ServiceProvider = serviceProvider;
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

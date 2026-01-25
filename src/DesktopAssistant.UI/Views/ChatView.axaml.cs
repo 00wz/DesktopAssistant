@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace DesktopAssistant.UI.Views;
 
-public partial class MainWindow : Window
+public partial class ChatView : UserControl
 {
-    public MainWindow()
+    public ChatView()
     {
         InitializeComponent();
     }
