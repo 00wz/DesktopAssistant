@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DesktopAssistant.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DesktopAssistant.Domain\DesktopAssistant.Domain.csproj" />
+    <ProjectReference Include="..\DesktopAssistant.Application\DesktopAssistant.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Semantic Kernel (единый коннектор для всех OpenAI-совместимых провайдеров) -->
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.32.0" />
+    
+    <!-- MCP Integration (для Semantic Kernel) -->
+    <!-- <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview" /> -->
+    
+    <!-- Database -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    
+    <!-- Speech Recognition (offline - Vosk) -->
+    <PackageReference Include="Vosk" Version="0.3.38" />
+    
+    <!-- Text-to-Speech (offline - Piper TTS via ONNX) -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.0" />
+    
+    <!-- Audio -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    
+    <!-- Configuration -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+    
+    <!-- Logging -->
+    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
+    
+    <!-- DI -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>

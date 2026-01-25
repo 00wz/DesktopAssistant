@@ -1,0 +1,110 @@
+using DesktopAssistant.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace DesktopAssistant.Infrastructure.Persistence;
+
+/// <summary>
+/// Контекст базы данных приложения
+/// </summary>
+public class AppDbContext : DbContext
+{
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<MessageNode> MessageNodes => Set<MessageNode>();
+    public DbSet<ConversationBranch> ConversationBranches => Set<ConversationBranch>();
+    public DbSet<AssistantProfile> AssistantProfiles => Set<AssistantProfile>();
+    public DbSet<AppSettings> AppSettings => Set<AppSettings>();
+
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        // Conversation
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(500);
+            entity.Property(e => e.Summary).HasMaxLength(10000);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasOne(e => e.AssistantProfile)
+                  .WithMany(a => a.Conversations)
+                  .HasForeignKey(e => e.AssistantProfileId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ActiveBranch)
+                  .WithMany()
+                  .HasForeignKey(e => e.ActiveBranchId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // MessageNode
+        modelBuilder.Entity<MessageNode>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).IsRequired();
+            entity.Property(e => e.NodeType).HasConversion<string>();
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasOne(e => e.Conversation)
+                  .WithMany(c => c.Messages)
+                  .HasForeignKey(e => e.ConversationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Parent)
+                  .WithMany(e => e.Children)
+                  .HasForeignKey(e => e.ParentId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(e => e.ConversationId);
+            entity.HasIndex(e => e.ParentId);
+        });
+
+        // ConversationBranch
+        modelBuilder.Entity<ConversationBranch>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasOne(e => e.Conversation)
+                  .WithMany(c => c.Branches)
+                  .HasForeignKey(e => e.ConversationId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.HeadNode)
+                  .WithMany()
+                  .HasForeignKey(e => e.HeadNodeId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // AssistantProfile
+        modelBuilder.Entity<AssistantProfile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.WakeWord).HasMaxLength(100);
+            entity.Property(e => e.SystemPrompt).IsRequired();
+            entity.Property(e => e.VoiceName).HasMaxLength(200);
+            entity.Property(e => e.ModelId).HasMaxLength(200);
+            entity.Property(e => e.BaseUrl).HasMaxLength(500);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasIndex(e => e.Name);
+        });
+
+        // AppSettings
+        modelBuilder.Entity<AppSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Value).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(1000);
+
+            entity.HasIndex(e => e.Key).IsUnique();
+        });
+    }
+}
