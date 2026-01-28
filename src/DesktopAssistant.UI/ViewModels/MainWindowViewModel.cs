@@ -31,17 +31,11 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>
     /// Инициализация главного окна
     /// </summary>
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        try
-        {
-            // Создаём начальную вкладку чата
-            await CreateNewChatAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error initializing main window");
-        }
+        // При запуске показываем приветственный экран без автоматического создания чата
+        _logger.LogInformation("Main window initialized");
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -80,18 +74,21 @@ public partial class MainWindowViewModel : ObservableObject
         var index = Chats.IndexOf(chat);
         Chats.Remove(chat);
 
-        if (Chats.Count == 0)
+        // При закрытии последней вкладки показываем приветственный экран
+        if (Chats.Count > 0)
         {
-            // Если закрыли последнюю вкладку - создаём новую
-            _ = CreateNewChatAsync();
-        }
-        else if (index >= Chats.Count)
-        {
-            SelectedTabIndex = Chats.Count - 1;
+            if (index >= Chats.Count)
+            {
+                SelectedTabIndex = Chats.Count - 1;
+            }
+            else
+            {
+                SelectedTabIndex = index;
+            }
         }
         else
         {
-            SelectedTabIndex = index;
+            SelectedChat = null;
         }
 
         _logger.LogInformation("Closed chat tab");
