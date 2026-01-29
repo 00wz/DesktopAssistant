@@ -3,10 +3,12 @@ using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
+using DesktopAssistant.Infrastructure.MCP.Plugins;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 namespace DesktopAssistant.Infrastructure.AI;
 
@@ -22,7 +24,9 @@ public class ChatService : IChatService
     private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly IConversationBranchRepository _branchRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
+    private readonly IMcpServerManager _mcpServerManager;
     private readonly ILogger<ChatService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
 
     public ChatService(
         IKernelFactory kernelFactory,
@@ -32,6 +36,8 @@ public class ChatService : IChatService
         IMessageNodeRepository messageNodeRepository,
         IConversationBranchRepository branchRepository,
         IAssistantProfileRepository assistantRepository,
+        IMcpServerManager mcpServerManager,
+        ILoggerFactory loggerFactory,
         ILogger<ChatService> logger)
     {
         _kernelFactory = kernelFactory;
@@ -41,6 +47,8 @@ public class ChatService : IChatService
         _messageNodeRepository = messageNodeRepository;
         _branchRepository = branchRepository;
         _assistantRepository = assistantRepository;
+        _mcpServerManager = mcpServerManager;
+        _loggerFactory = loggerFactory;
         _logger = logger;
     }
 
@@ -237,12 +245,22 @@ public class ChatService : IChatService
 
     private async Task<string> GetResponseAsync(ChatHistory chatHistory, CancellationToken cancellationToken)
     {
-        var kernel = _kernelFactory.Create();
+        var kernel = CreateKernelWithMcpTools();
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
+
+        // Включаем автоматический function calling для MCP tools
+        var executionSettings = new OpenAIPromptExecutionSettings
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+        };
 
         try
         {
-            var response = await chatService.GetChatMessageContentAsync(chatHistory, cancellationToken: cancellationToken);
+            var response = await chatService.GetChatMessageContentAsync(
+                chatHistory,
+                executionSettings,
+                kernel,
+                cancellationToken);
             return response.Content ?? string.Empty;
         }
         catch (Exception ex)
@@ -253,20 +271,28 @@ public class ChatService : IChatService
     }
 
     private async Task<string> GetStreamingResponseAsync(
-        ChatHistory chatHistory, 
-        Action<string> onChunkReceived, 
+        ChatHistory chatHistory,
+        Action<string> onChunkReceived,
         CancellationToken cancellationToken)
     {
-        var kernel = _kernelFactory.Create();
+        var kernel = CreateKernelWithMcpTools();
         var chatService = kernel.GetRequiredService<IChatCompletionService>();
+
+        // Включаем автоматический function calling для MCP tools
+        var executionSettings = new OpenAIPromptExecutionSettings
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+        };
 
         try
         {
             var fullResponse = new System.Text.StringBuilder();
 
             await foreach (var chunk in chatService.GetStreamingChatMessageContentsAsync(
-                chatHistory, 
-                cancellationToken: cancellationToken))
+                chatHistory,
+                executionSettings,
+                kernel,
+                cancellationToken))
             {
                 if (!string.IsNullOrEmpty(chunk.Content))
                 {
@@ -282,5 +308,27 @@ public class ChatService : IChatService
             _logger.LogError(ex, "Error getting streaming response from LLM");
             throw;
         }
+    }
+
+    /// <summary>
+    /// Создаёт Kernel с зарегистрированными MCP tools
+    /// </summary>
+    private Kernel CreateKernelWithMcpTools()
+    {
+        var kernel = _kernelFactory.Create();
+        
+        // Регистрируем MCP tools если есть подключённые серверы
+        var connectedServers = _mcpServerManager.GetConnectedServers();
+        if (connectedServers.Count > 0)
+        {
+            var mcpToolsPlugin = new McpToolsPlugin(
+                _mcpServerManager,
+                _loggerFactory.CreateLogger<McpToolsPlugin>());
+            mcpToolsPlugin.RegisterToolsToKernel(kernel);
+            
+            _logger.LogDebug("Registered MCP tools from {ServerCount} servers", connectedServers.Count);
+        }
+        
+        return kernel;
     }
 }

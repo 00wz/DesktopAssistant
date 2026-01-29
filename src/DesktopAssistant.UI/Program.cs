@@ -3,6 +3,8 @@ using System;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Infrastructure;
 using DesktopAssistant.UI.ViewModels;
 
@@ -38,10 +40,30 @@ sealed class Program
         // Инициализация базы данных
         serviceProvider.InitializeDatabaseAsync().GetAwaiter().GetResult();
         
+        // Инициализация MCP серверов (в фоне, не блокирует запуск)
+        InitializeMcpServersAsync(serviceProvider);
+        
         // Передаём ServiceProvider в приложение
         App.SetServiceProvider(serviceProvider);
         
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
+    
+    /// <summary>
+    /// Асинхронно инициализирует MCP серверы в фоне
+    /// </summary>
+    private static async void InitializeMcpServersAsync(IServiceProvider serviceProvider)
+    {
+        try
+        {
+            var mcpManager = serviceProvider.GetRequiredService<IMcpServerManager>();
+            await mcpManager.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            var logger = serviceProvider.GetService<ILogger<Program>>();
+            logger?.LogError(ex, "Failed to initialize MCP servers");
+        }
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

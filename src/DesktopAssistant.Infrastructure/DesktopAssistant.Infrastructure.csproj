@@ -17,8 +17,8 @@
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.32.0" />
     
-    <!-- MCP Integration (для Semantic Kernel) -->
-    <!-- <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview" /> -->
+    <!-- MCP Integration -->
+    <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.1" />
     
     <!-- Database -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
@@ -50,6 +50,14 @@
     
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    
+    <!-- HTTP -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embedded Resources -->
+    <EmbeddedResource Include="MCP\Resources\mcp-servers-catalog.json" />
   </ItemGroup>
 
 </Project>

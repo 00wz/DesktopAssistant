@@ -1,0 +1,109 @@
+{
+  "servers": [
+    {
+      "id": "context7",
+      "name": "Context7",
+      "description": "Поиск документации библиотек и фреймворков. Позволяет находить актуальную документацию, примеры кода и API reference по любым библиотекам и фреймворкам.",
+      "githubUrl": "https://github.com/upstash/context7-mcp",
+      "tags": ["documentation", "search", "libraries", "frameworks", "api"]
+    },
+    {
+      "id": "tavily",
+      "name": "Tavily Search",
+      "description": "Мощный веб-поиск с использованием Tavily API. Поиск актуальной информации в интернете, новости, исследования.",
+      "githubUrl": "https://github.com/tavily-ai/tavily-mcp",
+      "tags": ["search", "web", "internet", "news", "research"]
+    },
+    {
+      "id": "filesystem",
+      "name": "Filesystem",
+      "description": "Доступ к файловой системе. Чтение, запись, создание и управление файлами и директориями.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["filesystem", "files", "directories", "io"]
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "description": "Работа с GitHub API. Управление репозиториями, issues, pull requests, поиск по коду.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["github", "git", "repositories", "code", "issues", "pr"]
+    },
+    {
+      "id": "playwright",
+      "name": "Playwright Browser",
+      "description": "Автоматизация браузера с помощью Playwright. Взаимодействие с веб-страницами, скриншоты, навигация, заполнение форм.",
+      "githubUrl": "https://github.com/microsoft/playwright-mcp",
+      "tags": ["browser", "automation", "web", "scraping", "testing"]
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite",
+      "description": "Работа с SQLite базами данных. Выполнение SQL запросов, создание и управление таблицами.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["database", "sqlite", "sql", "data"]
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "description": "Работа с PostgreSQL базами данных. Выполнение SQL запросов, управление схемой.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["database", "postgres", "postgresql", "sql", "data"]
+    },
+    {
+      "id": "fetch",
+      "name": "Fetch",
+      "description": "HTTP клиент для выполнения запросов к REST API. GET, POST, PUT, DELETE запросы.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["http", "api", "rest", "fetch", "request"]
+    },
+    {
+      "id": "memory",
+      "name": "Memory",
+      "description": "Постоянное хранилище для AI с семантическим поиском. Запоминание информации между сессиями.",
+      "githubUrl": "https://github.com/doobidoo/mcp-memory-service",
+      "tags": ["memory", "storage", "semantic", "knowledge"]
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "description": "Интеграция со Slack. Отправка сообщений, чтение каналов, управление воркспейсом.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["slack", "messaging", "chat", "communication"]
+    },
+    {
+      "id": "google-drive",
+      "name": "Google Drive",
+      "description": "Работа с Google Drive. Чтение, создание и управление файлами в облаке.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["google", "drive", "cloud", "storage", "documents"]
+    },
+    {
+      "id": "brave-search",
+      "name": "Brave Search",
+      "description": "Веб-поиск через Brave Search API. Приватный поиск без трекинга.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["search", "web", "brave", "privacy"]
+    },
+    {
+      "id": "puppeteer",
+      "name": "Puppeteer",
+      "description": "Автоматизация Chrome браузера через Puppeteer. Скриншоты, PDF, навигация.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["browser", "chrome", "puppeteer", "automation"]
+    },
+    {
+      "id": "exa",
+      "name": "Exa Search",
+      "description": "Семантический веб-поиск через Exa API. Поиск по смыслу, а не по ключевым словам.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["search", "semantic", "web", "ai"]
+    },
+    {
+      "id": "sequential-thinking",
+      "name": "Sequential Thinking",
+      "description": "Инструмент для пошагового рассуждения. Помогает разбивать сложные задачи на шаги.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "tags": ["thinking", "reasoning", "planning", "steps"]
+    }
+  ]
+}
