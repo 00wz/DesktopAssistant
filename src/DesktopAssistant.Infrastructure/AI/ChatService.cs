@@ -311,13 +311,25 @@ public class ChatService : IChatService
     }
 
     /// <summary>
-    /// Создаёт Kernel с зарегистрированными MCP tools
+    /// Создаёт Kernel с зарегистрированными MCP tools и базовыми инструментами
     /// </summary>
     private Kernel CreateKernelWithMcpTools()
     {
         var kernel = _kernelFactory.Create();
         
-        // Регистрируем MCP tools если есть подключённые серверы
+        // 1. Регистрируем базовые инструменты (execute_command, read_file, write_to_file и т.д.)
+        var coreToolsPlugin = new CoreToolsPlugin(
+            _loggerFactory.CreateLogger<CoreToolsPlugin>());
+        kernel.ImportPluginFromObject(coreToolsPlugin, "CoreTools");
+        _logger.LogDebug("Registered CoreToolsPlugin");
+        
+        // 2. Регистрируем инструменты управления MCP (search_mcp_servers, fetch_mcp_server_readme)
+        var mcpManagementPlugin = new McpManagementPlugin(
+            _loggerFactory.CreateLogger<McpManagementPlugin>());
+        kernel.ImportPluginFromObject(mcpManagementPlugin, "McpManagement");
+        _logger.LogDebug("Registered McpManagementPlugin");
+        
+        // 3. Регистрируем MCP tools из подключённых серверов
         var connectedServers = _mcpServerManager.GetConnectedServers();
         if (connectedServers.Count > 0)
         {

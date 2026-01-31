@@ -1,26 +1,43 @@
 # DesktopAssistant - Progress Log
 
-## Этап 3: MCP Интеграция (Текущий)
+## Этап 3: MCP Интеграция (Завершён)
 
-### 2026-01-27
+### 2026-01-31
 
 #### Выполнено
 
 - ✅ Исследован MCP протокол и C# SDK
 - ✅ Изучена документация modelcontextprotocol/csharp-sdk
-- ✅ Разработан план интеграции MCP
+- ✅ Разработан план интеграции MCP (docs/mcp-integration-plan.md)
+- ✅ Создана конфигурационная модель MCP серверов (McpConfiguration, McpServerConfig)
+- ✅ Создан McpConfigurationService для управления mcp.json
+- ✅ Создан McpServerManager для управления MCP клиентами
+- ✅ Создан McpToolsPlugin для динамической регистрации tools из MCP серверов
+- ✅ Создан McpManagementPlugin с tools для самоустановки:
+  - search_mcp_servers - поиск в каталоге
+  - fetch_mcp_server_readme - загрузка README из GitHub
+  - get_mcp_config_path - путь к конфигурации
+  - get_mcp_servers_directory - путь для установки серверов
+- ✅ Создан CoreToolsPlugin с базовыми tools:
+  - execute_command - выполнение команд
+  - read_file - чтение файлов
+  - write_to_file - запись файлов
+  - path_exists - проверка существования путей
+  - list_directory - листинг директорий
+- ✅ Создан каталог MCP серверов (mcp-servers-catalog.json)
+- ✅ Интегрирован MCP клиент с Semantic Kernel Function Calling
+- ✅ Обновлён ChatService для регистрации всех плагинов
+- ✅ Проект успешно компилируется
 
-#### В процессе
+#### Архитектура MCP
 
-- 🔄 Создание конфигурационной модели MCP серверов
-- 🔄 Создание базовых tools для самоустановки MCP серверов
+Реализована архитектура самоустановки MCP серверов по образцу Cline:
 
-#### Запланировано
-
-- ⏳ Создание McpServerManager для управления серверами
-- ⏳ Интеграция MCP клиента с Semantic Kernel
-- ⏳ Обновление ChatService для работы с tools
-- ⏳ Тестирование MCP интеграции
+1. **Минимальный каталог** - только githubUrl, description, tags
+2. **Динамическое получение инструкций** - AI загружает README из GitHub
+3. **Автономная установка** - AI самостоятельно выполняет команды
+4. **FileSystemWatcher** - автоматическая перезагрузка при изменении mcp.json
+5. **FunctionChoiceBehavior.Auto()** - автоматический function calling
 
 ---
 
@@ -65,7 +82,21 @@
 
 ## История изменений
 
-### v0.0.1 (2026-01-25)
+### v0.3.0 (2026-01-31)
+
+- MCP интеграция с самоустановкой серверов
+- Минимальный каталог MCP серверов (15 серверов)
+- Базовые tools (execute_command, read_file, write_to_file)
+- Function Calling через Semantic Kernel
+
+### v0.2.0 (2026-01-27)
+
+- Работающий чат с LLM через Semantic Kernel
+- Стриминговые ответы
+- TabControl с диалогами
+- Конфигурация через appsettings.json и User Secrets
+
+### v0.1.0 (2026-01-25)
 
 - Инициализация проекта
 - Создание memory-bank с документацией архитектуры
@@ -78,28 +109,29 @@
 | Метрика | Значение |
 |---------|----------|
 | Начало проекта | 2026-01-25 |
-| Текущий этап | 1 |
-| Проектов в Solution | 0 (планируется 4) |
-| Зависимостей | 0 (планируется ~20) |
+| Текущий этап | 3 (завершён) |
+| Проектов в Solution | 4 |
+| MCP серверов в каталоге | 15 |
 
 ---
 
 ## Backlog по этапам
 
-### Этап 1: Инициализация ✅ (в процессе)
+### Этап 1: Инициализация ✅
 - Архитектура и документация
 - Структура проекта
 - Базовые зависимости
 
-### Этап 2: Базовый UI
+### Этап 2: Базовый UI ✅
 - MainWindow с TabControl
-- Первоначальная настройка (wizard)
+- ChatView с чатом
 - Основные ViewModels
 
-### Этап 3: Интеграция с LLM
-- Semantic Kernel setup
-- Провайдеры (OpenAI, Azure)
-- Стриминговый чат
+### Этап 3: MCP Интеграция ✅
+- MCP клиент
+- Конфигурация серверов
+- Выполнение tools
+- Самоустановка серверов
 
 ### Этап 4: Persistence
 - SQLite + EF Core
@@ -121,17 +153,12 @@
 - Стриминговый вывод
 - Выбор голоса
 
-### Этап 8: MCP интеграция
-- MCP клиент
-- Конфигурация серверов
-- Выполнение tools
-
-### Этап 9: System Tray
+### Этап 8: System Tray
 - Работа в фоне
 - Уведомления
 - Контекстное меню
 
-### Этап 10: Суммаризация
+### Этап 9: Суммаризация
 - Подсчёт токенов
 - Автоматическая суммаризация
 - Настройки порога
@@ -140,7 +167,7 @@
 
 ## Известные проблемы
 
-*Пока не выявлены*
+- CS8619 warning в McpServerManager (nullable Dictionary) - не критично
 
 ---
 
@@ -151,3 +178,4 @@
 - [Vosk API](https://alphacephei.com/vosk/)
 - [Azure Speech Service](https://learn.microsoft.com/azure/ai-services/speech-service/)
 - [MCP Specification](https://spec.modelcontextprotocol.io/)
+- [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk)
