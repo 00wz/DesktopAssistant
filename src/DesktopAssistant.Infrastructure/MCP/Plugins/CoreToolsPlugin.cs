@@ -28,7 +28,8 @@ public class CoreToolsPlugin
         [Description("Команда для выполнения (например: git clone https://github.com/repo)")] string command,
         [Description("Рабочая директория для выполнения команды (опционально)")] string? workingDirectory = null)
     {
-        _logger.LogInformation("Executing command: {Command} in {Directory}", command, workingDirectory ?? "current directory");
+        _logger.LogInformation("[TOOL execute_command] Args: command={Command}, workingDirectory={Directory}",
+            command, workingDirectory ?? "(null)");
         
         try
         {
@@ -117,12 +118,14 @@ public class CoreToolsPlugin
                 resultStr = resultStr.Substring(0, 10000) + "\n\n[Вывод обрезан из-за размера]";
             }
             
-            _logger.LogDebug("Command completed with exit code {ExitCode}", process.ExitCode);
+            _logger.LogInformation("[TOOL execute_command] Result: exitCode={ExitCode}, outputLength={Length}",
+                process.ExitCode, resultStr.Length);
+            _logger.LogDebug("[TOOL execute_command] Full result:\n{Result}", resultStr);
             return resultStr;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing command: {Command}", command);
+            _logger.LogError(ex, "[TOOL execute_command] Error executing command: {Command}", command);
             return $"Ошибка выполнения команды: {ex.Message}";
         }
     }
@@ -135,7 +138,7 @@ public class CoreToolsPlugin
     public async Task<string> ReadFileAsync(
         [Description("Путь к файлу для чтения")] string path)
     {
-        _logger.LogDebug("Reading file: {Path}", path);
+        _logger.LogInformation("[TOOL read_file] Args: path={Path}", path);
         
         try
         {
@@ -144,6 +147,7 @@ public class CoreToolsPlugin
             
             if (!File.Exists(path))
             {
+                _logger.LogWarning("[TOOL read_file] File not found: {Path}", path);
                 return $"Файл не найден: {path}";
             }
             
@@ -155,11 +159,13 @@ public class CoreToolsPlugin
                 content = content.Substring(0, 50000) + "\n\n[Файл обрезан из-за размера]";
             }
             
+            _logger.LogInformation("[TOOL read_file] Result: length={Length}", content.Length);
+            _logger.LogDebug("[TOOL read_file] Content:\n{Content}", content);
             return content;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error reading file: {Path}", path);
+            _logger.LogError(ex, "[TOOL read_file] Error reading file: {Path}", path);
             return $"Ошибка чтения файла: {ex.Message}";
         }
     }
@@ -173,7 +179,8 @@ public class CoreToolsPlugin
         [Description("Путь к файлу для записи")] string path,
         [Description("Содержимое для записи в файл")] string content)
     {
-        _logger.LogDebug("Writing to file: {Path}", path);
+        _logger.LogInformation("[TOOL write_to_file] Args: path={Path}, contentLength={Length}", path, content.Length);
+        _logger.LogDebug("[TOOL write_to_file] Content to write:\n{Content}", content);
         
         try
         {
@@ -185,15 +192,17 @@ public class CoreToolsPlugin
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
+                _logger.LogInformation("[TOOL write_to_file] Created directory: {Directory}", directory);
             }
             
             await File.WriteAllTextAsync(path, content);
             
+            _logger.LogInformation("[TOOL write_to_file] Result: success, wrote to {Path}", path);
             return $"Файл успешно записан: {path}";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error writing to file: {Path}", path);
+            _logger.LogError(ex, "[TOOL write_to_file] Error writing to file: {Path}", path);
             return $"Ошибка записи файла: {ex.Message}";
         }
     }
@@ -206,19 +215,26 @@ public class CoreToolsPlugin
     public string PathExists(
         [Description("Путь для проверки")] string path)
     {
+        _logger.LogInformation("[TOOL path_exists] Args: path={Path}", path);
+        
         path = ExpandPath(path);
         
+        string result;
         if (File.Exists(path))
         {
-            return $"Файл существует: {path}";
+            result = $"Файл существует: {path}";
         }
-        
-        if (Directory.Exists(path))
+        else if (Directory.Exists(path))
         {
-            return $"Директория существует: {path}";
+            result = $"Директория существует: {path}";
+        }
+        else
+        {
+            result = $"Путь не существует: {path}";
         }
         
-        return $"Путь не существует: {path}";
+        _logger.LogInformation("[TOOL path_exists] Result: {Result}", result);
+        return result;
     }
     
     /// <summary>
@@ -229,10 +245,13 @@ public class CoreToolsPlugin
     public string ListDirectory(
         [Description("Путь к директории")] string path)
     {
+        _logger.LogInformation("[TOOL list_directory] Args: path={Path}", path);
+        
         path = ExpandPath(path);
         
         if (!Directory.Exists(path))
         {
+            _logger.LogWarning("[TOOL list_directory] Directory not found: {Path}", path);
             return $"Директория не существует: {path}";
         }
         
@@ -270,10 +289,14 @@ public class CoreToolsPlugin
                 }
             }
             
-            return result.ToString();
+            var resultStr = result.ToString();
+            _logger.LogInformation("[TOOL list_directory] Result: found {DirCount} dirs and {FileCount} files",
+                dirs.Length, files.Length);
+            return resultStr;
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "[TOOL list_directory] Error listing directory: {Path}", path);
             return $"Ошибка чтения директории: {ex.Message}";
         }
     }

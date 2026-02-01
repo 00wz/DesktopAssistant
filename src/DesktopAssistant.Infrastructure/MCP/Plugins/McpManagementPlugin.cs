@@ -34,12 +34,14 @@ public class McpManagementPlugin
     public async Task<string> SearchMcpServersAsync(
         [Description("Поисковый запрос: описание задачи или ключевые слова")] string query)
     {
-        _logger.LogDebug("Searching MCP servers with query: {Query}", query);
+        _logger.LogInformation("[TOOL search_mcp_servers] Args: query={Query}", query);
         
         var catalog = await LoadCatalogAsync();
+        _logger.LogDebug("[TOOL search_mcp_servers] Catalog loaded with {Count} servers", catalog.Servers.Count);
         
         if (catalog.Servers.Count == 0)
         {
+            _logger.LogWarning("[TOOL search_mcp_servers] Catalog is empty");
             return "Каталог MCP серверов пуст.";
         }
         
@@ -59,6 +61,7 @@ public class McpManagementPlugin
         
         if (results.Count == 0)
         {
+            _logger.LogInformation("[TOOL search_mcp_servers] Result: no servers found");
             return $"Не найдено MCP серверов по запросу '{query}'. Попробуйте другие ключевые слова.";
         }
         
@@ -75,6 +78,9 @@ public class McpManagementPlugin
         
         resultText += "\nДля установки сервера загрузите его README с помощью fetch_mcp_server_readme и следуйте инструкциям.";
         
+        _logger.LogInformation("[TOOL search_mcp_servers] Result: found {Count} servers", results.Count);
+        _logger.LogDebug("[TOOL search_mcp_servers] Full result:\n{Result}", resultText);
+        
         return resultText;
     }
     
@@ -86,14 +92,16 @@ public class McpManagementPlugin
     public async Task<string> FetchMcpServerReadmeAsync(
         [Description("URL GitHub репозитория (например: https://github.com/upstash/context7-mcp)")] string githubUrl)
     {
-        _logger.LogDebug("Fetching README from: {Url}", githubUrl);
+        _logger.LogInformation("[TOOL fetch_mcp_server_readme] Args: githubUrl={Url}", githubUrl);
         
         try
         {
             // Преобразуем GitHub URL в raw URL для README
             var rawUrl = ConvertToRawReadmeUrl(githubUrl);
+            _logger.LogDebug("[TOOL fetch_mcp_server_readme] Converted to raw URL: {RawUrl}", rawUrl);
             
             var response = await _httpClient.GetAsync(rawUrl);
+            _logger.LogDebug("[TOOL fetch_mcp_server_readme] Response status: {Status}", response.StatusCode);
             
             if (!response.IsSuccessStatusCode)
             {
@@ -102,33 +110,45 @@ public class McpManagementPlugin
                 {
                     rawUrl.Replace("README.md", "readme.md"),
                     rawUrl.Replace("README.md", "Readme.md"),
+                    rawUrl.Replace("/main/", "/master/"),
+                    rawUrl.Replace("/main/", "/master/").Replace("README.md", "readme.md"),
                 };
                 
                 foreach (var altUrl in altUrls)
                 {
+                    _logger.LogDebug("[TOOL fetch_mcp_server_readme] Trying alternative URL: {AltUrl}", altUrl);
                     response = await _httpClient.GetAsync(altUrl);
-                    if (response.IsSuccessStatusCode) break;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogDebug("[TOOL fetch_mcp_server_readme] Success with URL: {AltUrl}", altUrl);
+                        break;
+                    }
                 }
             }
             
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogWarning("[TOOL fetch_mcp_server_readme] Failed to load README, status: {Status}", response.StatusCode);
                 return $"Не удалось загрузить README из {githubUrl}. Код ответа: {response.StatusCode}";
             }
             
             var readme = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("[TOOL fetch_mcp_server_readme] Result: loaded {Length} chars", readme.Length);
             
             // Ограничиваем размер для контекста LLM
             if (readme.Length > 15000)
             {
                 readme = readme.Substring(0, 15000) + "\n\n[README обрезан из-за размера]";
+                _logger.LogDebug("[TOOL fetch_mcp_server_readme] README truncated to 15000 chars");
             }
+            
+            _logger.LogDebug("[TOOL fetch_mcp_server_readme] Full README:\n{Readme}", readme);
             
             return $"README из {githubUrl}:\n\n{readme}";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching README from {Url}", githubUrl);
+            _logger.LogError(ex, "[TOOL fetch_mcp_server_readme] Error fetching README from {Url}", githubUrl);
             return $"Ошибка при загрузке README: {ex.Message}";
         }
     }
@@ -144,7 +164,9 @@ public class McpManagementPlugin
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             ".desktopasst");
         
-        return Path.Combine(configDir, "mcp.json");
+        var path = Path.Combine(configDir, "mcp.json");
+        _logger.LogInformation("[TOOL get_mcp_config_path] Result: {Path}", path);
+        return path;
     }
     
     /// <summary>
@@ -154,10 +176,12 @@ public class McpManagementPlugin
     [Description("Возвращает путь к директории для клонирования MCP серверов")]
     public string GetMcpServersDirectory()
     {
-        return Path.Combine(
+        var path = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             ".desktopasst",
             "mcp-servers");
+        _logger.LogInformation("[TOOL get_mcp_servers_directory] Result: {Path}", path);
+        return path;
     }
     
     private async Task<McpServersCatalog> LoadCatalogAsync()

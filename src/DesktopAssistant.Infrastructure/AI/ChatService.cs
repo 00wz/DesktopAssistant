@@ -3,6 +3,7 @@ using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
+using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.MCP.Plugins;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -316,6 +317,12 @@ public class ChatService : IChatService
     private Kernel CreateKernelWithMcpTools()
     {
         var kernel = _kernelFactory.Create();
+        
+        // 0. Регистрируем фильтр для логирования вызовов функций
+        var loggingFilter = new FunctionLoggingFilter(
+            _loggerFactory.CreateLogger<FunctionLoggingFilter>());
+        kernel.FunctionInvocationFilters.Add(loggingFilter);
+        _logger.LogDebug("Registered FunctionLoggingFilter");
         
         // 1. Регистрируем базовые инструменты (execute_command, read_file, write_to_file и т.д.)
         var coreToolsPlugin = new CoreToolsPlugin(

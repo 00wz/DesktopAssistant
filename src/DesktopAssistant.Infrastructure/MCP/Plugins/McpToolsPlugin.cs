@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using DesktopAssistant.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
@@ -59,7 +60,9 @@ public class McpToolsPlugin
     
     private KernelFunction CreateKernelFunction(McpToolInfoDto tool)
     {
-        var functionName = $"{tool.ServerId}_{tool.Name}";
+        // Санитизируем имя функции: только ASCII буквы, цифры и подчёркивания
+        var rawName = $"{tool.ServerId}_{tool.Name}";
+        var functionName = SanitizeFunctionName(rawName);
         var description = $"[MCP:{tool.ServerId}] {tool.Description ?? tool.Name}";
         
         // Создаём делегат для вызова tool
@@ -156,5 +159,32 @@ public class McpToolsPlugin
                 IsRequired = requiredParams.Contains(paramName)
             };
         }
+    }
+    
+    /// <summary>
+    /// Санитизирует имя функции для совместимости с Semantic Kernel
+    /// Допустимы только ASCII буквы, цифры и подчёркивания
+    /// </summary>
+    private static string SanitizeFunctionName(string name)
+    {
+        // Заменяем дефисы и точки на подчёркивания
+        var sanitized = name.Replace('-', '_').Replace('.', '_');
+        
+        // Удаляем все недопустимые символы
+        sanitized = Regex.Replace(sanitized, @"[^a-zA-Z0-9_]", "");
+        
+        // Если имя начинается с цифры, добавляем префикс
+        if (sanitized.Length > 0 && char.IsDigit(sanitized[0]))
+        {
+            sanitized = "fn_" + sanitized;
+        }
+        
+        // Убираем последовательные подчёркивания
+        sanitized = Regex.Replace(sanitized, @"_+", "_");
+        
+        // Убираем подчёркивания в начале и конце
+        sanitized = sanitized.Trim('_');
+        
+        return sanitized;
     }
 }
