@@ -26,6 +26,7 @@ public class ChatService : IChatService
     private readonly IConversationBranchRepository _branchRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
     private readonly IMcpServerManager _mcpServerManager;
+    private readonly IMcpConfigurationService _mcpConfigurationService;
     private readonly ILogger<ChatService> _logger;
     private readonly ILoggerFactory _loggerFactory;
 
@@ -38,6 +39,7 @@ public class ChatService : IChatService
         IConversationBranchRepository branchRepository,
         IAssistantProfileRepository assistantRepository,
         IMcpServerManager mcpServerManager,
+        IMcpConfigurationService mcpConfigurationService,
         ILoggerFactory loggerFactory,
         ILogger<ChatService> logger)
     {
@@ -49,6 +51,7 @@ public class ChatService : IChatService
         _branchRepository = branchRepository;
         _assistantRepository = assistantRepository;
         _mcpServerManager = mcpServerManager;
+        _mcpConfigurationService = mcpConfigurationService;
         _loggerFactory = loggerFactory;
         _logger = logger;
     }
@@ -187,11 +190,14 @@ public class ChatService : IChatService
             userMessage,
             cancellationToken: cancellationToken);
 
-        _logger.LogDebug("Added user message {MessageId}", userNode.Id);
+        _logger.LogInformation("[USER MESSAGE] {MessageId}:\n{Content}", userNode.Id, userMessage);
 
         // Собираем контекст для LLM
         var contextMessages = await _conversationService.BuildContextAsync(userNode.Id, cancellationToken);
         var chatHistory = BuildChatHistory(contextMessages);
+        
+        // Логируем полный контекст отправляемый в LLM
+        // LogChatHistory(chatHistory);
 
         // Получаем ответ от LLM
         string assistantResponse;
@@ -204,6 +210,9 @@ public class ChatService : IChatService
             assistantResponse = await GetResponseAsync(chatHistory, cancellationToken);
         }
 
+        _logger.LogInformation("[ASSISTANT MESSAGE] Response ({Length} chars):\n{Content}",
+            assistantResponse.Length, assistantResponse);
+
         // Добавляем ответ ассистента
         var assistantNode = await _conversationService.AddMessageAsync(
             conversationId,
@@ -211,8 +220,6 @@ public class ChatService : IChatService
             MessageNodeType.Assistant,
             assistantResponse,
             cancellationToken: cancellationToken);
-
-        _logger.LogDebug("Added assistant message {MessageId}", assistantNode.Id);
 
         return assistantNode;
     }
@@ -242,6 +249,18 @@ public class ChatService : IChatService
         }
 
         return chatHistory;
+    }
+    
+    private void LogChatHistory(ChatHistory chatHistory)
+    {
+        _logger.LogInformation("[CHAT HISTORY] Sending {Count} messages to LLM:", chatHistory.Count);
+        
+        foreach (var message in chatHistory)
+        {
+            var role = message.Role.Label.ToUpperInvariant();
+            var content = message.Content ?? "(empty)";
+            _logger.LogInformation("[{Role}] {Content}", role, content);
+        }
     }
 
     private async Task<string> GetResponseAsync(ChatHistory chatHistory, CancellationToken cancellationToken)
@@ -330,9 +349,11 @@ public class ChatService : IChatService
         kernel.ImportPluginFromObject(coreToolsPlugin, "CoreTools");
         _logger.LogDebug("Registered CoreToolsPlugin");
         
-        // 2. Регистрируем инструменты управления MCP (search_mcp_servers, fetch_mcp_server_readme)
+        // 2. Регистрируем инструменты управления MCP (search_mcp_servers, fetch_mcp_server_readme, install_mcp_server)
         var mcpManagementPlugin = new McpManagementPlugin(
-            _loggerFactory.CreateLogger<McpManagementPlugin>());
+            _loggerFactory.CreateLogger<McpManagementPlugin>(),
+            _mcpServerManager,
+            _mcpConfigurationService);
         kernel.ImportPluginFromObject(mcpManagementPlugin, "McpManagement");
         _logger.LogDebug("Registered McpManagementPlugin");
         

@@ -56,14 +56,8 @@ public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
                 var resultValue = context.Result?.GetValue<object>();
                 var resultStr = resultValue?.ToString() ?? "(null)";
                 
-                // Ограничиваем размер результата для логирования
-                if (resultStr.Length > 2000)
-                {
-                    resultStr = resultStr.Substring(0, 2000) + "... [truncated]";
-                }
-                
                 _logger.LogInformation(
-                    "[TOOL RESULT] {FunctionName} - Duration: {Duration}ms - Result ({Length} chars): {Result}",
+                    "[TOOL RESULT] {FunctionName} - Duration: {Duration}ms - Result ({Length} chars):\n{Result}",
                     functionName, duration.TotalMilliseconds, resultStr.Length, resultStr);
             }
             catch (Exception ex)
@@ -105,15 +99,7 @@ public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
         var dict = new Dictionary<string, object?>();
         foreach (var kvp in arguments)
         {
-            // Ограничиваем размер строковых значений
-            if (kvp.Value is string str && str.Length > 500)
-            {
-                dict[kvp.Key] = str.Substring(0, 500) + "... [truncated]";
-            }
-            else
-            {
-                dict[kvp.Key] = kvp.Value;
-            }
+            dict[kvp.Key] = kvp.Value;
         }
         
         return JsonSerializer.Serialize(dict, JsonOptions);

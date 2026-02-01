@@ -67,6 +67,14 @@ public class McpConfigurationService : IMcpConfigurationService, IDisposable
             }
             
             var json = await File.ReadAllTextAsync(ConfigFilePath, cancellationToken);
+            
+            // Обрабатываем пустой файл или файл с пробелами
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                _logger.LogInformation("Config file is empty, returning empty configuration");
+                return new McpConfigurationDto();
+            }
+            
             var config = JsonSerializer.Deserialize<McpConfiguration>(json, _jsonOptions);
             
             return MapToDto(config ?? new McpConfiguration());

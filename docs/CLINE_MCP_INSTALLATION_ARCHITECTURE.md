@@ -384,3 +384,213 @@ Default path for new servers: {MCP_SERVERS_PATH}
 
 5. **Безопасность**
    - Вызовы MCP tools требуют подтверждения пользователя
+
+---
+
+## 9. Универсальный tool для добавления MCP серверов
+
+### 9.1. add_mcp_server
+
+Универсальный tool для добавления любого MCP сервера в конфигурацию:
+
+```csharp
+add_mcp_server(
+    serverId: string,   // Уникальный ID
+    command: string,    // 'npx', 'node', 'python' и т.д.
+    argsJson: string,   // JSON массив аргументов
+    envJson: string     // JSON объект переменных окружения
+)
+```
+
+**Примеры использования:**
+
+1. **npx сервер** (публикуется в npm):
+```
+add_mcp_server(
+    serverId: "tavily",
+    command: "npx",
+    argsJson: "["-y", "tavily-mcp@0.2.1"]",
+    envJson: "{"TAVILY_API_KEY": "tvly-xxx"}"
+)
+```
+
+2. **node сервер** (после клонирования и сборки):
+```
+add_mcp_server(
+    serverId: "weather",
+    command: "node",
+    argsJson: "["/home/user/.desktopasst/mcp-servers/weather/build/index.js"]",
+    envJson: "{"API_KEY": "xxx"}"
+)
+```
+
+3. **python сервер**:
+```
+add_mcp_server(
+    serverId: "custom",
+    command: "python",
+    argsJson: "["/path/to/server/main.py"]",
+    envJson: "{}"
+)
+```
+
+### 9.2. Автоматические действия
+
+1. **Для npx команд** - валидация npm пакета через `npm view`
+2. Запись конфигурации в mcp.json
+3. Ожидание автоматического подключения (FileWatcher)
+4. Возврат результата:
+   - ✅ Успех: список доступных tools
+   - ❌ Ошибка валидации npm (только для npx)
+   - ❌ Ошибка подключения с диагностикой
+   - ⚠️ Статус неизвестен
+
+### 9.3. Алгоритм установки серверов
+
+**Простой сервер (npx):**
+```
+1. fetch_mcp_server_readme(githubUrl)
+   ↓
+2. add_mcp_server(serverId, "npx", argsJson, envJson)
+   ↓
+   Готово! Tools доступны.
+```
+
+**Сервер требующий сборки:**
+```
+1. fetch_mcp_server_readme(githubUrl)
+   ↓
+2. execute_command("git clone ... {get_mcp_servers_directory()}/server-name")
+   ↓
+3. execute_command("cd ... && npm install && npm run build")
+   ↓
+4. add_mcp_server(serverId, "node", "[path/to/build/index.js]", envJson)
+   ↓
+   Готово! Tools доступны.
+```
+
+### 9.4. Доступные MCP management tools
+
+| Tool | Описание |
+|------|----------|
+| `search_mcp_servers` | Поиск серверов в каталоге |
+| `fetch_mcp_server_readme` | Загрузка README из GitHub |
+| `add_mcp_server` | Универсальное добавление сервера (с автоматической валидацией) |
+| `get_mcp_config_path` | Путь к mcp.json (информационный) |
+| `get_mcp_servers_directory` | Путь для клонирования серверов |
+
+### 9.5. Примеры результатов add_mcp_server
+
+**Успех:**
+```
+✅ MCP СЕРВЕР 'tavily' УСПЕШНО УСТАНОВЛЕН И ПОДКЛЮЧЕН!
+
+Конфигурация:
+  Command: npx
+  Args: -y tavily-mcp@0.2.1
+  Env: 1 переменных
+
+Доступные tools (2):
+  - tavily_search: Search the web using Tavily API
+  - tavily_extract: Extract content from URLs
+```
+
+**Ошибка валидации npm (только для npx):**
+```
+❌ ОШИБКА ВАЛИДАЦИИ npm пакета!
+
+Пакет: @tavily/mcp-server-tavily
+Ошибка: Пакет не найден в npm registry
+
+РЕШЕНИЕ: Вернись к README и найди ТОЧНОЕ имя пакета!
+```
+
+**Ошибка подключения:**
+```
+❌ ОШИБКА ПОДКЛЮЧЕНИЯ к MCP серверу 'weather'!
+
+Ошибка: Cannot find module '/path/to/build/index.js'
+
+РЕШЕНИЕ: Проверь что сервер собран и путь указан верно.
+```
+
+### 9.6. Универсальная валидация серверов
+
+`add_mcp_server` выполняет **предварительную валидацию** перед записью конфигурации, адаптированную под тип сервера:
+
+| Тип сервера | Команда | Проверка |
+|-------------|---------|----------|
+| **npx** | `npx` | Проверка npm пакета через `npm view` |
+| **node** | `node` | Проверка существования .js/.mjs файла |
+| **python** | `python`, `python3` | Проверка существования .py файла |
+| **Другие** | любая | Проверка доступности команды в PATH (`where`/`which`) |
+
+**Логика валидации:**
+
+```csharp
+ValidateServerConfigAsync(command, args):
+    1. Если command == "npx":
+       - Найти имя пакета в args (первый аргумент без "-")
+       - Выполнить: npm view {package} name --json
+       - При ошибке: вернуть "❌ ОШИБКА ВАЛИДАЦИИ npm пакета!"
+       
+    2. Если command == "node" / "python" / "python3":
+       - Найти путь к скрипту в args (.js, .mjs, .py)
+       - Проверить: File.Exists(scriptPath)
+       - При отсутствии: вернуть "❌ ОШИБКА: Файл скрипта не найден!"
+       
+    3. Для других команд:
+       - Проверить: where/which {command}
+       - При отсутствии: вернуть "⚠️ ПРЕДУПРЕЖДЕНИЕ: Команда может быть недоступна"
+       
+    4. Если все проверки пройдены: return null (продолжить установку)
+```
+
+**Примеры ошибок:**
+
+```
+❌ ОШИБКА ВАЛИДАЦИИ npm пакета!
+
+Пакет: @tavily/mcp-server
+Ошибка: Пакет не найден в npm registry
+
+Возможные причины:
+1. Имя пакета написано с ошибкой
+2. Ты ПРИДУМАЛ имя пакета вместо копирования из README
+
+РЕШЕНИЕ: Вернись к README (fetch_mcp_server_readme) и найди ТОЧНОЕ имя пакета!
+```
+
+```
+❌ ОШИБКА: Файл скрипта не найден!
+
+Путь: /home/user/.desktopasst/mcp-servers/weather/build/index.js
+
+Возможные причины:
+1. Сервер не был склонирован или не собран
+2. Путь указан неверно
+
+РЕШЕНИЕ:
+1. Убедись что репозиторий склонирован в get_mcp_servers_directory()
+2. Выполни сборку: execute_command('npm install && npm run build')
+3. Проверь правильность пути к собранному файлу
+```
+
+```
+⚠️ ПРЕДУПРЕЖДЕНИЕ: Команда 'uvx' может быть недоступна в системе.
+
+Конфигурация будет записана, но сервер может не запуститься.
+Убедись что программа установлена и доступна в PATH.
+```
+
+### 9.7. Поддерживаемые типы MCP серверов
+
+| Тип | Команда | Аргументы | Пример |
+|-----|---------|-----------|--------|
+| **npm (npx)** | `npx` | `["-y", "package@version"]` | `["npx", ["-y", "tavily-mcp@0.2.1"]]` |
+| **npm (npx scoped)** | `npx` | `["-y", "@scope/package"]` | `["npx", ["-y", "@upstash/context7-mcp"]]` |
+| **Node.js** | `node` | `["/path/to/index.js"]` | `["node", ["/path/build/index.js"]]` |
+| **Python** | `python` / `python3` | `["/path/to/main.py"]` | `["python", ["-m", "server"]]` |
+| **uv (Python)** | `uvx` | `["package"]` | `["uvx", ["mcp-server-fetch"]]` |
+| **Docker** | `docker` | `["run", "-i", "image"]` | `["docker", ["run", "-i", "mcp/server"]]` |
+| **Другие** | любая | любые | Зависит от сервера |
