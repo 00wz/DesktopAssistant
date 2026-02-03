@@ -33,6 +33,11 @@ public interface IMcpServerManager
     IReadOnlyList<McpServerInfoDto> GetConnectedServers();
     
     /// <summary>
+    /// Возвращает информацию о конкретном сервере (включая статус ошибки)
+    /// </summary>
+    McpServerInfoDto? GetServerInfo(string serverId);
+    
+    /// <summary>
     /// Возвращает все tools со всех подключённых серверов
     /// </summary>
     IReadOnlyList<McpToolInfoDto> GetAllTools();

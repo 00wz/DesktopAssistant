@@ -1,13 +1,6 @@
 {
   "servers": [
     {
-      "id": "context7",
-      "name": "Context7",
-      "description": "Поиск документации библиотек и фреймворков. Позволяет находить актуальную документацию, примеры кода и API reference по любым библиотекам и фреймворкам.",
-      "githubUrl": "https://github.com/upstash/context7-mcp",
-      "tags": ["documentation", "search", "libraries", "frameworks", "api"]
-    },
-    {
       "id": "tavily",
       "name": "Tavily Search",
       "description": "Мощный веб-поиск с использованием Tavily API. Поиск актуальной информации в интернете, новости, исследования.",
@@ -18,92 +11,127 @@
       "id": "filesystem",
       "name": "Filesystem",
       "description": "Доступ к файловой системе. Чтение, запись, создание и управление файлами и директориями.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
       "tags": ["filesystem", "files", "directories", "io"]
     },
     {
-      "id": "github",
-      "name": "GitHub",
-      "description": "Работа с GitHub API. Управление репозиториями, issues, pull requests, поиск по коду.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["github", "git", "repositories", "code", "issues", "pr"]
+      "id": "memory",
+      "name": "Memory",
+      "description": "Постоянное хранилище для AI в виде knowledge graph. Запоминание информации между сессиями.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/memory",
+      "tags": ["memory", "storage", "knowledge-graph"]
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "description": "Работа с Git репозиториями. Чтение истории, коммитов, веток, diff.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/git",
+      "tags": ["git", "version-control", "repositories"]
+    },
+    {
+      "id": "fetch",
+      "name": "Fetch",
+      "description": "HTTP клиент для выполнения запросов к веб-страницам и REST API. Извлечение содержимого страниц.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/fetch",
+      "tags": ["http", "api", "rest", "fetch", "request"]
     },
     {
       "id": "playwright",
       "name": "Playwright Browser",
       "description": "Автоматизация браузера с помощью Playwright. Взаимодействие с веб-страницами, скриншоты, навигация, заполнение форм.",
-      "githubUrl": "https://github.com/microsoft/playwright-mcp",
+      "githubUrl": "https://github.com/executeautomation/mcp-playwright",
       "tags": ["browser", "automation", "web", "scraping", "testing"]
     },
     {
-      "id": "sqlite",
-      "name": "SQLite",
-      "description": "Работа с SQLite базами данных. Выполнение SQL запросов, создание и управление таблицами.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["database", "sqlite", "sql", "data"]
+      "id": "qdrant",
+      "name": "Qdrant Vector Database",
+      "description": "Интеграция с Qdrant vector search engine. Семантический поиск и хранение векторных эмбеддингов.",
+      "githubUrl": "https://github.com/qdrant/mcp-server-qdrant",
+      "tags": ["vector", "database", "embeddings", "semantic", "search"]
     },
     {
-      "id": "postgres",
-      "name": "PostgreSQL",
-      "description": "Работа с PostgreSQL базами данных. Выполнение SQL запросов, управление схемой.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["database", "postgres", "postgresql", "sql", "data"]
+      "id": "kubernetes",
+      "name": "Kubernetes",
+      "description": "Управление Kubernetes кластером. Работа с подами, деплойментами, сервисами, логами.",
+      "githubUrl": "https://github.com/containers/kubernetes-mcp-server",
+      "tags": ["kubernetes", "k8s", "containers", "devops"]
     },
     {
-      "id": "fetch",
-      "name": "Fetch",
-      "description": "HTTP клиент для выполнения запросов к REST API. GET, POST, PUT, DELETE запросы.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["http", "api", "rest", "fetch", "request"]
-    },
-    {
-      "id": "memory",
-      "name": "Memory",
-      "description": "Постоянное хранилище для AI с семантическим поиском. Запоминание информации между сессиями.",
-      "githubUrl": "https://github.com/doobidoo/mcp-memory-service",
-      "tags": ["memory", "storage", "semantic", "knowledge"]
-    },
-    {
-      "id": "slack",
-      "name": "Slack",
-      "description": "Интеграция со Slack. Отправка сообщений, чтение каналов, управление воркспейсом.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["slack", "messaging", "chat", "communication"]
-    },
-    {
-      "id": "google-drive",
-      "name": "Google Drive",
-      "description": "Работа с Google Drive. Чтение, создание и управление файлами в облаке.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["google", "drive", "cloud", "storage", "documents"]
-    },
-    {
-      "id": "brave-search",
-      "name": "Brave Search",
-      "description": "Веб-поиск через Brave Search API. Приватный поиск без трекинга.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["search", "web", "brave", "privacy"]
-    },
-    {
-      "id": "puppeteer",
-      "name": "Puppeteer",
-      "description": "Автоматизация Chrome браузера через Puppeteer. Скриншоты, PDF, навигация.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
-      "tags": ["browser", "chrome", "puppeteer", "automation"]
+      "id": "mysql",
+      "name": "MySQL",
+      "description": "Работа с MySQL базами данных. Выполнение SQL запросов, управление схемой.",
+      "githubUrl": "https://github.com/f4ww4z/mcp-mysql-server",
+      "tags": ["database", "mysql", "sql", "data"]
     },
     {
       "id": "exa",
       "name": "Exa Search",
       "description": "Семантический веб-поиск через Exa API. Поиск по смыслу, а не по ключевым словам.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "githubUrl": "https://github.com/exa-labs/exa-mcp-server",
       "tags": ["search", "semantic", "web", "ai"]
     },
     {
       "id": "sequential-thinking",
       "name": "Sequential Thinking",
       "description": "Инструмент для пошагового рассуждения. Помогает разбивать сложные задачи на шаги.",
-      "githubUrl": "https://github.com/modelcontextprotocol/servers",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking",
       "tags": ["thinking", "reasoning", "planning", "steps"]
+    },
+    {
+      "id": "mcp-memory-service",
+      "name": "Memory Service (ChromaDB)",
+      "description": "Постоянное хранилище для AI с семантическим поиском через ChromaDB.",
+      "githubUrl": "https://github.com/doobidoo/mcp-memory-service",
+      "tags": ["memory", "storage", "semantic", "knowledge", "chromadb", "build-required"]
+    },
+    {
+      "id": "obsidian",
+      "name": "Obsidian Reader",
+      "description": "Чтение и поиск в директории Markdown заметок Obsidian vault.",
+      "githubUrl": "https://github.com/smithery-ai/mcp-obsidian",
+      "tags": ["obsidian", "markdown", "notes", "knowledge"]
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "description": "Интеграция с Notion API. Чтение и управление страницами, базами данных.",
+      "githubUrl": "https://github.com/makenotion/notion-mcp-server",
+      "tags": ["notion", "notes", "databases", "productivity"]
+    },
+    {
+      "id": "mongodb",
+      "name": "MongoDB",
+      "description": "Работа с MongoDB базами данных. CRUD операции, агрегации.",
+      "githubUrl": "https://github.com/mongodb/mongodb-mcp-server",
+      "tags": ["database", "mongodb", "nosql", "data"]
+    },
+    {
+      "id": "docker",
+      "name": "Docker",
+      "description": "Управление Docker контейнерами, образами, volumes и networks.",
+      "githubUrl": "https://github.com/docker/docker-mcp",
+      "tags": ["docker", "containers", "devops"]
+    },
+    {
+      "id": "time",
+      "name": "Time",
+      "description": "Получение текущего времени и работа с часовыми поясами.",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/time",
+      "tags": ["time", "timezone", "datetime"]
+    },
+    {
+      "id": "everything",
+      "name": "Everything",
+      "description": "Демонстрационный сервер со всеми типами MCP примитивов (tools, resources, prompts).",
+      "githubUrl": "https://github.com/modelcontextprotocol/servers/tree/main/src/everything",
+      "tags": ["demo", "example", "all-features"]
+    },
+    {
+      "id": "sentry",
+      "name": "Sentry",
+      "description": "Интеграция с Sentry для мониторинга ошибок и исключений.",
+      "githubUrl": "https://github.com/getsentry/sentry-mcp",
+      "tags": ["sentry", "errors", "monitoring", "debugging"]
     }
   ]
 }

@@ -304,10 +304,10 @@ public class ChatService : IChatService
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
         };
 
+        var fullResponse = new System.Text.StringBuilder();
+
         try
         {
-            var fullResponse = new System.Text.StringBuilder();
-
             await foreach (var chunk in chatService.GetStreamingChatMessageContentsAsync(
                 chatHistory,
                 executionSettings,
@@ -325,6 +325,15 @@ public class ChatService : IChatService
         }
         catch (Exception ex)
         {
+            var accumulatedContent = fullResponse.ToString();
+            
+            // Логируем накопленный ответ перед ошибкой
+            if (!string.IsNullOrEmpty(accumulatedContent))
+            {
+                _logger.LogWarning("Streaming was interrupted. Accumulated response ({Length} chars):\n{Content}",
+                    accumulatedContent.Length, accumulatedContent);
+            }
+            
             _logger.LogError(ex, "Error getting streaming response from LLM");
             throw;
         }

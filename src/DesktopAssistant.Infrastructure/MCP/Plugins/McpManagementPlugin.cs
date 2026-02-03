@@ -98,8 +98,10 @@ public class McpManagementPlugin
         {
             // Преобразуем GitHub URL в raw URL для README
             var rawUrl = ConvertToRawReadmeUrl(githubUrl);
+            _logger.LogDebug("[TOOL fetch_mcp_server_readme] Converted to raw URL: {RawUrl}", rawUrl);
             
             var response = await _httpClient.GetAsync(rawUrl);
+            _logger.LogDebug("[TOOL fetch_mcp_server_readme] Response status: {Status}", response.StatusCode);
             
             if (!response.IsSuccessStatusCode)
             {
@@ -114,9 +116,11 @@ public class McpManagementPlugin
                 
                 foreach (var altUrl in altUrls)
                 {
+                    _logger.LogDebug("[TOOL fetch_mcp_server_readme] Trying alternative URL: {AltUrl}", altUrl);
                     response = await _httpClient.GetAsync(altUrl);
                     if (response.IsSuccessStatusCode)
                     {
+                        _logger.LogDebug("[TOOL fetch_mcp_server_readme] Success with URL: {AltUrl}", altUrl);
                         break;
                     }
                 }
@@ -124,6 +128,7 @@ public class McpManagementPlugin
             
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogWarning("[TOOL fetch_mcp_server_readme] Failed to load README, status: {Status}", response.StatusCode);
                 return $"Не удалось загрузить README из {githubUrl}. Код ответа: {response.StatusCode}";
             }
             
@@ -236,28 +241,44 @@ public class McpManagementPlugin
             await Task.Delay(500); // Даём время FileWatcher обработать изменение
             
             // 7. Проверяем статус подключения с несколькими попытками
-            const int maxAttempts = 5;
+            const int maxAttempts = 120;
             const int delayMs = 1000;
             
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                var servers = _serverManager.GetConnectedServers();
-                var connectedServer = servers.FirstOrDefault(s => s.Id == serverId);
+                // Используем GetServerInfo для получения информации включая ошибки
+                var serverInfo = _serverManager.GetServerInfo(serverId);
                 
-                if (connectedServer != null && connectedServer.Status == McpServerStatusDto.Connected)
+                if (serverInfo != null)
                 {
-                    // Успех! Формируем отчёт
-                    var toolsList = connectedServer.Tools.Any()
-                        ? string.Join("\n", connectedServer.Tools.Select(t => $"  - {t.Name}: {t.Description ?? "no description"}"))
-                        : "  (нет tools)";
+                    // Проверяем успешное подключение
+                    if (serverInfo.Status == McpServerStatusDto.Connected)
+                    {
+                        var toolsList = serverInfo.Tools.Any()
+                            ? string.Join("\n", serverInfo.Tools.Select(t => $"  - {t.Name}: {t.Description ?? "no description"}"))
+                            : "  (нет tools)";
+                        
+                        return $"✅ MCP СЕРВЕР '{serverId}' УСПЕШНО УСТАНОВЛЕН И ПОДКЛЮЧЕН!\n\n" +
+                               $"Конфигурация:\n" +
+                               $"  Command: {command}\n" +
+                               $"  Args: {string.Join(" ", args)}\n" +
+                               (env.Any() ? $"  Env: {env.Keys.Count} переменных\n" : "") +
+                               $"\nДоступные tools ({serverInfo.Tools.Count}):\n{toolsList}\n\n" +
+                               "Теперь ты можешь использовать эти tools для выполнения задач пользователя.";
+                    }
                     
-                    return $"✅ MCP СЕРВЕР '{serverId}' УСПЕШНО УСТАНОВЛЕН И ПОДКЛЮЧЕН!\n\n" +
-                           $"Конфигурация:\n" +
-                           $"  Command: {command}\n" +
-                           $"  Args: {string.Join(" ", args)}\n" +
-                           (env.Any() ? $"  Env: {env.Keys.Count} переменных\n" : "") +
-                           $"\nДоступные tools ({connectedServer.Tools.Count}):\n{toolsList}\n\n" +
-                           "Теперь ты можешь использовать эти tools для выполнения задач пользователя.";
+                    // Проверяем ошибку подключения - сразу возвращаем ошибку, не ждём
+                    if (serverInfo.Status == McpServerStatusDto.Error)
+                    {
+                        return $"❌ ОШИБКА ПОДКЛЮЧЕНИЯ к MCP серверу '{serverId}'!\n\n" +
+                               $"Конфигурация записана, но сервер не запустился.\n" +
+                               $"Ошибка: {serverInfo.ErrorMessage}\n\n" +
+                               "Возможные причины:\n" +
+                               "1. Неверный формат команды или аргументов\n" +
+                               "2. Отсутствуют необходимые переменные окружения (API ключи)\n" +
+                               "3. Пакет требует дополнительной настройки\n\n" +
+                               "РЕШЕНИЕ: Проверь README и убедись что все параметры указаны верно.";
+                    }
                 }
                 
                 if (attempt < maxAttempts)
@@ -266,26 +287,10 @@ public class McpManagementPlugin
                 }
             }
             
-            // 8. Не удалось подключиться - проверяем ошибку
-            var allServers = _serverManager.GetConnectedServers();
-            var serverInfo = allServers.FirstOrDefault(s => s.Id == serverId);
-            
-            if (serverInfo != null && serverInfo.Status == McpServerStatusDto.Error)
-            {
-                return $"❌ ОШИБКА ПОДКЛЮЧЕНИЯ к MCP серверу '{serverId}'!\n\n" +
-                       $"Конфигурация записана, но сервер не запустился.\n" +
-                       $"Ошибка: {serverInfo.ErrorMessage}\n\n" +
-                       "Возможные причины:\n" +
-                       "1. Неверный формат команды или аргументов\n" +
-                       "2. Отсутствуют необходимые переменные окружения (API ключи)\n" +
-                       "3. Пакет требует дополнительной настройки\n\n" +
-                       "РЕШЕНИЕ: Проверь README и убедись что все параметры указаны верно.";
-            }
-            
-            return $"⚠️ MCP сервер '{serverId}' - конфигурация записана, но статус подключения неизвестен.\n\n" +
-                   "Конфигурация сохранена в mcp.json.\n" +
-                   "Сервер может подключиться позже или требует перезапуска приложения.\n\n" +
-                   "Если сервер не появился, проверь логи на наличие ошибок.";
+            // 8. Таймаут - сервер всё ещё в статусе Connecting
+            return $"⚠️ MCP сервер '{serverId}' - конфигурация записана, но подключение не завершилось за {maxAttempts} секунд.\n\n" +
+                   "Конфигурация сохранена в mcp.json.\n\n" +
+                   "Возможная причина: сервер запускается медленно";
         }
         catch (Exception ex)
         {
@@ -536,12 +541,39 @@ public class McpManagementPlugin
     
     private static string ConvertToRawReadmeUrl(string githubUrl)
     {
-        // https://github.com/owner/repo -> https://raw.githubusercontent.com/owner/repo/main/README.md
-        var match = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)");
-        if (match.Success)
+        // Обрабатываем URL с подкаталогами:
+        // https://github.com/owner/repo/tree/main/src/subdir -> README из подкаталога
+        // https://github.com/owner/repo/blob/main/src/subdir/README.md -> прямая ссылка
+        // https://github.com/owner/repo -> README из корня
+        
+        // Паттерн для URL с tree (подкаталог)
+        var treeMatch = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)/tree/([^/]+)/(.+)");
+        if (treeMatch.Success)
         {
-            var owner = match.Groups[1].Value;
-            var repo = match.Groups[2].Value.TrimEnd('/');
+            var owner = treeMatch.Groups[1].Value;
+            var repo = treeMatch.Groups[2].Value;
+            var branch = treeMatch.Groups[3].Value;
+            var path = treeMatch.Groups[4].Value.TrimEnd('/');
+            return $"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}/README.md";
+        }
+        
+        // Паттерн для URL с blob (прямая ссылка на файл)
+        var blobMatch = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)");
+        if (blobMatch.Success)
+        {
+            var owner = blobMatch.Groups[1].Value;
+            var repo = blobMatch.Groups[2].Value;
+            var branch = blobMatch.Groups[3].Value;
+            var filePath = blobMatch.Groups[4].Value;
+            return $"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{filePath}";
+        }
+        
+        // Базовый паттерн для корня репозитория
+        var baseMatch = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)");
+        if (baseMatch.Success)
+        {
+            var owner = baseMatch.Groups[1].Value;
+            var repo = baseMatch.Groups[2].Value.TrimEnd('/');
             return $"https://raw.githubusercontent.com/{owner}/{repo}/main/README.md";
         }
         

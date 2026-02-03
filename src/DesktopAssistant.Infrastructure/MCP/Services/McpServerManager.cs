@@ -165,6 +165,11 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
             .ToList();
     }
     
+    public McpServerInfoDto? GetServerInfo(string serverId)
+    {
+        return _serverInfos.TryGetValue(serverId, out var info) ? info : null;
+    }
+    
     public IReadOnlyList<McpToolInfoDto> GetAllTools()
     {
         return _serverInfos.Values
