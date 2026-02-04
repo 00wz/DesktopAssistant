@@ -3,82 +3,168 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+        xmlns:models="using:DesktopAssistant.UI.Models"
         xmlns:views="using:DesktopAssistant.UI.Views"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
         x:Class="DesktopAssistant.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Desktop Assistant"
-        Width="900"
+        Width="1000"
         Height="700"
-        MinWidth="600"
-        MinHeight="400"
+        MinWidth="700"
+        MinHeight="500"
         WindowStartupLocation="CenterScreen">
     
-    <Grid RowDefinitions="Auto,*">
-        <!-- Панель инструментов -->
-        <Border Grid.Row="0" 
-                Background="#F0F0F0" 
-                Padding="10,5">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0"
-                           Text="Desktop Assistant"
-                           FontSize="18"
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"/>
+    <Grid ColumnDefinitions="Auto,*">
+        <!-- Боковая панель со списком диалогов -->
+        <Border Grid.Column="0" 
+                Background="#2D2D30"
+                Width="260"
+                IsVisible="{Binding IsSidebarVisible}">
+            <Grid RowDefinitions="Auto,*">
+                <!-- Заголовок боковой панели -->
+                <Border Grid.Row="0" 
+                        Background="#3E3E42"
+                        Padding="15,10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="Диалоги"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1"
+                                Command="{Binding CreateNewChatCommand}"
+                                ToolTip.Tip="Новый чат"
+                                Background="Transparent"
+                                Padding="8,4">
+                            <TextBlock Text="+" FontSize="18" Foreground="White"/>
+                        </Button>
+                    </Grid>
+                </Border>
                 
-                <Button Grid.Column="1"
-                        Command="{Binding CreateNewChatCommand}"
-                        Content="+ Новый чат"
-                        Padding="15,8"/>
+                <!-- Список сохранённых диалогов -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Пустое состояние -->
+                        <TextBlock Text="Нет сохранённых диалогов"
+                                   Foreground="#888888"
+                                   Margin="15,20"
+                                   IsVisible="{Binding !SavedConversations.Count}"/>
+                        
+                        <!-- Список диалогов -->
+                        <ItemsControl ItemsSource="{Binding SavedConversations}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="models:ConversationListItem">
+                                    <Button Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenConversationCommand}"
+                                            CommandParameter="{Binding}"
+                                            Background="Transparent"
+                                            Padding="15,10"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Stretch"
+                                            CornerRadius="0">
+                                        <Button.Styles>
+                                            <Style Selector="Button:pointerover">
+                                                <Setter Property="Background" Value="#3E3E42"/>
+                                            </Style>
+                                        </Button.Styles>
+                                        <StackPanel Spacing="3">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontSize="13"
+                                                       Foreground="White"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="1"/>
+                                            <TextBlock Text="{Binding FormattedDate}"
+                                                       FontSize="11"
+                                                       Foreground="#888888"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
         </Border>
         
-        <!-- TabControl с чатами -->
-        <TabControl Grid.Row="1"
-                    ItemsSource="{Binding Chats}"
-                    SelectedIndex="{Binding SelectedTabIndex}"
-                    SelectedItem="{Binding SelectedChat}"
-                    TabStripPlacement="Top">
-            <TabControl.ItemTemplate>
-                <DataTemplate DataType="vm:ChatViewModel">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <TextBlock Text="{Binding ConversationTitle}"
-                                   VerticalAlignment="Center"/>
-                        <Button Content="×"
-                                FontSize="14"
-                                Padding="5,0"
-                                Background="Transparent"
-                                Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).CloseChatCommand}"
-                                CommandParameter="{Binding}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </TabControl.ItemTemplate>
-            <TabControl.ContentTemplate>
-                <DataTemplate DataType="vm:ChatViewModel">
-                    <views:ChatView DataContext="{Binding}"/>
-                </DataTemplate>
-            </TabControl.ContentTemplate>
-        </TabControl>
-        
-        <!-- Пустое состояние -->
-        <Border Grid.Row="1"
-                IsVisible="{Binding !Chats.Count}"
-                Background="#FAFAFA">
-            <StackPanel VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        Spacing="20">
-                <TextBlock Text="Добро пожаловать в Desktop Assistant!"
-                           FontSize="24"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Text="Нажмите 'Новый чат' чтобы начать диалог с AI"
-                           FontSize="14"
-                           Foreground="Gray"
-                           HorizontalAlignment="Center"/>
-                <Button Content="Начать новый чат"
-                        Command="{Binding CreateNewChatCommand}"
-                        HorizontalAlignment="Center"
-                        Padding="20,10"/>
-            </StackPanel>
-        </Border>
+        <!-- Основная область -->
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
+            <!-- Панель инструментов -->
+            <Border Grid.Row="0" 
+                    Background="#F0F0F0" 
+                    Padding="10,5">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Кнопка скрытия/показа боковой панели -->
+                    <Button Grid.Column="0"
+                            Command="{Binding ToggleSidebarCommand}"
+                            ToolTip.Tip="Показать/скрыть панель диалогов"
+                            Background="Transparent"
+                            Padding="8,5"
+                            Margin="0,0,10,0">
+                        <TextBlock Text="☰" FontSize="16"/>
+                    </Button>
+                    
+                    <TextBlock Grid.Column="1"
+                               Text="Desktop Assistant"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    
+                    <Button Grid.Column="2"
+                            Command="{Binding CreateNewChatCommand}"
+                            Content="+ Новый чат"
+                            Padding="15,8"/>
+                </Grid>
+            </Border>
+            
+            <!-- TabControl с чатами -->
+            <TabControl Grid.Row="1"
+                        ItemsSource="{Binding Chats}"
+                        SelectedIndex="{Binding SelectedTabIndex}"
+                        SelectedItem="{Binding SelectedChat}"
+                        TabStripPlacement="Top"
+                        IsVisible="{Binding Chats.Count}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate DataType="vm:ChatViewModel">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="{Binding ConversationTitle}"
+                                       VerticalAlignment="Center"/>
+                            <Button Content="×"
+                                    FontSize="14"
+                                    Padding="5,0"
+                                    Background="Transparent"
+                                    Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).CloseChatCommand}"
+                                    CommandParameter="{Binding}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+                <TabControl.ContentTemplate>
+                    <DataTemplate DataType="vm:ChatViewModel">
+                        <views:ChatView DataContext="{Binding}"/>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+            
+            <!-- Пустое состояние -->
+            <Border Grid.Row="1"
+                    IsVisible="{Binding !Chats.Count}"
+                    Background="#FAFAFA">
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="20">
+                    <TextBlock Text="Добро пожаловать в Desktop Assistant!"
+                               FontSize="24"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Выберите диалог из списка слева или создайте новый"
+                               FontSize="14"
+                               Foreground="Gray"
+                               HorizontalAlignment="Center"/>
+                    <Button Content="Начать новый чат"
+                            Command="{Binding CreateNewChatCommand}"
+                            HorizontalAlignment="Center"
+                            Padding="20,10"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

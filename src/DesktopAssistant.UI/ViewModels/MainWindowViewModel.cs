@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -12,6 +14,7 @@ namespace DesktopAssistant.UI.ViewModels;
 public partial class MainWindowViewModel : ObservableObject
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<MainWindowViewModel> _logger;
 
     [ObservableProperty]
@@ -20,22 +23,106 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedTabIndex;
 
-    public ObservableCollection<ChatViewModel> Chats { get; } = new();
+    [ObservableProperty]
+    private bool _isSidebarVisible = true;
 
-    public MainWindowViewModel(IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger)
+    [ObservableProperty]
+    private ConversationListItem? _selectedConversation;
+
+    public ObservableCollection<ChatViewModel> Chats { get; } = new();
+    public ObservableCollection<ConversationListItem> SavedConversations { get; } = new();
+
+    public MainWindowViewModel(
+        IServiceProvider serviceProvider,
+        IServiceScopeFactory scopeFactory,
+        ILogger<MainWindowViewModel> logger)
     {
         _serviceProvider = serviceProvider;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
     /// <summary>
     /// Инициализация главного окна
     /// </summary>
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        // При запуске показываем приветственный экран без автоматического создания чата
+        // При запуске загружаем список сохранённых диалогов
+        await LoadSavedConversationsAsync();
         _logger.LogInformation("Main window initialized");
-        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Загружает список сохранённых диалогов
+    /// </summary>
+    public async Task LoadSavedConversationsAsync()
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            var conversations = await chatService.GetConversationsAsync();
+            
+            SavedConversations.Clear();
+            foreach (var conv in conversations.OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt))
+            {
+                SavedConversations.Add(new ConversationListItem
+                {
+                    Id = conv.Id,
+                    Title = conv.Title,
+                    UpdatedAt = conv.UpdatedAt ?? conv.CreatedAt
+                });
+            }
+            
+            _logger.LogDebug("Loaded {Count} saved conversations", SavedConversations.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading saved conversations");
+        }
+    }
+
+    /// <summary>
+    /// Открывает сохранённый диалог
+    /// </summary>
+    [RelayCommand]
+    public async Task OpenConversationAsync(ConversationListItem? item)
+    {
+        if (item == null) return;
+
+        try
+        {
+            // Проверяем, не открыт ли уже этот диалог
+            var existingChat = Chats.FirstOrDefault(c => c.CurrentConversation?.Id == item.Id);
+            if (existingChat != null)
+            {
+                SelectedChat = existingChat;
+                SelectedTabIndex = Chats.IndexOf(existingChat);
+                return;
+            }
+
+            var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
+            await chatViewModel.InitializeAsync(item.Id);
+            
+            Chats.Add(chatViewModel);
+            SelectedChat = chatViewModel;
+            SelectedTabIndex = Chats.Count - 1;
+            
+            _logger.LogInformation("Opened conversation {ConversationId}: {Title}", item.Id, item.Title);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening conversation {ConversationId}", item.Id);
+        }
+    }
+
+    /// <summary>
+    /// Переключает видимость боковой панели
+    /// </summary>
+    [RelayCommand]
+    public void ToggleSidebar()
+    {
+        IsSidebarVisible = !IsSidebarVisible;
     }
 
     /// <summary>
@@ -54,6 +141,9 @@ public partial class MainWindowViewModel : ObservableObject
             Chats.Add(chatViewModel);
             SelectedChat = chatViewModel;
             SelectedTabIndex = Chats.Count - 1;
+            
+            // Обновляем список сохранённых диалогов
+            await LoadSavedConversationsAsync();
             
             _logger.LogInformation("Created new chat tab");
         }
