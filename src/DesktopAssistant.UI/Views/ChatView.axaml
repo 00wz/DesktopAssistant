@@ -10,9 +10,15 @@
              x:DataType="vm:ChatViewModel">
     
     <UserControl.Resources>
-        <converters:UserMessageForegroundConverter x:Key="UserMessageForegroundConverter"/>
-        <converters:UserMessageBackgroundConverter x:Key="UserMessageBackgroundConverter"/>
-        <converters:UserMessageAlignmentConverter x:Key="UserMessageAlignmentConverter"/>
+        <converters:BoolToValueConverter x:Key="UserMessageForegroundConverter"
+                                         TrueValue="White"
+                                         FalseValue="Black"/>
+        <converters:BoolToValueConverter x:Key="UserMessageBackgroundConverter"
+                                         TrueValue="#007ACC"
+                                         FalseValue="#E8E8E8"/>
+        <converters:BoolToValueConverter x:Key="UserMessageAlignmentConverter"
+                                         TrueValue="Right"
+                                         FalseValue="Left"/>
     </UserControl.Resources>
     
     <Grid RowDefinitions="*,Auto,Auto">
