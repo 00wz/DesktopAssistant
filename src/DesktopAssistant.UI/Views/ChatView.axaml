@@ -19,6 +19,7 @@
         <converters:BoolToValueConverter x:Key="UserMessageAlignmentConverter"
                                          TrueValue="Right"
                                          FalseValue="Left"/>
+        <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
     </UserControl.Resources>
     
     <Grid RowDefinitions="*,Auto,Auto">
@@ -37,13 +38,69 @@
                                 MaxWidth="500"
                                 Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
                                 HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
-                            
+
                             <StackPanel>
-                                <TextBlock Text="{Binding Content}"
-                                           TextWrapping="Wrap"
-                                           Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
-                                
-                                <!-- Индикатор загрузки при стриминге -->
+                                <!-- View mode (when not editing) -->
+                                <StackPanel IsVisible="{Binding !IsEditing}">
+                                    <TextBlock Text="{Binding Content}"
+                                               TextWrapping="Wrap"
+                                               Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
+
+                                    <!-- Edit button (only for User messages) -->
+                                    <Button Content="✏️"
+                                            IsVisible="{Binding IsUser}"
+                                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
+                                            CommandParameter="{Binding}"
+                                            HorizontalAlignment="Right"
+                                            Margin="0,5,0,0"
+                                            Padding="5,2"
+                                            Background="Transparent"
+                                            ToolTip.Tip="Edit message"/>
+                                </StackPanel>
+
+                                <!-- Edit mode (when editing) -->
+                                <StackPanel IsVisible="{Binding IsEditing}">
+                                    <TextBox Text="{Binding EditedContent, Mode=TwoWay}"
+                                             TextWrapping="Wrap"
+                                             AcceptsReturn="True"
+                                             MinHeight="60"
+                                             Margin="0,0,0,5"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <Button Content="Save"
+                                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SaveEditedMessageCommand}"
+                                                CommandParameter="{Binding}"/>
+                                        <Button Content="Cancel"
+                                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Navigation through siblings (when TotalSiblings > 1) -->
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            Margin="0,5,0,0"
+                                            IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
+                                    <Button Content="◀"
+                                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsEnabled="{Binding HasPreviousSibling}"
+                                            Padding="8,2"
+                                            ToolTip.Tip="Previous version"/>
+                                    <TextBlock VerticalAlignment="Center" Margin="10,0"
+                                               Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}">
+                                        <Run Text="{Binding CurrentSiblingIndex}"/>
+                                        <Run Text="/"/>
+                                        <Run Text="{Binding TotalSiblings}"/>
+                                    </TextBlock>
+                                    <Button Content="▶"
+                                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsEnabled="{Binding HasNextSibling}"
+                                            Padding="8,2"
+                                            ToolTip.Tip="Next version"/>
+                                </StackPanel>
+
+                                <!-- Streaming indicator (existing) -->
                                 <ProgressBar IsIndeterminate="True"
                                              IsVisible="{Binding IsStreaming}"
                                              Height="3"
