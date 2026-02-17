@@ -23,7 +23,7 @@ public interface IChatService
     Task<IEnumerable<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Получает историю сообщений для диалога
+    /// Получает историю сообщений для текущей ветки диалога
     /// </summary>
     /// <param name="conversationId">ID диалога</param>
     /// <param name="cancellationToken">Токен отмены</param>
@@ -66,7 +66,7 @@ public interface IChatService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Формирует контекст истории диалога <paramref name="lastMessageId"/> и выполняет запрос ассистенту
+    /// Формирует контекст истории диалога по <paramref name="lastMessageId"/> и выполняет запрос ассистенту
     /// </summary>
     /// <param name="conversationId">ID диалога</param>
     /// <param name="lastMessageId">ID последнего сообщения для построения контекста</param>

@@ -103,7 +103,8 @@ public partial class ChatViewModel : ObservableObject
 
     private async Task LoadMessagesAsync(CancellationToken cancellationToken)
     {
-        if (CurrentConversation == null) return;
+        if (CurrentConversation == null)
+            throw new InvalidOperationException("Cannot load messages: CurrentConversation is null");
 
         var messages = await _chatService.GetConversationHistoryAsync(CurrentConversation.Id, cancellationToken);
 
@@ -140,8 +141,11 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSendMessage))]
     private async Task SendMessageAsync()
     {
-        if (CurrentConversation == null || string.IsNullOrWhiteSpace(InputMessage))
-            return;
+        if (CurrentConversation == null)
+            throw new InvalidOperationException("Cannot send message: CurrentConversation is null");
+
+        if (string.IsNullOrWhiteSpace(InputMessage))
+            throw new InvalidOperationException("Cannot send message: InputMessage is empty");
 
         var userMessage = InputMessage.Trim();
         InputMessage = string.Empty;
@@ -253,8 +257,11 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveEditedMessageAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null || !message.ParentId.HasValue)
-            return;
+        if (CurrentConversation == null)
+            throw new InvalidOperationException("Cannot save edited message: CurrentConversation is null");
+
+        if (!message.ParentId.HasValue)
+            throw new ArgumentException("Cannot save edited message: message.ParentId is null", nameof(message));
 
         try
         {
@@ -332,8 +339,11 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task NavigateToPreviousSiblingAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null || !message.ParentId.HasValue)
-            return;
+        if (CurrentConversation == null)
+            throw new InvalidOperationException("Cannot navigate to previous sibling: CurrentConversation is null");
+
+        if (!message.ParentId.HasValue)
+            throw new ArgumentException("Cannot navigate to previous sibling: message.ParentId is null", nameof(message));
 
         try
         {
@@ -351,11 +361,11 @@ public partial class ChatViewModel : ObservableObject
                 .ToList();
 
             if (siblingList.Count <= 1)
-                return;
+                throw new InvalidOperationException("Cannot navigate to previous sibling: no siblings available");
 
             var currentIndex = siblingList.FindIndex(s => s.Id == message.Id);
             if (currentIndex <= 0)
-                return;
+                throw new InvalidOperationException("Cannot navigate to previous sibling: already at first sibling or message not found");
 
             var previousSibling = siblingList[currentIndex - 1];
 
@@ -388,8 +398,11 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task NavigateToNextSiblingAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null || !message.ParentId.HasValue)
-            return;
+        if (CurrentConversation == null)
+            throw new InvalidOperationException("Cannot navigate to next sibling: CurrentConversation is null");
+
+        if (!message.ParentId.HasValue)
+            throw new ArgumentException("Cannot navigate to next sibling: message.ParentId is null", nameof(message));
 
         try
         {
@@ -407,11 +420,11 @@ public partial class ChatViewModel : ObservableObject
                 .ToList();
 
             if (siblingList.Count <= 1)
-                return;
+                throw new InvalidOperationException("Cannot navigate to next sibling: no siblings available");
 
             var currentIndex = siblingList.FindIndex(s => s.Id == message.Id);
             if (currentIndex < 0 || currentIndex >= siblingList.Count - 1)
-                return;
+                throw new InvalidOperationException("Cannot navigate to next sibling: already at last sibling or message not found");
 
             var nextSibling = siblingList[currentIndex + 1];
 
@@ -444,7 +457,7 @@ public partial class ChatViewModel : ObservableObject
     private async Task UpdateSiblingInfoAsync(ChatMessageModel message, CancellationToken cancellationToken)
     {
         if (!message.ParentId.HasValue)
-            return;
+            throw new ArgumentException("Cannot update sibling info: message.ParentId is null", nameof(message));
 
         var siblings = await _messageNodeRepository.GetChildrenAsync(
             message.ParentId.Value,
