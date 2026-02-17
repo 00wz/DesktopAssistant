@@ -123,57 +123,51 @@ public class ChatService : IChatService
     }
 
     /// <inheritdoc />
-    public async Task<MessageNode> SendMessageAsync(
-        Guid conversationId, 
-        string userMessage, 
+    public async Task<MessageNode> AddUserMessageAsync(
+        Guid conversationId,
+        Guid parentNodeId,
+        string content,
         CancellationToken cancellationToken = default)
     {
-        return await SendMessageInternalAsync(conversationId, userMessage, null, cancellationToken);
+        var userNode = await _conversationService.AddMessageAsync(
+            conversationId,
+            parentNodeId,
+            MessageNodeType.User,
+            content,
+            cancellationToken: cancellationToken);
+
+        _logger.LogInformation("[USER MESSAGE] {MessageId}:\n{Content}", userNode.Id, content);
+
+        return userNode;
     }
 
     /// <inheritdoc />
-    public async Task<MessageNode> SendMessageStreamingAsync(
-        Guid conversationId, 
-        string userMessage, 
-        Action<string> onChunkReceived, 
-        CancellationToken cancellationToken = default)
-    {
-        return await SendMessageInternalAsync(conversationId, userMessage, onChunkReceived, cancellationToken);
-    }
-
-    private async Task<MessageNode> SendMessageInternalAsync(
+    public async Task<MessageNode> AddUserMessageAsync(
         Guid conversationId,
-        string userMessage,
-        Action<string>? onChunkReceived,
-        CancellationToken cancellationToken)
+        string content,
+        CancellationToken cancellationToken = default)
     {
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
             ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
 
-        // Определяем родительский узел для нового сообщения
         if (!conversation.ActiveLeafNodeId.HasValue)
         {
             throw new InvalidOperationException($"Conversation {conversationId} has no active leaf node");
         }
 
-        var parentNodeId = conversation.ActiveLeafNodeId.Value;
+        return await AddUserMessageAsync(conversationId, conversation.ActiveLeafNodeId.Value, content, cancellationToken);
+    }
 
-        // Добавляем сообщение пользователя
-        var userNode = await _conversationService.AddMessageAsync(
-            conversationId,
-            parentNodeId,
-            MessageNodeType.User,
-            userMessage,
-            cancellationToken: cancellationToken);
-
-        _logger.LogInformation("[USER MESSAGE] {MessageId}:\n{Content}", userNode.Id, userMessage);
-
+    /// <inheritdoc />
+    public async Task<MessageNode> GetAssistantResponseAsync(
+        Guid conversationId,
+        Guid lastMessageId,
+        Action<string>? onChunkReceived = null,
+        CancellationToken cancellationToken = default)
+    {
         // Собираем контекст для LLM
-        var contextMessages = await _conversationService.BuildContextAsync(userNode.Id, cancellationToken);
+        var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
         var chatHistory = BuildChatHistory(contextMessages);
-        
-        // Логируем полный контекст отправляемый в LLM
-        // LogChatHistory(chatHistory);
 
         // Получаем ответ от LLM
         string assistantResponse;
@@ -192,12 +186,29 @@ public class ChatService : IChatService
         // Добавляем ответ ассистента
         var assistantNode = await _conversationService.AddMessageAsync(
             conversationId,
-            userNode.Id,
+            lastMessageId,
             MessageNodeType.Assistant,
             assistantResponse,
             cancellationToken: cancellationToken);
 
         return assistantNode;
+    }
+
+    /// <inheritdoc />
+    public async Task<MessageNode> GetAssistantResponseAsync(
+        Guid conversationId,
+        Action<string>? onChunkReceived = null,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        if (!conversation.ActiveLeafNodeId.HasValue)
+        {
+            throw new InvalidOperationException($"Conversation {conversationId} has no active leaf node");
+        }
+
+        return await GetAssistantResponseAsync(conversationId, conversation.ActiveLeafNodeId.Value, onChunkReceived, cancellationToken);
     }
 
     private ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages)

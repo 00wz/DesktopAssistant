@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -8,6 +7,8 @@ using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.Logging;
+using System.Collections.ObjectModel;
+using Tmds.DBus.Protocol;
 
 namespace DesktopAssistant.UI.ViewModels;
 
@@ -146,12 +147,21 @@ public partial class ChatViewModel : ObservableObject
         InputMessage = string.Empty;
         ErrorMessage = null;
 
+        // 1. Создаем новое пользовательское сообщение
+        var userNode = await _chatService.AddUserMessageAsync(
+            CurrentConversation.Id,
+            userMessage,
+            cancellationToken: default);
+
         // Добавляем сообщение пользователя в UI
         var userMessageModel = new ChatMessageModel(
-            Guid.NewGuid(),
-            MessageNodeType.User,
-            userMessage,
-            DateTime.UtcNow);
+            userNode.Id,
+            userNode.NodeType,
+            userNode.Content,
+            userNode.CreatedAt)
+        {
+            ParentId = userNode.ParentId  // Important: preserve ParentId
+        };
         Messages.Add(userMessageModel);
 
         // Создаём placeholder для ответа ассистента
@@ -170,9 +180,8 @@ public partial class ChatViewModel : ObservableObject
             IsLoading = true;
 
             // Отправляем сообщение с потоковой передачей
-            var response = await _chatService.SendMessageStreamingAsync(
+            var response = await _chatService.GetAssistantResponseAsync(
                 CurrentConversation.Id,
-                userMessage,
                 chunk =>
                 {
                     // Обновляем UI в главном потоке
@@ -239,7 +248,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Сохраняет отредактированное сообщение и создаёт альтернативную ветвь
+    /// Сохраняет отредактированное сообщение и создаёт альтернативную ветвь (sibling)
     /// </summary>
     [RelayCommand]
     private async Task SaveEditedMessageAsync(ChatMessageModel message)
@@ -252,21 +261,19 @@ public partial class ChatViewModel : ObservableObject
             IsLoading = true;
             ErrorMessage = null;
 
-            // 1. Switch active child to this message's parent so we create a sibling
-            var parentNode = await _messageNodeRepository.GetByIdAsync(message.ParentId.Value, default);
-            if (parentNode != null && parentNode.ParentId.HasValue)
-            {
-                // This will create an alternative branch at the parent level
-                await _chatService.SwitchToSiblingAsync(
-                    CurrentConversation.Id,
-                    parentNode.ParentId.Value,
-                    message.ParentId.Value,
-                    cancellationToken: default);
-            }
-
-            // 2. Send the edited message (creates a new sibling)
             var editedText = message.EditedContent.Trim();
 
+            // 1. Создаем новое пользовательское сообщение как sibling текущего
+            var userNode = await _chatService.AddUserMessageAsync(
+                CurrentConversation.Id,
+                message.ParentId.Value,  // Тот же родитель = создается sibling
+                editedText,
+                cancellationToken: default);
+
+            // 3. Reload messages
+            await LoadMessagesAsync(default);
+
+            // 2. Получаем ответ ассистента для нового сообщения
             // Create placeholder for assistant response
             var assistantMessageModel = new ChatMessageModel(
                 Guid.NewGuid(),
@@ -276,27 +283,26 @@ public partial class ChatViewModel : ObservableObject
             {
                 IsStreaming = true
             };
+            Messages.Add(assistantMessageModel);
 
-            // Send message with streaming
-            var response = await _chatService.SendMessageStreamingAsync(
+            var response = await _chatService.GetAssistantResponseAsync(
                 CurrentConversation.Id,
-                editedText,
+                userNode.Id,
                 chunk =>
                 {
                     Dispatcher.UIThread.Post(() =>
                     {
                         assistantMessageModel.AppendContent(chunk);
                     });
-                });
+                },
+                cancellationToken: default);
 
             assistantMessageModel.Id = response.Id;
             assistantMessageModel.IsStreaming = false;
 
-            // 3. Reload messages
             message.IsEditing = false;
-            await LoadMessagesAsync(default);
 
-            _logger.LogInformation("Created alternative branch from edited message");
+            _logger.LogInformation("Created sibling message {MessageId} from edited message", userNode.Id);
         }
         catch (Exception ex)
         {

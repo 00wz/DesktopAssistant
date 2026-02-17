@@ -57,7 +57,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Добавляет сообщение в диалог
+    /// Добавляет сообщение в диалог и обновляет активную ветку
     /// </summary>
     public async Task<MessageNode> AddMessageAsync(
         Guid conversationId,

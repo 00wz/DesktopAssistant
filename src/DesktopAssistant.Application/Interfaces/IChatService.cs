@@ -7,29 +7,7 @@ namespace DesktopAssistant.Application.Interfaces;
 /// </summary>
 public interface IChatService
 {
-    /// <summary>
-    /// Отправляет сообщение и получает ответ от LLM
-    /// </summary>
-    /// <param name="conversationId">ID диалога</param>
-    /// <param name="userMessage">Сообщение пользователя</param>
-    /// <param name="cancellationToken">Токен отмены</param>
-    /// <returns>Ответ от LLM</returns>
-    Task<MessageNode> SendMessageAsync(Guid conversationId, string userMessage, CancellationToken cancellationToken = default);
-    
-    /// <summary>
-    /// Отправляет сообщение и получает ответ от LLM с потоковой передачей
-    /// </summary>
-    /// <param name="conversationId">ID диалога</param>
-    /// <param name="userMessage">Сообщение пользователя</param>
-    /// <param name="onChunkReceived">Callback для обработки частей ответа</param>
-    /// <param name="cancellationToken">Токен отмены</param>
-    /// <returns>Полный ответ от LLM</returns>
-    Task<MessageNode> SendMessageStreamingAsync(
-        Guid conversationId, 
-        string userMessage, 
-        Action<string> onChunkReceived,
-        CancellationToken cancellationToken = default);
-    
+  
     /// <summary>
     /// Создаёт новый диалог
     /// </summary>
@@ -60,4 +38,56 @@ public interface IChatService
     /// <param name="newChildId">ID нового активного дочернего узла</param>
     /// <param name="cancellationToken">Токен отмены</param>
     Task SwitchToSiblingAsync(Guid conversationId, Guid parentNodeId, Guid newChildId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Добавляет пользовательское сообщение в диалог и обновляет активную ветку
+    /// </summary>
+    /// <param name="conversationId">ID диалога</param>
+    /// <param name="parentNodeId">ID родительского сообщения</param>
+    /// <param name="content">Содержимое сообщения</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Созданное сообщение</returns>
+    Task<MessageNode> AddUserMessageAsync(
+        Guid conversationId,
+        Guid parentNodeId,
+        string content,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Добавляет пользовательское сообщение в активную ветку диалога
+    /// </summary>
+    /// <param name="conversationId">ID диалога</param>
+    /// <param name="content">Содержимое сообщения</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Созданное сообщение</returns>
+    Task<MessageNode> AddUserMessageAsync(
+        Guid conversationId,
+        string content,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Формирует контекст истории диалога <paramref name="lastMessageId"/> и выполняет запрос ассистенту
+    /// </summary>
+    /// <param name="conversationId">ID диалога</param>
+    /// <param name="lastMessageId">ID последнего сообщения для построения контекста</param>
+    /// <param name="onChunkReceived">Callback для обработки частей ответа (опционально, для streaming)</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Ответ ассистента</returns>
+    Task<MessageNode> GetAssistantResponseAsync(
+        Guid conversationId,
+        Guid lastMessageId,
+        Action<string>? onChunkReceived = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Формирует контекст текущей активной ветки диалога и выполняет запрос ассистенту
+    /// </summary>
+    /// <param name="conversationId">ID диалога</param>
+    /// <param name="onChunkReceived">Callback для обработки частей ответа (опционально, для streaming)</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Ответ ассистента</returns>
+    Task<MessageNode> GetAssistantResponseAsync(
+        Guid conversationId,
+        Action<string>? onChunkReceived = null,
+        CancellationToken cancellationToken = default);
 }
