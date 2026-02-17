@@ -13,20 +13,17 @@ public class ConversationService
 {
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageNodeRepository _messageNodeRepository;
-    private readonly IConversationBranchRepository _branchRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
     private readonly ILogger<ConversationService> _logger;
 
     public ConversationService(
         IConversationRepository conversationRepository,
         IMessageNodeRepository messageNodeRepository,
-        IConversationBranchRepository branchRepository,
         IAssistantProfileRepository assistantRepository,
         ILogger<ConversationService> logger)
     {
         _conversationRepository = conversationRepository;
         _messageNodeRepository = messageNodeRepository;
-        _branchRepository = branchRepository;
         _assistantRepository = assistantRepository;
         _logger = logger;
     }
@@ -43,24 +40,17 @@ public class ConversationService
             ?? throw new InvalidOperationException($"Assistant profile {assistantProfileId} not found");
 
         var conversation = new Conversation(title, assistantProfileId);
-        
+
         // Добавляем системный промпт как корневое сообщение
         var rootMessage = conversation.AddRootMessage(assistant.SystemPrompt);
-        
+
         await _conversationRepository.AddAsync(conversation, cancellationToken);
-        
-        // Создаём ветку по умолчанию
-        var defaultBranch = new ConversationBranch(
-            conversation.Id,
-            "Main",
-            rootMessage.Id,
-            isDefault: true);
-        
-        await _branchRepository.AddAsync(defaultBranch, cancellationToken);
-        conversation.SetActiveBranch(defaultBranch.Id);
+
+        // Устанавливаем ActiveLeafNodeId
+        conversation.SetActiveLeafNode(rootMessage.Id);
         await _conversationRepository.UpdateAsync(conversation, cancellationToken);
 
-        _logger.LogInformation("Created conversation {ConversationId} with assistant {AssistantId}", 
+        _logger.LogInformation("Created conversation {ConversationId} with assistant {AssistantId}",
             conversation.Id, assistantProfileId);
 
         return conversation;
@@ -86,18 +76,14 @@ public class ConversationService
         var message = new MessageNode(conversationId, nodeType, content, parentNodeId, tokenCount);
         await _messageNodeRepository.AddAsync(message, cancellationToken);
 
-        // Обновляем head текущей ветки
-        if (conversation.ActiveBranchId.HasValue)
-        {
-            var activeBranch = await _branchRepository.GetByIdAsync(conversation.ActiveBranchId.Value, cancellationToken);
-            if (activeBranch != null)
-            {
-                activeBranch.SetHeadNode(message.Id);
-                await _branchRepository.UpdateAsync(activeBranch, cancellationToken);
-            }
-        }
+        // Обновляем ActiveChildId родителя и ActiveLeafNodeId диалога
+        parentNode.SetActiveChild(message.Id);
+        await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
 
-        _logger.LogDebug("Added message {MessageId} to conversation {ConversationId}", 
+        conversation.SetActiveLeafNode(message.Id);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogDebug("Added message {MessageId} to conversation {ConversationId}",
             message.Id, conversationId);
 
         return message;
@@ -125,51 +111,6 @@ public class ConversationService
             message.Id, conversationId);
 
         return message;
-    }
-
-    /// <summary>
-    /// Создаёт новую ветку от указанного сообщения
-    /// </summary>
-    public async Task<ConversationBranch> CreateBranchAsync(
-        Guid conversationId,
-        Guid fromNodeId,
-        string branchName,
-        CancellationToken cancellationToken = default)
-    {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-        var branch = new ConversationBranch(conversationId, branchName, fromNodeId);
-        await _branchRepository.AddAsync(branch, cancellationToken);
-
-        _logger.LogInformation("Created branch {BranchId} in conversation {ConversationId} from node {NodeId}",
-            branch.Id, conversationId, fromNodeId);
-
-        return branch;
-    }
-
-    /// <summary>
-    /// Переключает активную ветку диалога
-    /// </summary>
-    public async Task SwitchBranchAsync(
-        Guid conversationId,
-        Guid branchId,
-        CancellationToken cancellationToken = default)
-    {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-        var branch = await _branchRepository.GetByIdAsync(branchId, cancellationToken)
-            ?? throw new InvalidOperationException($"Branch {branchId} not found");
-
-        if (branch.ConversationId != conversationId)
-            throw new InvalidOperationException($"Branch {branchId} does not belong to conversation {conversationId}");
-
-        conversation.SetActiveBranch(branchId);
-        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
-
-        _logger.LogInformation("Switched to branch {BranchId} in conversation {ConversationId}",
-            branchId, conversationId);
     }
 
     /// <summary>
@@ -233,5 +174,70 @@ public class ConversationService
     {
         await _conversationRepository.SoftDeleteAsync(conversationId, cancellationToken);
         _logger.LogInformation("Soft-deleted conversation {ConversationId}", conversationId);
+    }
+
+    /// <summary>
+    /// Переключается на sibling сообщение
+    /// </summary>
+    public async Task SwitchToSiblingAsync(
+        Guid conversationId,
+        Guid parentNodeId,
+        Guid newChildId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Parent node {parentNodeId} not found");
+
+        // Находим новый лист
+        var newChild = await _messageNodeRepository.GetByIdAsync(newChildId, cancellationToken)
+            ?? throw new InvalidOperationException($"Child node {newChildId} not found");
+
+        // Обновляем активного ребенка родителя
+        parentNode.SetActiveChild(newChildId);
+        await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
+
+        var leafNode = await FindLeafFromNodeAsync(newChild, cancellationToken);
+
+        // Обновляем активный лист диалога
+        conversation.SetActiveLeafNode(leafNode.Id);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogInformation(
+            "Switched to sibling {ChildId} in conversation {ConversationId}, new leaf: {LeafId}",
+            newChildId, conversationId, leafNode.Id);
+    }
+
+    /// <summary>
+    /// Находит лист, следуя по цепочке ActiveChildId
+    /// </summary>
+    private async Task<MessageNode> FindLeafFromNodeAsync(
+        MessageNode startNode,
+        CancellationToken cancellationToken)
+    {
+        var current = startNode;
+        while (current.ActiveChildId.HasValue)
+        {
+            current = await _messageNodeRepository.GetByIdAsync(
+                current.ActiveChildId.Value, cancellationToken)
+                ?? throw new InvalidOperationException($"Active child not found");
+        }
+        return current;
+    }
+
+    /// <summary>
+    /// Получает текущий активный лист диалога
+    /// </summary>
+    public async Task<MessageNode?> GetActiveLeafNodeAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+        if (conversation?.ActiveLeafNodeId == null) return null;
+
+        return await _messageNodeRepository.GetByIdAsync(
+            conversation.ActiveLeafNodeId.Value, cancellationToken);
     }
 }

@@ -30,12 +30,11 @@ public class ConversationRepository : BaseRepository<Conversation>, IConversatio
     }
 
     public async Task<Conversation?> GetWithMessagesAsync(
-        Guid id, 
+        Guid id,
         CancellationToken cancellationToken = default)
     {
         return await _dbSet
             .Include(c => c.Messages)
-            .Include(c => c.Branches)
             .Include(c => c.AssistantProfile)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
@@ -90,31 +89,6 @@ public class MessageNodeRepository : BaseRepository<MessageNode>, IMessageNodeRe
             .Where(m => m.ParentId == parentId)
             .OrderBy(m => m.CreatedAt)
             .ToListAsync(cancellationToken);
-    }
-}
-
-public class ConversationBranchRepository : BaseRepository<ConversationBranch>, IConversationBranchRepository
-{
-    public ConversationBranchRepository(AppDbContext context) : base(context)
-    {
-    }
-
-    public async Task<IEnumerable<ConversationBranch>> GetByConversationIdAsync(
-        Guid conversationId, 
-        CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .Where(b => b.ConversationId == conversationId)
-            .OrderBy(b => b.CreatedAt)
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<ConversationBranch?> GetDefaultBranchAsync(
-        Guid conversationId, 
-        CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .FirstOrDefaultAsync(b => b.ConversationId == conversationId && b.IsDefault, cancellationToken);
     }
 }
 

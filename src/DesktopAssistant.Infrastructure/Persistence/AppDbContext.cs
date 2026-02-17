@@ -10,7 +10,6 @@ public class AppDbContext : DbContext
 {
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<MessageNode> MessageNodes => Set<MessageNode>();
-    public DbSet<ConversationBranch> ConversationBranches => Set<ConversationBranch>();
     public DbSet<AssistantProfile> AssistantProfiles => Set<AssistantProfile>();
     public DbSet<AppSettings> AppSettings => Set<AppSettings>();
 
@@ -35,9 +34,9 @@ public class AppDbContext : DbContext
                   .HasForeignKey(e => e.AssistantProfileId)
                   .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(e => e.ActiveBranch)
+            entity.HasOne(e => e.ActiveLeafNode)
                   .WithMany()
-                  .HasForeignKey(e => e.ActiveBranchId)
+                  .HasForeignKey(e => e.ActiveLeafNodeId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -59,26 +58,14 @@ public class AppDbContext : DbContext
                   .HasForeignKey(e => e.ParentId)
                   .OnDelete(DeleteBehavior.Restrict);
 
+            entity.HasOne(e => e.ActiveChild)
+                  .WithMany()
+                  .HasForeignKey(e => e.ActiveChildId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasIndex(e => e.ConversationId);
             entity.HasIndex(e => e.ParentId);
-        });
-
-        // ConversationBranch
-        modelBuilder.Entity<ConversationBranch>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).HasMaxLength(200);
-            entity.HasQueryFilter(e => !e.IsDeleted);
-
-            entity.HasOne(e => e.Conversation)
-                  .WithMany(c => c.Branches)
-                  .HasForeignKey(e => e.ConversationId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.HeadNode)
-                  .WithMany()
-                  .HasForeignKey(e => e.HeadNodeId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => e.ActiveChildId);
         });
 
         // AssistantProfile

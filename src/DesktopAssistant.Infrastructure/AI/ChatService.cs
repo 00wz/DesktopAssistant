@@ -23,7 +23,6 @@ public class ChatService : IChatService
     private readonly ConversationService _conversationService;
     private readonly IConversationRepository _conversationRepository;
     private readonly IMessageNodeRepository _messageNodeRepository;
-    private readonly IConversationBranchRepository _branchRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
     private readonly IMcpServerManager _mcpServerManager;
     private readonly IMcpConfigurationService _mcpConfigurationService;
@@ -36,7 +35,6 @@ public class ChatService : IChatService
         ConversationService conversationService,
         IConversationRepository conversationRepository,
         IMessageNodeRepository messageNodeRepository,
-        IConversationBranchRepository branchRepository,
         IAssistantProfileRepository assistantRepository,
         IMcpServerManager mcpServerManager,
         IMcpConfigurationService mcpConfigurationService,
@@ -48,7 +46,6 @@ public class ChatService : IChatService
         _conversationService = conversationService;
         _conversationRepository = conversationRepository;
         _messageNodeRepository = messageNodeRepository;
-        _branchRepository = branchRepository;
         _assistantRepository = assistantRepository;
         _mcpServerManager = mcpServerManager;
         _mcpConfigurationService = mcpConfigurationService;
@@ -105,7 +102,7 @@ public class ChatService : IChatService
 
     /// <inheritdoc />
     public async Task<IEnumerable<MessageNode>> GetConversationHistoryAsync(
-        Guid conversationId, 
+        Guid conversationId,
         CancellationToken cancellationToken = default)
     {
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
@@ -115,19 +112,14 @@ public class ChatService : IChatService
             return Enumerable.Empty<MessageNode>();
         }
 
-        if (!conversation.ActiveBranchId.HasValue)
+        if (!conversation.ActiveLeafNodeId.HasValue)
         {
-            _logger.LogWarning("Conversation {ConversationId} has no active branch", conversationId);
+            _logger.LogWarning("Conversation {ConversationId} has no active leaf node", conversationId);
             return Enumerable.Empty<MessageNode>();
         }
 
-        var branch = await _branchRepository.GetByIdAsync(conversation.ActiveBranchId.Value, cancellationToken);
-        if (branch == null || branch.HeadNodeId == Guid.Empty)
-        {
-            return Enumerable.Empty<MessageNode>();
-        }
-
-        return await _conversationService.BuildContextAsync(branch.HeadNodeId, cancellationToken);
+        return await _conversationService.BuildContextAsync(
+            conversation.ActiveLeafNodeId.Value, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -158,29 +150,13 @@ public class ChatService : IChatService
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
             ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
 
-        // Получаем текущую ветку и head
-        var branch = conversation.ActiveBranchId.HasValue
-            ? await _branchRepository.GetByIdAsync(conversation.ActiveBranchId.Value, cancellationToken)
-            : await _branchRepository.GetDefaultBranchAsync(conversationId, cancellationToken);
-
-        if (branch == null)
-        {
-            throw new InvalidOperationException($"No active branch found for conversation {conversationId}");
-        }
-
         // Определяем родительский узел для нового сообщения
-        Guid parentNodeId;
-        if (branch.HeadNodeId != Guid.Empty)
+        if (!conversation.ActiveLeafNodeId.HasValue)
         {
-            parentNodeId = branch.HeadNodeId;
+            throw new InvalidOperationException($"Conversation {conversationId} has no active leaf node");
         }
-        else
-        {
-            // Если head не задан, ищем корневое сообщение (system)
-            var messages = await _messageNodeRepository.GetByConversationIdAsync(conversationId, cancellationToken);
-            var rootMessage = messages.FirstOrDefault(m => m.NodeType == MessageNodeType.System);
-            parentNodeId = rootMessage?.Id ?? throw new InvalidOperationException("No root message found");
-        }
+
+        var parentNodeId = conversation.ActiveLeafNodeId.Value;
 
         // Добавляем сообщение пользователя
         var userNode = await _conversationService.AddMessageAsync(

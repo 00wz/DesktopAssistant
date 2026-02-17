@@ -20,7 +20,6 @@ public partial class ChatViewModel : ObservableObject
     private readonly IChatService _chatService;
     private readonly ConversationService _conversationService;
     private readonly IMessageNodeRepository _messageNodeRepository;
-    private readonly IConversationBranchRepository _branchRepository;
     private readonly ILogger<ChatViewModel> _logger;
 
     [ObservableProperty]
@@ -44,13 +43,11 @@ public partial class ChatViewModel : ObservableObject
         IChatService chatService,
         ConversationService conversationService,
         IMessageNodeRepository messageNodeRepository,
-        IConversationBranchRepository branchRepository,
         ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
         _conversationService = conversationService;
         _messageNodeRepository = messageNodeRepository;
-        _branchRepository = branchRepository;
         _logger = logger;
     }
 
@@ -246,7 +243,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Сохраняет отредактированное сообщение и создаёт новую ветку
+    /// Сохраняет отредактированное сообщение и создаёт альтернативную ветвь
     /// </summary>
     [RelayCommand]
     private async Task SaveEditedMessageAsync(ChatMessageModel message)
@@ -259,21 +256,19 @@ public partial class ChatViewModel : ObservableObject
             IsLoading = true;
             ErrorMessage = null;
 
-            // 1. Create a branch from the message's parent
-            var branchName = $"Edit-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
-            var newBranch = await _conversationService.CreateBranchAsync(
-                CurrentConversation.Id,
-                message.ParentId.Value,
-                branchName,
-                cancellationToken: default);
+            // 1. Switch active child to this message's parent so we create a sibling
+            var parentNode = await _messageNodeRepository.GetByIdAsync(message.ParentId.Value, default);
+            if (parentNode != null && parentNode.ParentId.HasValue)
+            {
+                // This will create an alternative branch at the parent level
+                await _conversationService.SwitchToSiblingAsync(
+                    CurrentConversation.Id,
+                    parentNode.ParentId.Value,
+                    message.ParentId.Value,
+                    cancellationToken: default);
+            }
 
-            // 2. Switch to the new branch
-            await _conversationService.SwitchBranchAsync(
-                CurrentConversation.Id,
-                newBranch.Id,
-                cancellationToken: default);
-
-            // 3. Send the edited message
+            // 2. Send the edited message (creates a new sibling)
             var editedText = message.EditedContent.Trim();
 
             // Create placeholder for assistant response
@@ -301,11 +296,11 @@ public partial class ChatViewModel : ObservableObject
             assistantMessageModel.Id = response.Id;
             assistantMessageModel.IsStreaming = false;
 
-            // 4. Reload messages
+            // 3. Reload messages
             message.IsEditing = false;
             await LoadMessagesAsync(default);
 
-            _logger.LogInformation("Created new branch {BranchId} from edited message", newBranch.Id);
+            _logger.LogInformation("Created alternative branch from edited message");
         }
         catch (Exception ex)
         {
@@ -362,8 +357,12 @@ public partial class ChatViewModel : ObservableObject
 
             var previousSibling = siblingList[currentIndex - 1];
 
-            // Find or create a branch containing this sibling
-            await SwitchToBranchContainingNodeAsync(previousSibling.Id);
+            // Switch to the previous sibling using the new system
+            await _conversationService.SwitchToSiblingAsync(
+                CurrentConversation.Id,
+                message.ParentId.Value,
+                previousSibling.Id,
+                cancellationToken: default);
 
             // Reload UI
             await InitializeAsync(CurrentConversation.Id, default);
@@ -414,8 +413,12 @@ public partial class ChatViewModel : ObservableObject
 
             var nextSibling = siblingList[currentIndex + 1];
 
-            // Find or create a branch containing this sibling
-            await SwitchToBranchContainingNodeAsync(nextSibling.Id);
+            // Switch to the next sibling using the new system
+            await _conversationService.SwitchToSiblingAsync(
+                CurrentConversation.Id,
+                message.ParentId.Value,
+                nextSibling.Id,
+                cancellationToken: default);
 
             // Reload UI
             await InitializeAsync(CurrentConversation.Id, default);
@@ -458,48 +461,5 @@ public partial class ChatViewModel : ObservableObject
             message.HasPreviousSibling = currentIndex > 0;
             message.HasNextSibling = currentIndex < siblingList.Count - 1;
         }
-    }
-
-    /// <summary>
-    /// Находит или создаёт ветку, содержащую указанный узел, и переключается на неё
-    /// </summary>
-    private async Task SwitchToBranchContainingNodeAsync(Guid nodeId)
-    {
-        if (CurrentConversation == null)
-            return;
-
-        // Get all branches for this conversation
-        var branches = await _branchRepository.GetByConversationIdAsync(
-            CurrentConversation.Id,
-            cancellationToken: default);
-
-        // Check each branch to see if it contains the node
-        foreach (var branch in branches)
-        {
-            var path = await _conversationService.BuildContextAsync(branch.HeadNodeId, default);
-            if (path.Any(n => n.Id == nodeId))
-            {
-                // Found a branch containing this node
-                await _conversationService.SwitchBranchAsync(
-                    CurrentConversation.Id,
-                    branch.Id,
-                    cancellationToken: default);
-                return;
-            }
-        }
-
-        // If no branch contains this node, create a new branch from it
-        var newBranch = await _conversationService.CreateBranchAsync(
-            CurrentConversation.Id,
-            nodeId,
-            $"Branch-{DateTime.UtcNow:yyyyMMdd-HHmmss}",
-            cancellationToken: default);
-
-        await _conversationService.SwitchBranchAsync(
-            CurrentConversation.Id,
-            newBranch.Id,
-            cancellationToken: default);
-
-        _logger.LogInformation("Created new branch {BranchId} for node {NodeId}", newBranch.Id, nodeId);
     }
 }

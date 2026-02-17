@@ -34,7 +34,6 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<IMessageNodeRepository, MessageNodeRepository>();
-        services.AddScoped<IConversationBranchRepository, ConversationBranchRepository>();
         services.AddScoped<IAssistantProfileRepository, AssistantProfileRepository>();
         services.AddScoped<IAppSettingsRepository, AppSettingsRepository>();
 

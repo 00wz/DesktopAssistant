@@ -15,10 +15,12 @@ public class MessageNode : BaseEntity
     public string Content { get; private set; } = string.Empty;
     public int TokenCount { get; private set; }
     public string? Metadata { get; private set; }
-    
+    public Guid? ActiveChildId { get; private set; }
+
     // Навигационные свойства
     public MessageNode? Parent { get; private set; }
     public ICollection<MessageNode> Children { get; private set; } = new List<MessageNode>();
+    public MessageNode? ActiveChild { get; private set; }
     public Conversation? Conversation { get; private set; }
 
     private MessageNode() { } // Для EF Core
@@ -58,12 +60,35 @@ public class MessageNode : BaseEntity
     }
 
     /// <summary>
+    /// Устанавливает активного дочернего узла
+    /// </summary>
+    public void SetActiveChild(Guid childId)
+    {
+        if (!Children.Any(c => c.Id == childId))
+            throw new InvalidOperationException($"Child {childId} not found");
+        ActiveChildId = childId;
+        MarkAsUpdated();
+    }
+
+    /// <summary>
+    /// Находит листовой узел, следуя по цепочке ActiveChild
+    /// </summary>
+    public MessageNode? FindLeafNode()
+    {
+        var current = this;
+        while (current.ActiveChildId.HasValue && current.ActiveChild != null)
+            current = current.ActiveChild;
+        return current;
+    }
+
+    /// <summary>
     /// Создаёт дочерний узел (ответвление от текущего сообщения)
     /// </summary>
     public MessageNode CreateChild(MessageNodeType nodeType, string content, int tokenCount = 0, string? metadata = null)
     {
         var child = new MessageNode(ConversationId, nodeType, content, Id, tokenCount, metadata);
         Children.Add(child);
+        SetActiveChild(child.Id); // Автоматически устанавливаем как активного
         return child;
     }
 
@@ -72,7 +97,7 @@ public class MessageNode : BaseEntity
     /// </summary>
     public MessageNode CreateSummaryNode(string summaryContent, int tokenCount = 0)
     {
-        return CreateChild(MessageNodeType.Summary, summaryContent, tokenCount, 
+        return CreateChild(MessageNodeType.Summary, summaryContent, tokenCount,
             metadata: $"{{\"summarizedAt\":\"{DateTime.UtcNow:O}\"}}");
     }
 }

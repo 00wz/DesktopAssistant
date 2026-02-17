@@ -36,15 +36,6 @@ public interface IMessageNodeRepository : IRepository<MessageNode>
 }
 
 /// <summary>
-/// Репозиторий для работы с ветками диалогов
-/// </summary>
-public interface IConversationBranchRepository : IRepository<ConversationBranch>
-{
-    Task<IEnumerable<ConversationBranch>> GetByConversationIdAsync(Guid conversationId, CancellationToken cancellationToken = default);
-    Task<ConversationBranch?> GetDefaultBranchAsync(Guid conversationId, CancellationToken cancellationToken = default);
-}
-
-/// <summary>
 /// Репозиторий для работы с профилями ассистентов
 /// </summary>
 public interface IAssistantProfileRepository : IRepository<AssistantProfile>

@@ -8,15 +8,14 @@ public class Conversation : BaseEntity
 {
     public string Title { get; private set; } = string.Empty;
     public Guid AssistantProfileId { get; private set; }
-    public Guid? ActiveBranchId { get; private set; }
+    public Guid? ActiveLeafNodeId { get; private set; }
     public string? Summary { get; private set; }
     public int TotalTokenCount { get; private set; }
-    
+
     // Навигационные свойства
     public AssistantProfile? AssistantProfile { get; private set; }
-    public ConversationBranch? ActiveBranch { get; private set; }
+    public MessageNode? ActiveLeafNode { get; private set; }
     public ICollection<MessageNode> Messages { get; private set; } = new List<MessageNode>();
-    public ICollection<ConversationBranch> Branches { get; private set; } = new List<ConversationBranch>();
 
     private Conversation() { } // Для EF Core
 
@@ -44,9 +43,9 @@ public class Conversation : BaseEntity
         MarkAsUpdated();
     }
 
-    public void SetActiveBranch(Guid branchId)
+    public void SetActiveLeafNode(Guid nodeId)
     {
-        ActiveBranchId = branchId;
+        ActiveLeafNodeId = nodeId;
         MarkAsUpdated();
     }
 
