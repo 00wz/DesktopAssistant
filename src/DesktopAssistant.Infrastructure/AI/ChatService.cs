@@ -315,6 +315,23 @@ public class ChatService : IChatService
         }
     }
 
+    /// <inheritdoc />
+    public async Task SwitchToSiblingAsync(
+        Guid conversationId,
+        Guid parentNodeId,
+        Guid newChildId,
+        CancellationToken cancellationToken = default)
+    {
+        await _conversationService.SwitchToSiblingAsync(
+            conversationId,
+            parentNodeId,
+            newChildId,
+            cancellationToken);
+        
+        _logger.LogDebug("Switched to sibling {NewChildId} in conversation {ConversationId}",
+            newChildId, conversationId);
+    }
+
     /// <summary>
     /// Создаёт Kernel с зарегистрированными MCP tools и базовыми инструментами
     /// </summary>

@@ -3,7 +3,6 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Interfaces;
-using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
@@ -18,7 +17,6 @@ namespace DesktopAssistant.UI.ViewModels;
 public partial class ChatViewModel : ObservableObject
 {
     private readonly IChatService _chatService;
-    private readonly ConversationService _conversationService;
     private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly ILogger<ChatViewModel> _logger;
 
@@ -41,12 +39,10 @@ public partial class ChatViewModel : ObservableObject
 
     public ChatViewModel(
         IChatService chatService,
-        ConversationService conversationService,
         IMessageNodeRepository messageNodeRepository,
         ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
-        _conversationService = conversationService;
         _messageNodeRepository = messageNodeRepository;
         _logger = logger;
     }
@@ -261,7 +257,7 @@ public partial class ChatViewModel : ObservableObject
             if (parentNode != null && parentNode.ParentId.HasValue)
             {
                 // This will create an alternative branch at the parent level
-                await _conversationService.SwitchToSiblingAsync(
+                await _chatService.SwitchToSiblingAsync(
                     CurrentConversation.Id,
                     parentNode.ParentId.Value,
                     message.ParentId.Value,
@@ -358,7 +354,7 @@ public partial class ChatViewModel : ObservableObject
             var previousSibling = siblingList[currentIndex - 1];
 
             // Switch to the previous sibling using the new system
-            await _conversationService.SwitchToSiblingAsync(
+            await _chatService.SwitchToSiblingAsync(
                 CurrentConversation.Id,
                 message.ParentId.Value,
                 previousSibling.Id,
@@ -414,7 +410,7 @@ public partial class ChatViewModel : ObservableObject
             var nextSibling = siblingList[currentIndex + 1];
 
             // Switch to the next sibling using the new system
-            await _conversationService.SwitchToSiblingAsync(
+            await _chatService.SwitchToSiblingAsync(
                 CurrentConversation.Id,
                 message.ParentId.Value,
                 nextSibling.Id,

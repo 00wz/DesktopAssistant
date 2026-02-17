@@ -51,4 +51,13 @@ public interface IChatService
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Список сообщений от корня до текущей головы</returns>
     Task<IEnumerable<MessageNode>> GetConversationHistoryAsync(Guid conversationId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Переключается на альтернативную ветку (sibling) сообщения
+    /// </summary>
+    /// <param name="conversationId">ID диалога</param>
+    /// <param name="parentNodeId">ID родительского узла</param>
+    /// <param name="newChildId">ID нового активного дочернего узла</param>
+    /// <param name="cancellationToken">Токен отмены</param>
+    Task SwitchToSiblingAsync(Guid conversationId, Guid parentNodeId, Guid newChildId, CancellationToken cancellationToken = default);
 }
