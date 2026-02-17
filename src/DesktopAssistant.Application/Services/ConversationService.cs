@@ -3,6 +3,8 @@ using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace DesktopAssistant.Application.Services;
 
@@ -87,6 +89,66 @@ public class ConversationService
             message.Id, conversationId);
 
         return message;
+    }
+
+    /// <summary>
+    /// Добавляет сообщение с полным ChatMessageContent в диалог
+    /// </summary>
+    public async Task<MessageNode> AddChatMessageAsync(
+        Guid conversationId,
+        Guid parentNodeId,
+        ChatMessageContent chatMessage,
+        int tokenCount = 0,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Parent message {parentNodeId} not found");
+
+        // Определяем тип узла по роли
+        var nodeType = chatMessage.Role.Label.ToLowerInvariant() switch
+        {
+            "system" => MessageNodeType.System,
+            "user" => MessageNodeType.User,
+            "assistant" => MessageNodeType.Assistant,
+            "tool" => MessageNodeType.Tool,
+            _ => MessageNodeType.Assistant
+        };
+
+        // Создаем узел с пустым контентом (SetChatMessageContent установит его)
+        var message = new MessageNode(conversationId, nodeType, string.Empty, parentNodeId, tokenCount);
+
+        // Используем extension method для сохранения ChatMessageContent
+        // (нужно будет добавить using для MessageNodeExtensions)
+        message.UpdateContent(chatMessage.Content ?? string.Empty);
+        message.SetMetadata(SerializeChatMessage(chatMessage));
+
+        await _messageNodeRepository.AddAsync(message, cancellationToken);
+
+        // Обновляем ActiveChildId родителя и ActiveLeafNodeId диалога
+        parentNode.SetActiveChild(message.Id);
+        await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
+
+        conversation.SetActiveLeafNode(message.Id);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogDebug("Added chat message {MessageId} to conversation {ConversationId}",
+            message.Id, conversationId);
+
+        return message;
+    }
+
+    private string SerializeChatMessage(ChatMessageContent chatMessage)
+    {
+        // Используем System.Text.Json для сериализации
+        return System.Text.Json.JsonSerializer.Serialize(chatMessage, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        });
     }
 
     /// <summary>
