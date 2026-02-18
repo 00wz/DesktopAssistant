@@ -143,11 +143,13 @@ public class ConversationService
     private string SerializeChatMessage(ChatMessageContent chatMessage)
     {
         // Используем System.Text.Json для сериализации
+        // TypeInfoResolver нужен для корректной полиморфной сериализации (FunctionCallContent, FunctionResultContent, etc.)
         return System.Text.Json.JsonSerializer.Serialize(chatMessage, new System.Text.Json.JsonSerializerOptions
         {
             WriteIndented = true,
             PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
         });
     }
 

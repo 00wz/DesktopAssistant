@@ -13,21 +13,18 @@ public class StreamingChatMessageAggregator
     private readonly StringBuilder _contentBuilder = new();
     private readonly FunctionCallContentBuilder _functionCallBuilder = new();
     private readonly Dictionary<string, object?> _metadata = new();
-    private readonly List<KernelContent> _additionalItems = new();
+#pragma warning disable SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+    private readonly List<FileReferenceContent> _fileReferences = new();
+#pragma warning restore SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
 
     private AuthorRole? _role;
     private string? _authorName;
     private string? _modelId;
-    private Encoding? _encoding;
+    private Encoding _encoding = Encoding.UTF8;
 
-    /// <summary>
-    /// Добавляет фрагмент стримингового сообщения в агрегатор
-    /// </summary>
     public void Append(StreamingChatMessageContent streamingContent)
     {
-        ArgumentNullException.ThrowIfNull(streamingContent);
-
-        // 1. Аккумулируем базовые свойства (первый непустой wins)
+        // 1. Аккумулируем базовые свойства
         _role ??= streamingContent.Role;
 #pragma warning disable SKEXP0001 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
         _authorName ??= streamingContent.AuthorName;
@@ -35,16 +32,16 @@ public class StreamingChatMessageAggregator
         _modelId ??= streamingContent.ModelId;
         _encoding = streamingContent.Encoding;
 
-        // 2. Аккумулируем текстовый контент
+        // 2. Аккумулируем текст
         if (streamingContent.Content is not null)
         {
             _contentBuilder.Append(streamingContent.Content);
         }
 
-        // 3. Аккумулируем function calls через специальный builder
+        // 3. Аккумулируем function calls
         _functionCallBuilder.Append(streamingContent);
 
-        // 4. Аккумулируем metadata (merge)
+        // 4. Аккумулируем metadata
         if (streamingContent.Metadata != null)
         {
             foreach (var kvp in streamingContent.Metadata)
@@ -53,37 +50,34 @@ public class StreamingChatMessageAggregator
             }
         }
 
-        // 5. Обрабатываем другие типы контента в Items
+        // 5. Обрабатываем Items коллекцию для других типов контента
         foreach (var item in streamingContent.Items)
         {
 #pragma warning disable SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
             switch (item)
             {
-                // Текст и function calls уже обработаны выше
+                // Текстовый контент уже обработан выше через Content property
                 case StreamingTextContent:
+                    break;
+
+                // Function call updates обработаны через FunctionCallContentBuilder
                 case StreamingFunctionCallUpdateContent:
                     break;
 
-                // Файловые ссылки
-                case StreamingFileReferenceContent fileRef:
-                    _additionalItems.Add(new FileReferenceContent(fileRef.FileId));
+                // ПРАВИЛЬНАЯ КОНВЕРТАЦИЯ: создаем новый FileReferenceContent из StreamingFileReferenceContent
+                case StreamingFileReferenceContent streamingFileRef:
+                    _fileReferences.Add(new FileReferenceContent(streamingFileRef.FileId));
                     break;
 
-                // Любой другой KernelContent сохраняем как есть
-                default:
-                    if (item is KernelContent kernelContent)
-                    {
-                        _additionalItems.Add(kernelContent);
-                    }
-                    break;
+                    // Можно добавить обработку других streaming типов
+                    // case StreamingAnnotationContent streamingAnnotation:
+                    //     _annotations.Add(new AnnotationContent(...));
+                    //     break;
             }
 #pragma warning restore SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
         }
     }
 
-    /// <summary>
-    /// Собирает накопленные данные в полное ChatMessageContent
-    /// </summary>
     public ChatMessageContent Build()
     {
         var finalContent = _contentBuilder.ToString();
@@ -95,22 +89,23 @@ public class StreamingChatMessageAggregator
             content: finalContent,
             modelId: _modelId,
             encoding: _encoding,
-            metadata: _metadata)
+            metadata: _metadata
+        )
         {
             AuthorName = _authorName
         };
 #pragma warning restore SKEXP0001 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
 
-        // Добавляем function calls в Items
+        // Добавляем function calls
         foreach (var functionCall in functionCalls)
         {
             chatMessageContent.Items.Add(functionCall);
         }
 
-        // Добавляем другие типы контента
-        foreach (var item in _additionalItems)
+        // Добавляем файловые ссылки
+        foreach (var fileRef in _fileReferences)
         {
-            chatMessageContent.Items.Add(item);
+            chatMessageContent.Items.Add(fileRef);
         }
 
         return chatMessageContent;
