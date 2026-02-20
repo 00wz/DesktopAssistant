@@ -41,11 +41,6 @@ public partial class ChatViewModel : ObservableObject
 
     public ObservableCollection<ChatMessageModel> Messages { get; } = new();
 
-    // Последняя текстовая модель ассистента в текущем стриминге
-    private TextChatMessageModel? _activeAssistantModel;
-    // Tool-карточки текущего стриминга, ключ — callId
-    private Dictionary<string, ToolChatMessageModel>? _pendingToolModels;
-
     public ChatViewModel(
         IChatService chatService,
         IMessageNodeRepository messageNodeRepository,
@@ -146,18 +141,12 @@ public partial class ChatViewModel : ObservableObject
 
         Messages.Add(ChatMessageModelFactory.FromDto(userDto));
 
+        IsLoading = true;
         try
         {
-            IsLoading = true;
             await ProcessAssistantStreamAsync(
                 _chatService.GetAssistantResponseAsync(CurrentConversation.Id, default),
                 default);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending message");
-            ErrorMessage = $"Ошибка отправки сообщения: {ex.Message}";
-            CleanupActiveStreamModels();
         }
         finally
         {
@@ -236,7 +225,6 @@ public partial class ChatViewModel : ObservableObject
             _logger.LogError(ex, "Error saving edited message");
             ErrorMessage = $"Ошибка сохранения сообщения: {ex.Message}";
             message.IsEditing = false;
-            CleanupActiveStreamModels();
         }
         finally
         {
@@ -394,119 +382,122 @@ public partial class ChatViewModel : ObservableObject
     /// await foreach вызывается на UI-потоке: при каждом await MoveNextAsync() UI thread освобождается,
     /// что позволяет обрабатывать события кнопок (Approve/Deny) пока producer ждёт TCS.
     /// Чанки доставляются как AssistantChunkDto — процессируются на UI thread через SynchronizationContext.
+    /// Исключения перехватываются внутри: устанавливается ErrorMessage и выполняется очистка UI.
     /// </summary>
     private async Task ProcessAssistantStreamAsync(
         IAsyncEnumerable<StreamEvent> stream,
         CancellationToken cancellationToken)
     {
-        _activeAssistantModel = null;
-        _pendingToolModels = [];
+        TextChatMessageModel? activeAssistantModel = null;
+        var pendingToolModels = new Dictionary<string, ToolChatMessageModel>();
 
-        await foreach (var evt in stream.WithCancellation(cancellationToken))
+        try
         {
-            switch (evt)
+            await foreach (var evt in stream.WithCancellation(cancellationToken))
             {
-                case AssistantTurnDto turn:
-                    var model = new TextChatMessageModel
-                    {
-                        Id = turn.TempId,
-                        NodeType = MessageNodeType.Assistant,
-                        CreatedAt = turn.StartedAt,
-                        IsStreaming = true
-                    };
-                    _activeAssistantModel = model;
-                    Messages.Add(model);
-                    break;
+                switch (evt)
+                {
+                    case AssistantTurnDto turn:
+                        var model = new TextChatMessageModel
+                        {
+                            Id = turn.TempId,
+                            NodeType = MessageNodeType.Assistant,
+                            CreatedAt = turn.StartedAt,
+                            IsStreaming = true
+                        };
+                        activeAssistantModel = model;
+                        Messages.Add(model);
+                        break;
 
-                case AssistantChunkDto chunk:
-                    _activeAssistantModel?.AppendContent(chunk.Text);
-                    break;
+                    case AssistantChunkDto chunk:
+                        activeAssistantModel?.AppendContent(chunk.Text);
+                        break;
 
-                case ToolCallRequestedDto toolReq:
-                    // Тёрн ассистента завершён — следует tool call
-                    if (_activeAssistantModel != null)
-                        _activeAssistantModel.IsStreaming = false;
-                    HandleToolCallRequested(toolReq);
-                    break;
+                    case ToolCallRequestedDto toolReq:
+                        if (activeAssistantModel != null)
+                            activeAssistantModel.IsStreaming = false;
+                        HandleToolCallRequested(toolReq);
+                        break;
 
-                case ToolCallExecutingDto exec:
-                    if (_pendingToolModels.TryGetValue(exec.CallId, out var execModel))
-                        execModel.Status = ToolCallStatus.Executing;
-                    break;
+                    case ToolCallExecutingDto exec:
+                        if (pendingToolModels.TryGetValue(exec.CallId, out var execModel))
+                            execModel.Status = ToolCallStatus.Executing;
+                        break;
 
-                case ToolCallCompletedDto done:
-                    if (_pendingToolModels.TryGetValue(done.CallId, out var doneModel))
-                    {
-                        doneModel.ResultJson = done.ResultJson;
-                        doneModel.Status = ToolCallStatus.Completed;
-                        _pendingToolModels.Remove(done.CallId);
-                    }
-                    break;
+                    case ToolCallCompletedDto done:
+                        if (pendingToolModels.TryGetValue(done.CallId, out var doneModel))
+                        {
+                            doneModel.ResultJson = done.ResultJson;
+                            doneModel.Status = ToolCallStatus.Completed;
+                            pendingToolModels.Remove(done.CallId);
+                        }
+                        break;
 
-                case ToolCallFailedDto fail:
-                    if (_pendingToolModels.TryGetValue(fail.CallId, out var failModel))
-                    {
-                        failModel.ErrorMessage = fail.ErrorMessage;
-                        failModel.Status = fail.ErrorMessage == "Denied by user"
-                            ? ToolCallStatus.Denied
-                            : ToolCallStatus.Failed;
-                        _pendingToolModels.Remove(fail.CallId);
-                    }
-                    break;
+                    case ToolCallFailedDto fail:
+                        if (pendingToolModels.TryGetValue(fail.CallId, out var failModel))
+                        {
+                            failModel.ErrorMessage = fail.ErrorMessage;
+                            failModel.Status = fail.ErrorMessage == "Denied by user"
+                                ? ToolCallStatus.Denied
+                                : ToolCallStatus.Failed;
+                            pendingToolModels.Remove(fail.CallId);
+                        }
+                        break;
 
-                case AssistantResponseSavedDto saved:
-                    // Финальный тёрн завершён — сбрасываем стриминг и обновляем ID из БД
-                    if (_activeAssistantModel != null)
-                    {
-                        _activeAssistantModel.IsStreaming = false;
-                        _activeAssistantModel.Id = saved.LastNodeId;
-                    }
-                    break;
+                    case AssistantResponseSavedDto saved:
+                        if (activeAssistantModel != null)
+                        {
+                            activeAssistantModel.IsStreaming = false;
+                            activeAssistantModel.Id = saved.LastNodeId;
+                        }
+                        break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing assistant stream");
+            ErrorMessage = $"Ошибка получения ответа ассистента: {ex.Message}";
+            Cleanup();
+        }
+
+        void HandleToolCallRequested(ToolCallRequestedDto toolReq)
+        {
+            var toolModel = new ToolChatMessageModel
+            {
+                CallId = toolReq.CallId,
+                PluginName = toolReq.PluginName,
+                FunctionName = toolReq.FunctionName,
+                ArgumentsJson = toolReq.ArgumentsJson,
+                Status = ToolCallStatus.Pending,
+                Confirmation = toolReq.Confirmation
+            };
+
+            pendingToolModels[toolReq.CallId] = toolModel;
+            Messages.Add(toolModel);
+
+            if (IsAutoApproveTools)
+            {
+                toolModel.Status = ToolCallStatus.Approved;
+                toolReq.Confirmation.TrySetResult(true);
             }
         }
 
-        _pendingToolModels = null;
-    }
-
-    private void HandleToolCallRequested(ToolCallRequestedDto toolReq)
-    {
-        var toolModel = new ToolChatMessageModel
+        void Cleanup()
         {
-            CallId = toolReq.CallId,
-            PluginName = toolReq.PluginName,
-            FunctionName = toolReq.FunctionName,
-            ArgumentsJson = toolReq.ArgumentsJson,
-            Status = ToolCallStatus.Pending,
-            Confirmation = toolReq.Confirmation
-        };
+            if (activeAssistantModel?.IsStreaming == true)
+            {
+                Messages.Remove(activeAssistantModel);
+                activeAssistantModel = null;
+            }
 
-        _pendingToolModels![toolReq.CallId] = toolModel;
-        Messages.Add(toolModel);
-
-        if (IsAutoApproveTools)
-        {
-            toolModel.Status = ToolCallStatus.Approved;
-            toolReq.Confirmation.TrySetResult(true);
-        }
-        // Иначе: ждём нажатия Approve/Deny кнопок в UI
-    }
-
-    private void CleanupActiveStreamModels()
-    {
-        if (_activeAssistantModel?.IsStreaming == true)
-        {
-            Messages.Remove(_activeAssistantModel);
-            _activeAssistantModel = null;
-        }
-
-        if (_pendingToolModels != null)
-        {
-            foreach (var toolModel in _pendingToolModels.Values)
+            foreach (var toolModel in pendingToolModels.Values)
             {
                 toolModel.Confirmation?.TrySetCanceled();
                 Messages.Remove(toolModel);
             }
-            _pendingToolModels = null;
+
+            pendingToolModels.Clear();
         }
     }
 }
