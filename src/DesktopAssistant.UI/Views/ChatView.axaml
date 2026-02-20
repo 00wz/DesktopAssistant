@@ -8,7 +8,7 @@
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
              x:Class="DesktopAssistant.UI.Views.ChatView"
              x:DataType="vm:ChatViewModel">
-    
+
     <UserControl.Resources>
         <converters:BoolToValueConverter x:Key="UserMessageForegroundConverter"
                                          TrueValue="White"
@@ -21,99 +21,214 @@
                                          FalseValue="Left"/>
         <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
     </UserControl.Resources>
-    
+
+    <UserControl.DataTemplates>
+
+        <!-- TextChatMessageModel — text bubble for user and assistant messages -->
+        <DataTemplate DataType="models:TextChatMessageModel">
+            <Border Margin="5"
+                    Padding="12"
+                    CornerRadius="12"
+                    MaxWidth="500"
+                    Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
+                    HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
+                <StackPanel>
+
+                    <!-- View mode -->
+                    <StackPanel IsVisible="{Binding !IsEditing}">
+                        <TextBlock Text="{Binding Content}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
+
+                        <!-- Edit button (user messages only) -->
+                        <Button Content="✏️"
+                                IsVisible="{Binding IsUser}"
+                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
+                                CommandParameter="{Binding}"
+                                HorizontalAlignment="Right"
+                                Margin="0,5,0,0"
+                                Padding="5,2"
+                                Background="Transparent"
+                                ToolTip.Tip="Edit message"/>
+                    </StackPanel>
+
+                    <!-- Edit mode -->
+                    <StackPanel IsVisible="{Binding IsEditing}">
+                        <TextBox Text="{Binding EditedContent, Mode=TwoWay}"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="True"
+                                 MinHeight="60"
+                                 Margin="0,0,0,5"/>
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <Button Content="Save"
+                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SaveEditedMessageCommand}"
+                                    CommandParameter="{Binding}"/>
+                            <Button Content="Cancel"
+                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"
+                                    CommandParameter="{Binding}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Sibling navigation -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="0,5,0,0"
+                                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
+                        <Button Content="◀"
+                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding HasPreviousSibling}"
+                                Padding="8,2"
+                                ToolTip.Tip="Previous version"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0"
+                                   Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}">
+                            <Run Text="{Binding CurrentSiblingIndex}"/>
+                            <Run Text="/"/>
+                            <Run Text="{Binding TotalSiblings}"/>
+                        </TextBlock>
+                        <Button Content="▶"
+                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding HasNextSibling}"
+                                Padding="8,2"
+                                ToolTip.Tip="Next version"/>
+                    </StackPanel>
+
+                    <!-- Streaming indicator -->
+                    <ProgressBar IsIndeterminate="True"
+                                 IsVisible="{Binding IsStreaming}"
+                                 Height="3"
+                                 Margin="0,5,0,0"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- ToolChatMessageModel — collapsible tool call card -->
+        <DataTemplate DataType="models:ToolChatMessageModel">
+            <Border Background="#F0F4FF"
+                    CornerRadius="8"
+                    Margin="5,3"
+                    Padding="2"
+                    MaxWidth="500"
+                    HorizontalAlignment="Left">
+                <Expander>
+                    <Expander.Header>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="🔧" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PluginName}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="." VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding FunctionName}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Status}"
+                                       Foreground="Gray"
+                                       FontSize="11"
+                                       VerticalAlignment="Center"
+                                       Margin="6,0,0,0"/>
+                        </StackPanel>
+                    </Expander.Header>
+
+                    <StackPanel Margin="4" Spacing="6">
+
+                        <!-- Arguments -->
+                        <TextBlock Text="{Binding ArgumentsJson}"
+                                   FontFamily="Courier New,Monospace"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="#333333"/>
+
+                        <!-- Result (completed) -->
+                        <TextBlock Text="{Binding ResultJson}"
+                                   IsVisible="{Binding IsCompleted}"
+                                   FontFamily="Courier New,Monospace"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="#226622"/>
+
+                        <!-- Error (failed or denied) -->
+                        <TextBlock Text="{Binding ErrorMessage}"
+                                   IsVisible="{Binding IsFailed}"
+                                   TextWrapping="Wrap"
+                                   Foreground="#CC2222"
+                                   FontSize="11"/>
+
+                        <!-- Approve / Deny buttons (pending) -->
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8"
+                                    IsVisible="{Binding IsPending}">
+                            <Button Content="Подтвердить"
+                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="#4CAF50"
+                                    Foreground="White"
+                                    Padding="10,5"/>
+                            <Button Content="Отклонить"
+                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="#F44336"
+                                    Foreground="White"
+                                    Padding="10,5"/>
+                        </StackPanel>
+
+                        <!-- Executing indicator -->
+                        <ProgressBar IsIndeterminate="True"
+                                     IsVisible="{Binding IsExecuting}"
+                                     Height="3"/>
+                    </StackPanel>
+                </Expander>
+            </Border>
+        </DataTemplate>
+
+        <!-- SummarizationChatMessageModel — compact summary plaque -->
+        <DataTemplate DataType="models:SummarizationChatMessageModel">
+            <Border Background="#FFF9E6"
+                    CornerRadius="6"
+                    Margin="5,3"
+                    Padding="10,6"
+                    MaxWidth="500"
+                    HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="📋" VerticalAlignment="Center"/>
+                    <TextBlock Text="Сводка"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Status}"
+                               Foreground="Gray"
+                               FontSize="11"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding SummaryContent}"
+                               IsVisible="{Binding !IsInProgress}"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
+                               MaxWidth="300"
+                               FontSize="11"
+                               VerticalAlignment="Center"/>
+                    <ProgressBar IsIndeterminate="True"
+                                 IsVisible="{Binding IsInProgress}"
+                                 Width="80"
+                                 Height="3"
+                                 VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+    </UserControl.DataTemplates>
+
     <Grid RowDefinitions="*,Auto,Auto">
-        <!-- Список сообщений -->
-        <ScrollViewer Grid.Row="0" 
+
+        <!-- Messages list -->
+        <ScrollViewer Grid.Row="0"
                       Name="MessagesScrollViewer"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Messages}"
-                          Margin="10">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="models:ChatMessageModel">
-                        <Border Margin="5"
-                                Padding="12"
-                                CornerRadius="12"
-                                MaxWidth="500"
-                                Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
-                                HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
-
-                            <StackPanel>
-                                <!-- View mode (when not editing) -->
-                                <StackPanel IsVisible="{Binding !IsEditing}">
-                                    <TextBlock Text="{Binding Content}"
-                                               TextWrapping="Wrap"
-                                               Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
-
-                                    <!-- Edit button (only for User messages) -->
-                                    <Button Content="✏️"
-                                            IsVisible="{Binding IsUser}"
-                                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
-                                            CommandParameter="{Binding}"
-                                            HorizontalAlignment="Right"
-                                            Margin="0,5,0,0"
-                                            Padding="5,2"
-                                            Background="Transparent"
-                                            ToolTip.Tip="Edit message"/>
-                                </StackPanel>
-
-                                <!-- Edit mode (when editing) -->
-                                <StackPanel IsVisible="{Binding IsEditing}">
-                                    <TextBox Text="{Binding EditedContent, Mode=TwoWay}"
-                                             TextWrapping="Wrap"
-                                             AcceptsReturn="True"
-                                             MinHeight="60"
-                                             Margin="0,0,0,5"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="5">
-                                        <Button Content="Save"
-                                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SaveEditedMessageCommand}"
-                                                CommandParameter="{Binding}"/>
-                                        <Button Content="Cancel"
-                                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"
-                                                CommandParameter="{Binding}"/>
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <!-- Navigation through siblings (when TotalSiblings > 1) -->
-                                <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Center"
-                                            Margin="0,5,0,0"
-                                            IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
-                                    <Button Content="◀"
-                                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
-                                            CommandParameter="{Binding}"
-                                            IsEnabled="{Binding HasPreviousSibling}"
-                                            Padding="8,2"
-                                            ToolTip.Tip="Previous version"/>
-                                    <TextBlock VerticalAlignment="Center" Margin="10,0"
-                                               Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}">
-                                        <Run Text="{Binding CurrentSiblingIndex}"/>
-                                        <Run Text="/"/>
-                                        <Run Text="{Binding TotalSiblings}"/>
-                                    </TextBlock>
-                                    <Button Content="▶"
-                                            Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
-                                            CommandParameter="{Binding}"
-                                            IsEnabled="{Binding HasNextSibling}"
-                                            Padding="8,2"
-                                            ToolTip.Tip="Next version"/>
-                                </StackPanel>
-
-                                <!-- Streaming indicator (existing) -->
-                                <ProgressBar IsIndeterminate="True"
-                                             IsVisible="{Binding IsStreaming}"
-                                             Height="3"
-                                             Margin="0,5,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                          Margin="10"/>
         </ScrollViewer>
-        
-        <!-- Сообщение об ошибке -->
-        <Border Grid.Row="1" 
+
+        <!-- Error message -->
+        <Border Grid.Row="1"
                 Background="#FFE0E0"
                 Padding="10"
                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -121,43 +236,52 @@
                        Foreground="#CC0000"
                        TextWrapping="Wrap"/>
         </Border>
-        
-        <!-- Панель ввода -->
-        <Border Grid.Row="2" 
+
+        <!-- Input panel -->
+        <Border Grid.Row="2"
                 Background="#F5F5F5"
                 Padding="10">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBox Grid.Column="0"
-                         Text="{Binding InputMessage, Mode=TwoWay}"
-                         Watermark="Введите сообщение..."
-                         AcceptsReturn="False"
-                         TextWrapping="Wrap"
-                         MinHeight="40"
-                         MaxHeight="120"
-                         VerticalContentAlignment="Center"
-                         Margin="0,0,10,0">
-                    <TextBox.KeyBindings>
-                        <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
-                    </TextBox.KeyBindings>
-                </TextBox>
-                
-                <Button Grid.Column="1"
-                        Command="{Binding SendMessageCommand}"
-                        IsEnabled="{Binding !IsLoading}"
-                        Width="80"
-                        Height="40"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center">
-                    <Panel>
-                        <TextBlock Text="Отправить"
-                                   IsVisible="{Binding !IsLoading}"/>
-                        <ProgressBar IsIndeterminate="True"
-                                     IsVisible="{Binding IsLoading}"
-                                     Width="40"
-                                     Height="4"/>
-                    </Panel>
-                </Button>
-            </Grid>
+            <StackPanel Spacing="6">
+
+                <!-- Auto-approve toggle -->
+                <CheckBox Content="Авто-подтверждение tools"
+                          IsChecked="{Binding IsAutoApproveTools, Mode=TwoWay}"
+                          FontSize="12"/>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Grid.Column="0"
+                             Text="{Binding InputMessage, Mode=TwoWay}"
+                             Watermark="Введите сообщение..."
+                             AcceptsReturn="False"
+                             TextWrapping="Wrap"
+                             MinHeight="40"
+                             MaxHeight="120"
+                             VerticalContentAlignment="Center"
+                             Margin="0,0,10,0">
+                        <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
+                        </TextBox.KeyBindings>
+                    </TextBox>
+
+                    <Button Grid.Column="1"
+                            Command="{Binding SendMessageCommand}"
+                            IsEnabled="{Binding !IsLoading}"
+                            Width="80"
+                            Height="40"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center">
+                        <Panel>
+                            <TextBlock Text="Отправить"
+                                       IsVisible="{Binding !IsLoading}"/>
+                            <ProgressBar IsIndeterminate="True"
+                                         IsVisible="{Binding IsLoading}"
+                                         Width="40"
+                                         Height="4"/>
+                        </Panel>
+                    </Button>
+                </Grid>
+            </StackPanel>
         </Border>
+
     </Grid>
 </UserControl>
