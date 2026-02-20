@@ -8,27 +8,18 @@ public abstract record StreamEvent;
 
 /// <summary>
 /// Начало нового тёрна ассистента. Один объект на весь тёрн — не на чанк.
-/// ChunkReceived вызывается ChatService из фонового потока по мере поступления чанков.
-/// Completed вызывается перед yield следующего элемента потока.
-/// Consumer обязан подписаться на события до вызова MoveNextAsync (гарантируется await foreach).
 /// </summary>
 public sealed record AssistantTurnDto : StreamEvent
 {
     public Guid TempId { get; } = Guid.NewGuid();
     public DateTime StartedAt { get; } = DateTime.UtcNow;
-
-    /// <summary>Вызывается из фонового потока ChatService при получении каждого текстового чанка.</summary>
-    public event Action<string>? ChunkReceived;
-
-    /// <summary>
-    /// Вызывается из фонового потока ChatService после последнего чанка,
-    /// непосредственно перед yield следующего StreamEvent.
-    /// </summary>
-    public event Action? Completed;
-
-    public void OnChunk(string chunk) => ChunkReceived?.Invoke(chunk);
-    public void OnCompleted() => Completed?.Invoke();
 }
+
+/// <summary>
+/// Текстовый чанк текущего тёрна ассистента.
+/// Yielded по одному на каждый непустой чанк из LLM.
+/// </summary>
+public sealed record AssistantChunkDto(string Text) : StreamEvent;
 
 /// <summary>Tool-вызов, требующий подтверждения пользователя.
 /// Producer awaits Confirmation.Task после yield — producer заблокирован до разрешения TCS.
@@ -52,6 +43,6 @@ public sealed record ToolCallFailedDto(string CallId, string ErrorMessage) : Str
 /// <summary>
 /// Последний элемент потока — все сообщения сохранены в БД.
 /// LastNodeId — ID последнего сохранённого узла (финальный ответ ассистента).
-/// Consumer использует это для обновления ID последней UI-модели.
+/// Consumer использует это для: обновления ID последней UI-модели и сброса IsStreaming.
 /// </summary>
 public sealed record AssistantResponseSavedDto(Guid LastNodeId) : StreamEvent;

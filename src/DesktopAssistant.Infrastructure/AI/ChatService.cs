@@ -263,30 +263,19 @@ public class ChatService : IChatService
         // Цикл обработки LLM-тёрнов с tool calls
         while (!cancellationToken.IsCancellationRequested)
         {
-            var turn = new AssistantTurnDto();
-            yield return turn;
+            yield return new AssistantTurnDto();
 
-            // Стримим ответ LLM и уведомляем через события DTO
+            // Стримим ответ LLM, каждый непустой чанк — отдельный AssistantChunkDto
+            // yield нельзя внутри try/catch — исключения пробрасываются через итератор в consumer
             var aggregator = new StreamingChatMessageAggregator();
-            try
+            await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
+                chatHistory, executionSettings, kernel, cancellationToken))
             {
-                await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
-                    chatHistory, executionSettings, kernel, cancellationToken))
-                {
-                    aggregator.Append(chunk);
+                aggregator.Append(chunk);
 
-                    if (!string.IsNullOrEmpty(chunk.Content))
-                        turn.OnChunk(chunk.Content);
-                }
+                if (!string.IsNullOrEmpty(chunk.Content))
+                    yield return new AssistantChunkDto(chunk.Content);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting streaming response from LLM");
-                throw;
-            }
-
-            // Сигнал завершения тёрна — вызывается ПЕРЕД yield следующего элемента
-            turn.OnCompleted();
 
             var assistantMessage = aggregator.Build();
             chatHistory.Add(assistantMessage);

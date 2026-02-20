@@ -1,4 +1,3 @@
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Dtos;
@@ -394,23 +393,39 @@ public partial class ChatViewModel : ObservableObject
     /// Создаёт и обновляет UI-модели по мере поступления событий.
     /// await foreach вызывается на UI-потоке: при каждом await MoveNextAsync() UI thread освобождается,
     /// что позволяет обрабатывать события кнопок (Approve/Deny) пока producer ждёт TCS.
+    /// Чанки доставляются как AssistantChunkDto — процессируются на UI thread через SynchronizationContext.
     /// </summary>
     private async Task ProcessAssistantStreamAsync(
         IAsyncEnumerable<StreamEvent> stream,
         CancellationToken cancellationToken)
     {
         _activeAssistantModel = null;
-        _pendingToolModels = new Dictionary<string, ToolChatMessageModel>();
+        _pendingToolModels = [];
 
         await foreach (var evt in stream.WithCancellation(cancellationToken))
         {
             switch (evt)
             {
                 case AssistantTurnDto turn:
-                    HandleAssistantTurnStarted(turn);
+                    var model = new TextChatMessageModel
+                    {
+                        Id = turn.TempId,
+                        NodeType = MessageNodeType.Assistant,
+                        CreatedAt = turn.StartedAt,
+                        IsStreaming = true
+                    };
+                    _activeAssistantModel = model;
+                    Messages.Add(model);
+                    break;
+
+                case AssistantChunkDto chunk:
+                    _activeAssistantModel?.AppendContent(chunk.Text);
                     break;
 
                 case ToolCallRequestedDto toolReq:
+                    // Тёрн ассистента завершён — следует tool call
+                    if (_activeAssistantModel != null)
+                        _activeAssistantModel.IsStreaming = false;
                     HandleToolCallRequested(toolReq);
                     break;
 
@@ -440,36 +455,17 @@ public partial class ChatViewModel : ObservableObject
                     break;
 
                 case AssistantResponseSavedDto saved:
-                    // Обновляем ID последней модели ассистента на реальный ID из БД
+                    // Финальный тёрн завершён — сбрасываем стриминг и обновляем ID из БД
                     if (_activeAssistantModel != null)
+                    {
+                        _activeAssistantModel.IsStreaming = false;
                         _activeAssistantModel.Id = saved.LastNodeId;
+                    }
                     break;
             }
         }
 
         _pendingToolModels = null;
-    }
-
-    private void HandleAssistantTurnStarted(AssistantTurnDto turn)
-    {
-        var model = new TextChatMessageModel
-        {
-            Id = turn.TempId,
-            NodeType = MessageNodeType.Assistant,
-            CreatedAt = turn.StartedAt,
-            IsStreaming = true
-        };
-
-        // Chunk events вызываются из фонового потока ChatService после MoveNextAsync —
-        // подписываемся ПЕРЕД следующим await, гарантируя что не пропустим ни одного чанка
-        turn.ChunkReceived += chunk =>
-            Dispatcher.UIThread.Post(() => model.AppendContent(chunk));
-
-        turn.Completed +=
-            () => Dispatcher.UIThread.Post(() => model.IsStreaming = false);
-
-        _activeAssistantModel = model;
-        Messages.Add(model);
     }
 
     private void HandleToolCallRequested(ToolCallRequestedDto toolReq)
