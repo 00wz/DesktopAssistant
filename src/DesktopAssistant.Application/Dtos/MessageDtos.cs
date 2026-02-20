@@ -14,7 +14,9 @@ public record UserMessageDto(
     int CurrentSiblingIndex = 1,
     int TotalSiblings = 1,
     bool HasPreviousSibling = false,
-    bool HasNextSibling = false
+    bool HasNextSibling = false,
+    Guid? PreviousSiblingId = null,
+    Guid? NextSiblingId = null
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>Сообщение ассистента. Включает информацию о siblings.</summary>
@@ -26,7 +28,9 @@ public record AssistantMessageDto(
     int CurrentSiblingIndex = 1,
     int TotalSiblings = 1,
     bool HasPreviousSibling = false,
-    bool HasNextSibling = false
+    bool HasNextSibling = false,
+    Guid? PreviousSiblingId = null,
+    Guid? NextSiblingId = null
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>Результат выполнения tool-вызова.</summary>

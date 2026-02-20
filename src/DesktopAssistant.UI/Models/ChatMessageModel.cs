@@ -21,6 +21,8 @@ public abstract partial class ChatMessageModel : ObservableObject
 
     // Не observable — используется для логики навигации по ветвям
     public Guid? ParentId { get; set; }
+    public Guid? PreviousSiblingId { get; set; }
+    public Guid? NextSiblingId { get; set; }
 
     // Навигация по siblings (1-based индекс для отображения)
     [ObservableProperty]

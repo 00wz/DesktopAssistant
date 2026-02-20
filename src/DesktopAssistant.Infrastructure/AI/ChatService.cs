@@ -202,6 +202,8 @@ public class ChatService : IChatService
         int total = userSiblings.Count;
         int idx = userSiblings.FindIndex(s => s.Id == userNode.Id);
         int currentIndex = idx >= 0 ? idx + 1 : 1;
+        Guid? prevId = idx > 0 ? userSiblings[idx - 1].Id : null;
+        Guid? nextId = idx < total - 1 ? userSiblings[idx + 1].Id : null;
 
         return new UserMessageDto(
             userNode.Id,
@@ -211,7 +213,9 @@ public class ChatService : IChatService
             currentIndex,
             total,
             idx > 0,
-            idx < total - 1);
+            idx < total - 1,
+            prevId,
+            nextId);
     }
 
     /// <inheritdoc />
@@ -410,17 +414,17 @@ public class ChatService : IChatService
 
     private MessageDto MapNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {
-        var (currentIndex, total, hasPrev, hasNext) = ComputeSiblingInfo(node, siblingsMap);
+        var (currentIndex, total, hasPrev, hasNext, prevId, nextId) = ComputeSiblingInfo(node, siblingsMap);
 
         return node.NodeType switch
         {
             MessageNodeType.User => new UserMessageDto(
                 node.Id, node.ParentId, node.CreatedAt, node.Content,
-                currentIndex, total, hasPrev, hasNext),
+                currentIndex, total, hasPrev, hasNext, prevId, nextId),
 
             MessageNodeType.Assistant => new AssistantMessageDto(
                 node.Id, node.ParentId, node.CreatedAt, node.Content,
-                currentIndex, total, hasPrev, hasNext),
+                currentIndex, total, hasPrev, hasNext, prevId, nextId),
 
             MessageNodeType.Tool => MapToolNodeToDto(node),
 
@@ -431,11 +435,11 @@ public class ChatService : IChatService
         };
     }
 
-    private static (int currentIndex, int total, bool hasPrev, bool hasNext) ComputeSiblingInfo(
+    private static (int currentIndex, int total, bool hasPrev, bool hasNext, Guid? prevId, Guid? nextId) ComputeSiblingInfo(
         MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {
         if (!node.ParentId.HasValue || !siblingsMap.TryGetValue(node.ParentId.Value, out var siblings))
-            return (1, 1, false, false);
+            return (1, 1, false, false, null, null);
 
         var sameSiblings = siblings
             .Where(s => s.NodeType == node.NodeType)
@@ -443,12 +447,14 @@ public class ChatService : IChatService
             .ToList();
 
         int total = sameSiblings.Count;
-        if (total <= 1) return (1, 1, false, false);
+        if (total <= 1) return (1, 1, false, false, null, null);
 
         int idx = sameSiblings.FindIndex(s => s.Id == node.Id);
-        if (idx < 0) return (1, total, false, total > 1);
+        if (idx < 0) return (1, total, false, total > 1, null, sameSiblings[0].Id);
 
-        return (idx + 1, total, idx > 0, idx < total - 1);
+        Guid? prevId = idx > 0 ? sameSiblings[idx - 1].Id : null;
+        Guid? nextId = idx < total - 1 ? sameSiblings[idx + 1].Id : null;
+        return (idx + 1, total, idx > 0, idx < total - 1, prevId, nextId);
     }
 
     private ToolResultDto MapToolNodeToDto(MessageNode node)

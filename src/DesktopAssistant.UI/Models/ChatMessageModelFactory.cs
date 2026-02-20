@@ -17,7 +17,9 @@ public static class ChatMessageModelFactory
             CurrentSiblingIndex = u.CurrentSiblingIndex,
             TotalSiblings = u.TotalSiblings,
             HasPreviousSibling = u.HasPreviousSibling,
-            HasNextSibling = u.HasNextSibling
+            HasNextSibling = u.HasNextSibling,
+            PreviousSiblingId = u.PreviousSiblingId,
+            NextSiblingId = u.NextSiblingId
         },
 
         AssistantMessageDto a => new TextChatMessageModel(a.Id, MessageNodeType.Assistant, a.Content, a.CreatedAt)
@@ -26,7 +28,9 @@ public static class ChatMessageModelFactory
             CurrentSiblingIndex = a.CurrentSiblingIndex,
             TotalSiblings = a.TotalSiblings,
             HasPreviousSibling = a.HasPreviousSibling,
-            HasNextSibling = a.HasNextSibling
+            HasNextSibling = a.HasNextSibling,
+            PreviousSiblingId = a.PreviousSiblingId,
+            NextSiblingId = a.NextSiblingId
         },
 
         ToolResultDto t => new ToolChatMessageModel

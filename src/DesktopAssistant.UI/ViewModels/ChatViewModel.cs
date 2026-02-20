@@ -4,7 +4,6 @@ using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
-using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
@@ -17,7 +16,6 @@ namespace DesktopAssistant.UI.ViewModels;
 public partial class ChatViewModel : ObservableObject
 {
     private readonly IChatService _chatService;
-    private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly ILogger<ChatViewModel> _logger;
 
     [ObservableProperty]
@@ -43,11 +41,9 @@ public partial class ChatViewModel : ObservableObject
 
     public ChatViewModel(
         IChatService chatService,
-        IMessageNodeRepository messageNodeRepository,
         ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
-        _messageNodeRepository = messageNodeRepository;
         _logger = logger;
     }
 
@@ -270,44 +266,21 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task NavigateToPreviousSiblingAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null)
-            throw new InvalidOperationException("Cannot navigate to previous sibling: CurrentConversation is null");
-
-        if (!message.ParentId.HasValue)
-            throw new ArgumentException("Cannot navigate to previous sibling: message.ParentId is null", nameof(message));
+        if (CurrentConversation == null || !message.ParentId.HasValue || !message.PreviousSiblingId.HasValue)
+            return;
 
         try
         {
             IsLoading = true;
             ErrorMessage = null;
 
-            var siblings = await _messageNodeRepository.GetChildrenAsync(
-                message.ParentId.Value,
-                cancellationToken: default);
-
-            var siblingList = siblings
-                .Where(s => s.NodeType == message.NodeType)
-                .OrderBy(s => s.CreatedAt)
-                .ToList();
-
-            if (siblingList.Count <= 1)
-                throw new InvalidOperationException("Cannot navigate to previous sibling: no siblings available");
-
-            var currentIndex = siblingList.FindIndex(s => s.Id == message.Id);
-            if (currentIndex <= 0)
-                throw new InvalidOperationException("Cannot navigate to previous sibling: already at first sibling");
-
-            var previousSibling = siblingList[currentIndex - 1];
-
             await _chatService.SwitchToSiblingAsync(
                 CurrentConversation.Id,
                 message.ParentId.Value,
-                previousSibling.Id,
+                message.PreviousSiblingId.Value,
                 cancellationToken: default);
 
             await InitializeAsync(CurrentConversation.Id, default);
-
-            _logger.LogDebug("Navigated to previous sibling {NodeId}", previousSibling.Id);
         }
         catch (Exception ex)
         {
@@ -326,44 +299,21 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task NavigateToNextSiblingAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null)
-            throw new InvalidOperationException("Cannot navigate to next sibling: CurrentConversation is null");
-
-        if (!message.ParentId.HasValue)
-            throw new ArgumentException("Cannot navigate to next sibling: message.ParentId is null", nameof(message));
+        if (CurrentConversation == null || !message.ParentId.HasValue || !message.NextSiblingId.HasValue)
+            return;
 
         try
         {
             IsLoading = true;
             ErrorMessage = null;
 
-            var siblings = await _messageNodeRepository.GetChildrenAsync(
-                message.ParentId.Value,
-                cancellationToken: default);
-
-            var siblingList = siblings
-                .Where(s => s.NodeType == message.NodeType)
-                .OrderBy(s => s.CreatedAt)
-                .ToList();
-
-            if (siblingList.Count <= 1)
-                throw new InvalidOperationException("Cannot navigate to next sibling: no siblings available");
-
-            var currentIndex = siblingList.FindIndex(s => s.Id == message.Id);
-            if (currentIndex < 0 || currentIndex >= siblingList.Count - 1)
-                throw new InvalidOperationException("Cannot navigate to next sibling: already at last sibling");
-
-            var nextSibling = siblingList[currentIndex + 1];
-
             await _chatService.SwitchToSiblingAsync(
                 CurrentConversation.Id,
                 message.ParentId.Value,
-                nextSibling.Id,
+                message.NextSiblingId.Value,
                 cancellationToken: default);
 
             await InitializeAsync(CurrentConversation.Id, default);
-
-            _logger.LogDebug("Navigated to next sibling {NodeId}", nextSibling.Id);
         }
         catch (Exception ex)
         {
