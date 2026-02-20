@@ -60,6 +60,7 @@ public class ConversationService
 
     /// <summary>
     /// Добавляет сообщение в диалог и обновляет активную ветку
+    /// TODO: удалить эту перегрузку
     /// </summary>
     public async Task<MessageNode> AddMessageAsync(
         Guid conversationId,
@@ -178,7 +179,8 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Получает путь сообщений от корня до указанного узла (или до Summary Node)
+    /// Получает путь сообщений от указанного узла до корня
+    /// TODO: возможно переименовать метод ( либо перименовать GetMessagePathAsync)
     /// </summary>
     public async Task<IEnumerable<MessageNode>> GetMessagePathAsync(
         Guid nodeId,
@@ -293,6 +295,7 @@ public class ConversationService
 
     /// <summary>
     /// Получает текущий активный лист диалога
+    /// TODO: нигде не используется
     /// </summary>
     public async Task<MessageNode?> GetActiveLeafNodeAsync(
         Guid conversationId,

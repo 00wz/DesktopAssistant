@@ -121,7 +121,7 @@ public class ChatService : IChatService
             return Enumerable.Empty<MessageDto>();
         }
 
-        var nodes = (await _conversationService.BuildContextAsync(
+        var nodes = (await _conversationService.GetMessagePathAsync(
             conversation.ActiveLeafNodeId.Value, cancellationToken)).ToList();
 
         // Системные узлы не отображаются в UI
