@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using DesktopAssistant.Infrastructure.AI.Enums;
 
 namespace DesktopAssistant.Infrastructure.AI;
 
@@ -121,7 +122,7 @@ public class ChatService : IChatService
             return Enumerable.Empty<MessageDto>();
         }
 
-        var nodes = (await _conversationService.GetMessagePathAsync(
+        var nodes = (await _conversationService.GetBranchPathAsync(
             conversation.ActiveLeafNodeId.Value, cancellationToken)).ToList();
 
         // Системные узлы не отображаются в UI

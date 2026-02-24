@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -56,29 +57,19 @@ public class MessageNodeRepository : BaseRepository<MessageNode>, IMessageNodeRe
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<MessageNode>> GetBranchPathAsync(
-        Guid nodeId, 
-        CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<MessageNode> TraverseToRootAsync(
+        Guid nodeId,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var path = new List<MessageNode>();
         var currentNode = await _dbSet.FirstOrDefaultAsync(m => m.Id == nodeId, cancellationToken);
 
         while (currentNode != null)
         {
-            path.Insert(0, currentNode);
-            if (currentNode.ParentId.HasValue)
-            {
-                currentNode = await _dbSet.FirstOrDefaultAsync(
-                    m => m.Id == currentNode.ParentId.Value, 
-                    cancellationToken);
-            }
-            else
-            {
-                currentNode = null;
-            }
+            yield return currentNode;
+            currentNode = currentNode.ParentId.HasValue
+                ? await _dbSet.FirstOrDefaultAsync(m => m.Id == currentNode.ParentId.Value, cancellationToken)
+                : null;
         }
-
-        return path;
     }
 
     public async Task<IEnumerable<MessageNode>> GetChildrenAsync(

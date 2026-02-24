@@ -179,14 +179,17 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Получает путь сообщений от указанного узла до корня
-    /// TODO: возможно переименовать метод ( либо перименовать GetMessagePathAsync)
+    /// Возвращает полный упорядоченный путь от корня до указанного узла
     /// </summary>
-    public async Task<IEnumerable<MessageNode>> GetMessagePathAsync(
+    public async Task<IEnumerable<MessageNode>> GetBranchPathAsync(
         Guid nodeId,
         CancellationToken cancellationToken = default)
     {
-        return await _messageNodeRepository.GetBranchPathAsync(nodeId, cancellationToken);
+        var path = new List<MessageNode>();
+        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(nodeId, cancellationToken))
+            path.Add(node);
+        path.Reverse();
+        return path;
     }
 
     /// <summary>
@@ -197,28 +200,13 @@ public class ConversationService
         CancellationToken cancellationToken = default)
     {
         var messages = new List<MessageNode>();
-        var currentNode = await _messageNodeRepository.GetByIdAsync(headNodeId, cancellationToken);
-
-        while (currentNode != null)
+        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(headNodeId, cancellationToken))
         {
-            messages.Insert(0, currentNode);
-            
-            // Если нашли Summary Node - останавливаемся
-            if (currentNode.IsSummaryNode)
-            {
+            messages.Add(node);
+            if (node.IsSummaryNode)
                 break;
-            }
-
-            if (currentNode.ParentId.HasValue)
-            {
-                currentNode = await _messageNodeRepository.GetByIdAsync(currentNode.ParentId.Value, cancellationToken);
-            }
-            else
-            {
-                currentNode = null;
-            }
         }
-
+        messages.Reverse();
         return messages;
     }
 

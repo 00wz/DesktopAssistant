@@ -31,7 +31,7 @@ public interface IConversationRepository : IRepository<Conversation>
 public interface IMessageNodeRepository : IRepository<MessageNode>
 {
     Task<IEnumerable<MessageNode>> GetByConversationIdAsync(Guid conversationId, CancellationToken cancellationToken = default);
-    Task<IEnumerable<MessageNode>> GetBranchPathAsync(Guid nodeId, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<MessageNode> TraverseToRootAsync(Guid nodeId, CancellationToken cancellationToken = default);
     Task<IEnumerable<MessageNode>> GetChildrenAsync(Guid parentId, CancellationToken cancellationToken = default);
 }
 
