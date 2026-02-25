@@ -40,6 +40,18 @@ public partial class ChatViewModel : ObservableObject
     /// <summary>ID последнего узла активной ветки — передаётся явно во все методы сервиса.</summary>
     private Guid? _currentLeafNodeId;
 
+    /// <summary>Текущее состояние диалога — управляет доступностью SendMessage и Resume.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendMessageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ResumeCommand))]
+    [NotifyPropertyChangedFor(nameof(ShowInputPanel))]
+    [NotifyPropertyChangedFor(nameof(ShowResumePanel))]
+    private ConversationState _conversationStatus;
+
+    public bool ShowInputPanel => ConversationStatus == ConversationState.LastMessageIsAssistant;
+    public bool ShowResumePanel => ConversationStatus == ConversationState.LastMessageIsUser ||
+                                   ConversationStatus == ConversationState.AllToolCallsCompleted;
+
     public ObservableCollection<ChatMessageModel> Messages { get; } = new();
 
     public ChatViewModel(
@@ -100,6 +112,7 @@ public partial class ChatViewModel : ObservableObject
             cancellationToken: cancellationToken);
 
         _currentLeafNodeId = CurrentConversation.ActiveLeafNodeId;
+        ConversationStatus = ConversationState.LastMessageIsAssistant;
         _logger.LogInformation("Created new conversation {ConversationId}", CurrentConversation.Id);
     }
 
@@ -120,6 +133,9 @@ public partial class ChatViewModel : ObservableObject
         }
 
         _currentLeafNodeId = lastDtoId ?? CurrentConversation.ActiveLeafNodeId;
+
+        if (_currentLeafNodeId.HasValue)
+            ConversationStatus = await _chatService.GetConversationStateAsync(_currentLeafNodeId.Value, cancellationToken);
     }
 
     /// <summary>
@@ -163,10 +179,44 @@ public partial class ChatViewModel : ObservableObject
     private bool CanSendMessage() =>
         !IsLoading &&
         CurrentConversation != null &&
-        !string.IsNullOrWhiteSpace(InputMessage);
+        !string.IsNullOrWhiteSpace(InputMessage) &&
+        ConversationStatus == ConversationState.LastMessageIsAssistant;
+
+    private bool CanResume() =>
+        !IsLoading &&
+        CurrentConversation != null &&
+        _currentLeafNodeId.HasValue &&
+        (ConversationStatus == ConversationState.LastMessageIsUser ||
+         ConversationStatus == ConversationState.AllToolCallsCompleted);
 
     partial void OnInputMessageChanged(string value) => SendMessageCommand.NotifyCanExecuteChanged();
-    partial void OnIsLoadingChanged(bool value) => SendMessageCommand.NotifyCanExecuteChanged();
+
+    partial void OnIsLoadingChanged(bool value)
+    {
+        SendMessageCommand.NotifyCanExecuteChanged();
+        ResumeCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>
+    /// Возобновляет диалог: вызывается когда последнее сообщение — пользователя или все tool-вызовы завершены.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanResume))]
+    private async Task ResumeAsync()
+    {
+        if (CurrentConversation == null || !_currentLeafNodeId.HasValue) return;
+
+        IsLoading = true;
+        try
+        {
+            await ProcessAssistantStreamAsync(
+                _chatService.GetAssistantResponseAsync(CurrentConversation.Id, _currentLeafNodeId.Value, default),
+                default);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
 
     /// <summary>
     /// Очищает чат и создаёт новый диалог
@@ -269,7 +319,10 @@ public partial class ChatViewModel : ObservableObject
             if (result.ErrorMessage != null)
                 model.ErrorMessage = result.ErrorMessage;
 
-            if (await _chatService.CheckAllToolsCompleteAsync(_currentLeafNodeId!.Value) && CurrentConversation != null)
+            var state = await _chatService.GetConversationStateAsync(_currentLeafNodeId!.Value);
+            ConversationStatus = state;
+
+            if (state == ConversationState.AllToolCallsCompleted && CurrentConversation != null)
             {
                 IsLoading = true;
                 await ProcessAssistantStreamAsync(
@@ -306,7 +359,10 @@ public partial class ChatViewModel : ObservableObject
 
             model.Status = ToolCallStatus.Denied;
 
-            if (await _chatService.CheckAllToolsCompleteAsync(_currentLeafNodeId!.Value) && CurrentConversation != null)
+            var state = await _chatService.GetConversationStateAsync(_currentLeafNodeId!.Value);
+            ConversationStatus = state;
+
+            if (state == ConversationState.AllToolCallsCompleted && CurrentConversation != null)
             {
                 IsLoading = true;
                 await ProcessAssistantStreamAsync(
@@ -451,6 +507,9 @@ public partial class ChatViewModel : ObservableObject
             ErrorMessage = $"Ошибка получения ответа ассистента: {ex.Message}";
             Cleanup();
         }
+
+        if (_currentLeafNodeId.HasValue)
+            ConversationStatus = await _chatService.GetConversationStateAsync(_currentLeafNodeId.Value, CancellationToken.None);
 
         void HandleToolCallRequested(ToolCallRequestedDto toolReq)
         {

@@ -51,8 +51,8 @@ public interface IChatService
     Task<ToolCallResult> DenyToolCallAsync(Guid pendingNodeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Проверяет, все ли tool-узлы текущего тёрна выполнены.
-    /// Идёт назад от lastNodeId до первого не-Tool узла.
+    /// Определяет текущее состояние диалога, начиная обход с lastNodeId.
+    /// Возвращает <see cref="ConversationState"/>, описывающий доступные действия пользователя.
     /// </summary>
-    Task<bool> CheckAllToolsCompleteAsync(Guid lastNodeId, CancellationToken cancellationToken = default);
+    Task<ConversationState> GetConversationStateAsync(Guid lastNodeId, CancellationToken cancellationToken = default);
 }

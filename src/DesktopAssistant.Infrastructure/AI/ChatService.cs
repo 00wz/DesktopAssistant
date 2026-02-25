@@ -407,20 +407,35 @@ public class ChatService : IChatService
     }
 
     /// <inheritdoc />
-    public async Task<bool> CheckAllToolsCompleteAsync(Guid lastNodeId, CancellationToken cancellationToken = default)
+    public async Task<ConversationState> GetConversationStateAsync(
+        Guid lastNodeId,
+        CancellationToken cancellationToken = default)
     {
+        bool foundTools = false;
+        bool hasPending = false;
+
         await foreach (var node in _messageNodeRepository.TraverseToRootAsync(lastNodeId, cancellationToken))
         {
             if (node.NodeType != MessageNodeType.Tool)
-                break;
+            {
+                if (!foundTools)
+                {
+                    // Последний узел — не tool: User или что-то другое (Assistant/System)
+                    return node.NodeType == MessageNodeType.User
+                        ? ConversationState.LastMessageIsUser
+                        : ConversationState.LastMessageIsAssistant;
+                }
+                break; // Завершили обход цепочки tool-узлов
+            }
 
+            foundTools = true;
             var meta = TryDeserializeToolMeta(node.Metadata);
-            // meta == null → старый формат узла (без ToolNodeMetadata) → считаем completed
-            if (meta?.ResultJson == null && meta != null)
-                return false;
+            // meta == null → старый формат, считаем completed
+            if (meta != null && meta.ResultJson == null)
+                hasPending = true;
         }
 
-        return true;
+        return hasPending ? ConversationState.HasPendingToolCalls : ConversationState.AllToolCallsCompleted;
     }
 
     /// <summary>

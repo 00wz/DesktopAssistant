@@ -248,7 +248,9 @@
                           IsChecked="{Binding IsAutoApproveTools, Mode=TwoWay}"
                           FontSize="12"/>
 
-                <Grid ColumnDefinitions="*,Auto">
+                <!-- Input row: visible when last message is from assistant -->
+                <Grid ColumnDefinitions="*,Auto"
+                      IsVisible="{Binding ShowInputPanel}">
                     <TextBox Grid.Column="0"
                              Text="{Binding InputMessage, Mode=TwoWay}"
                              Watermark="Введите сообщение..."
@@ -280,6 +282,22 @@
                         </Panel>
                     </Button>
                 </Grid>
+
+                <!-- Resume button: visible when last message is user's or all tools completed -->
+                <Button IsVisible="{Binding ShowResumePanel}"
+                        Command="{Binding ResumeCommand}"
+                        HorizontalAlignment="Stretch"
+                        Height="40"
+                        HorizontalContentAlignment="Center">
+                    <Panel>
+                        <TextBlock Text="Возобновить"
+                                   IsVisible="{Binding !IsLoading}"/>
+                        <ProgressBar IsIndeterminate="True"
+                                     IsVisible="{Binding IsLoading}"
+                                     Width="40"
+                                     Height="4"/>
+                    </Panel>
+                </Button>
             </StackPanel>
         </Border>
 
