@@ -179,21 +179,6 @@ public class ChatService : IChatService
     /// <inheritdoc />
     public async Task<UserMessageDto> AddUserMessageAsync(
         Guid conversationId,
-        string content,
-        CancellationToken cancellationToken = default)
-    {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-        if (!conversation.ActiveLeafNodeId.HasValue)
-            throw new InvalidOperationException($"Conversation {conversationId} has no active leaf node");
-
-        return await AddUserMessageAsync(conversationId, conversation.ActiveLeafNodeId.Value, content, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public async Task<UserMessageDto> AddUserMessageAsync(
-        Guid conversationId,
         Guid parentNodeId,
         string content,
         CancellationToken cancellationToken = default)
@@ -236,14 +221,6 @@ public class ChatService : IChatService
     /// <inheritdoc />
     public IAsyncEnumerable<StreamEvent> GetAssistantResponseAsync(
         Guid conversationId,
-        CancellationToken cancellationToken = default)
-    {
-        return GetAssistantResponseCoreAsync(conversationId, lastMessageId: null, cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public IAsyncEnumerable<StreamEvent> GetAssistantResponseAsync(
-        Guid conversationId,
         Guid lastMessageId,
         CancellationToken cancellationToken = default)
     {
@@ -252,23 +229,11 @@ public class ChatService : IChatService
 
     private async IAsyncEnumerable<StreamEvent> GetAssistantResponseCoreAsync(
         Guid conversationId,
-        Guid? lastMessageId,
+        Guid lastMessageId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Определяем lastMessageId если не передан
-        if (!lastMessageId.HasValue)
-        {
-            var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
-                ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-            if (!conversation.ActiveLeafNodeId.HasValue)
-                throw new InvalidOperationException($"Conversation {conversationId} has no active leaf node");
-
-            lastMessageId = conversation.ActiveLeafNodeId.Value;
-        }
-
         // Собираем контекст
-        var contextMessages = await _conversationService.BuildContextAsync(lastMessageId.Value, cancellationToken);
+        var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
         var chatHistory = BuildChatHistory(contextMessages);
 
         var kernel = CreateKernelWithMcpTools();
@@ -296,7 +261,7 @@ public class ChatService : IChatService
         // Сохраняем сообщение ассистента в БД немедленно
         var assistantNode = await _conversationService.AddChatMessageAsync(
             conversationId,
-            lastMessageId.Value,
+            lastMessageId,
             assistantMessage,
             cancellationToken: cancellationToken);
 
@@ -393,8 +358,7 @@ public class ChatService : IChatService
 
         await UpdateToolNodeWithResultAsync(pendingNode, meta, resultJson, cancellationToken);
 
-        bool allComplete = await CheckAllToolsCompleteAsync(pendingNode.ConversationId, cancellationToken);
-        return new ToolCallResult(isError, resultJson, errorMsg, allComplete);
+        return new ToolCallResult(isError, resultJson, errorMsg);
     }
 
     /// <inheritdoc />
@@ -415,8 +379,7 @@ public class ChatService : IChatService
 
         await UpdateToolNodeWithResultAsync(pendingNode, meta, deniedResult, cancellationToken);
 
-        bool allComplete = await CheckAllToolsCompleteAsync(pendingNode.ConversationId, cancellationToken);
-        return new ToolCallResult(false, deniedResult, null, allComplete);
+        return new ToolCallResult(false, deniedResult, null);
     }
 
     /// <summary>
@@ -443,20 +406,10 @@ public class ChatService : IChatService
         await _messageNodeRepository.UpdateAsync(node, cancellationToken);
     }
 
-    /// <summary>
-    /// Проверяет, все ли tool-узлы текущего тёрна выполнены.
-    /// Идёт назад от ActiveLeafNodeId, собирает Tool-узлы до первого не-Tool узла.
-    /// Pending определяется по ResultJson == null в ToolNodeMetadata.
-    /// Старые узлы без ToolNodeMetadata считаются completed.
-    /// </summary>
-    private async Task<bool> CheckAllToolsCompleteAsync(Guid conversationId, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public async Task<bool> CheckAllToolsCompleteAsync(Guid lastNodeId, CancellationToken cancellationToken = default)
     {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
-        if (conversation?.ActiveLeafNodeId == null)
-            return true;
-
-        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(
-            conversation.ActiveLeafNodeId.Value, cancellationToken))
+        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(lastNodeId, cancellationToken))
         {
             if (node.NodeType != MessageNodeType.Tool)
                 break;

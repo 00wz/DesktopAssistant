@@ -37,6 +37,9 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAutoApproveTools;
 
+    /// <summary>ID последнего узла активной ветки — передаётся явно во все методы сервиса.</summary>
+    private Guid? _currentLeafNodeId;
+
     public ObservableCollection<ChatMessageModel> Messages { get; } = new();
 
     public ChatViewModel(
@@ -96,6 +99,7 @@ public partial class ChatViewModel : ObservableObject
             ConversationTitle,
             cancellationToken: cancellationToken);
 
+        _currentLeafNodeId = CurrentConversation.ActiveLeafNodeId;
         _logger.LogInformation("Created new conversation {ConversationId}", CurrentConversation.Id);
     }
 
@@ -108,10 +112,14 @@ public partial class ChatViewModel : ObservableObject
 
         Messages.Clear();
 
+        Guid? lastDtoId = null;
         foreach (var dto in dtos)
         {
             Messages.Add(ChatMessageModelFactory.FromDto(dto));
+            lastDtoId = dto.Id;
         }
+
+        _currentLeafNodeId = lastDtoId ?? CurrentConversation.ActiveLeafNodeId;
     }
 
     /// <summary>
@@ -132,16 +140,18 @@ public partial class ChatViewModel : ObservableObject
 
         var userDto = await _chatService.AddUserMessageAsync(
             CurrentConversation.Id,
+            _currentLeafNodeId!.Value,
             userMessage,
             cancellationToken: default);
 
+        _currentLeafNodeId = userDto.Id;
         Messages.Add(ChatMessageModelFactory.FromDto(userDto));
 
         IsLoading = true;
         try
         {
             await ProcessAssistantStreamAsync(
-                _chatService.GetAssistantResponseAsync(CurrentConversation.Id, default),
+                _chatService.GetAssistantResponseAsync(CurrentConversation.Id, userDto.Id, default),
                 default);
         }
         finally
@@ -259,11 +269,11 @@ public partial class ChatViewModel : ObservableObject
             if (result.ErrorMessage != null)
                 model.ErrorMessage = result.ErrorMessage;
 
-            if (result.AllToolsForTurnCompleted && CurrentConversation != null)
+            if (await _chatService.CheckAllToolsCompleteAsync(_currentLeafNodeId!.Value) && CurrentConversation != null)
             {
                 IsLoading = true;
                 await ProcessAssistantStreamAsync(
-                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, default),
+                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, _currentLeafNodeId!.Value, default),
                     default);
             }
         }
@@ -292,15 +302,15 @@ public partial class ChatViewModel : ObservableObject
 
         try
         {
-            var result = await _chatService.DenyToolCallAsync(model.Id);
+            await _chatService.DenyToolCallAsync(model.Id);
 
             model.Status = ToolCallStatus.Denied;
 
-            if (result.AllToolsForTurnCompleted && CurrentConversation != null)
+            if (await _chatService.CheckAllToolsCompleteAsync(_currentLeafNodeId!.Value) && CurrentConversation != null)
             {
                 IsLoading = true;
                 await ProcessAssistantStreamAsync(
-                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, default),
+                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, _currentLeafNodeId!.Value, default),
                     default);
             }
         }
@@ -425,9 +435,11 @@ public partial class ChatViewModel : ObservableObject
                             activeAssistantModel.IsStreaming = false;
                             activeAssistantModel.Id = saved.LastNodeId;
                         }
+                        _currentLeafNodeId = saved.LastNodeId;
                         break;
 
                     case ToolCallRequestedDto toolReq:
+                        _currentLeafNodeId = toolReq.PendingNodeId;
                         HandleToolCallRequested(toolReq);
                         break;
                 }

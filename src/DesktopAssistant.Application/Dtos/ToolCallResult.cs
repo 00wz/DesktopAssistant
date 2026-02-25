@@ -7,5 +7,4 @@ namespace DesktopAssistant.Application.Dtos;
 public record ToolCallResult(
     bool IsError,
     string ResultJson,
-    string? ErrorMessage,
-    bool AllToolsForTurnCompleted);
+    string? ErrorMessage);
