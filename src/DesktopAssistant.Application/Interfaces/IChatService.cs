@@ -51,7 +51,7 @@ public interface IChatService
     IAsyncEnumerable<StreamEvent> GetAssistantResponseAsync(Guid conversationId, Guid lastMessageId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Выполняет ожидающий tool-вызов (pendingNodeId — ID узла с Content == "__PENDING_TOOL__").
+    /// Выполняет ожидающий tool-вызов (pendingNodeId — ID узла с ToolNodeMetadata.ResultJson == null).
     /// Stateless: все данные восстанавливаются из БД по pendingNodeId.
     /// Обновляет узел результатом и возвращает ToolCallResult с флагом AllToolsForTurnCompleted.
     /// </summary>

@@ -35,15 +35,19 @@ public class ChatService : IChatService
     private readonly ILogger<ChatService> _logger;
     private readonly ILoggerFactory _loggerFactory;
 
-    /// <summary>Sentinel-значение в Content узла ожидающего tool-вызова.</summary>
-    private const string PendingToolSentinel = "__PENDING_TOOL__";
-
-    /// <summary>Метаданные ожидающего tool-узла, сериализуются в MessageNode.Metadata.</summary>
-    private sealed record PendingToolCallMetadata(
+    /// <summary>
+    /// Единая структура метаданных tool-узла — хранится в MessageNode.Metadata для всех стадий жизненного цикла.
+    /// Pending:   ResultJson == null, SerializedChatMessage == null.
+    /// Completed: ResultJson != null, SerializedChatMessage != null (сериализованный ChatMessageContent для контекста LLM).
+    /// Признак pending определяется исключительно по ResultJson == null — никакого sentinel в Content.
+    /// </summary>
+    private sealed record ToolNodeMetadata(
         string CallId,
         string PluginName,
         string FunctionName,
-        string ArgumentsJson);
+        string ArgumentsJson,
+        string? ResultJson = null,
+        string? SerializedChatMessage = null);
 
     public ChatService(
         IKernelFactory kernelFactory,
@@ -318,28 +322,23 @@ public class ChatService : IChatService
         {
             var callId = functionCall.Id ?? Guid.NewGuid().ToString();
             var argsJson = SerializeFunctionArgs(functionCall);
-            var pendingMeta = new PendingToolCallMetadata(
+
+            // Создаём pending-узел: ResultJson == null → признак ожидания
+            var toolMeta = new ToolNodeMetadata(
                 callId,
                 functionCall.PluginName ?? string.Empty,
                 functionCall.FunctionName,
                 argsJson);
 
-            var pendingNode = await CreatePendingToolNodeAsync(
-                conversationId, lastParentId, pendingMeta, cancellationToken);
-
+            var pendingNode = await CreateToolNodeAsync(conversationId, lastParentId, toolMeta, cancellationToken);
             lastParentId = pendingNode.Id;
 
             _logger.LogDebug("[PENDING TOOL] Created node {NodeId} for {PluginName}.{FunctionName}",
-                pendingNode.Id, pendingMeta.PluginName, pendingMeta.FunctionName);
+                pendingNode.Id, toolMeta.PluginName, toolMeta.FunctionName);
 
-            yield return new ToolCallRequestedDto(
-                callId,
-                pendingMeta.PluginName,
-                pendingMeta.FunctionName,
-                argsJson,
-                pendingNode.Id);
+            yield return new ToolCallRequestedDto(callId, toolMeta.PluginName, toolMeta.FunctionName, argsJson, pendingNode.Id);
         }
-        // Итератор завершается — поток событий закрыт до следующего GetAssistantResponseAsync
+        // Итератор завершается — поток закрыт до следующего GetAssistantResponseAsync
     }
 
     /// <inheritdoc />
@@ -348,13 +347,13 @@ public class ChatService : IChatService
         CancellationToken cancellationToken = default)
     {
         var pendingNode = await _messageNodeRepository.GetByIdAsync(pendingNodeId, cancellationToken)
-            ?? throw new InvalidOperationException($"Pending tool node {pendingNodeId} not found");
+            ?? throw new InvalidOperationException($"Tool node {pendingNodeId} not found");
 
-        if (pendingNode.Content != PendingToolSentinel)
-            throw new InvalidOperationException($"Node {pendingNodeId} is not a pending tool node (Content: {pendingNode.Content})");
+        var meta = TryDeserializeToolMeta(pendingNode.Metadata)
+            ?? throw new InvalidOperationException($"Failed to parse tool metadata for node {pendingNodeId}");
 
-        var meta = JsonSerializer.Deserialize<PendingToolCallMetadata>(pendingNode.Metadata!, _jsonOptions)
-            ?? throw new InvalidOperationException($"Failed to parse pending tool metadata for node {pendingNodeId}");
+        if (meta.ResultJson != null)
+            throw new InvalidOperationException($"Node {pendingNodeId} is not pending (already has result)");
 
         var kernel = CreateKernelWithMcpTools();
 
@@ -392,17 +391,9 @@ public class ChatService : IChatService
             errorMsg = ex.Message;
         }
 
-        // Обновляем узел реальным результатом
-        var functionCallForResult = new FunctionCallContent(meta.FunctionName, meta.PluginName, meta.CallId);
-        var resultContent = new FunctionResultContent(functionCallForResult, resultJson);
-        var resultChatMsg = resultContent.ToChatMessage();
-
-        pendingNode.UpdateContent(resultJson);
-        pendingNode.SetMetadata(ChatMessageSerializer.Serialize(resultChatMsg));
-        await _messageNodeRepository.UpdateAsync(pendingNode, cancellationToken);
+        await UpdateToolNodeWithResultAsync(pendingNode, meta, resultJson, cancellationToken);
 
         bool allComplete = await CheckAllToolsCompleteAsync(pendingNode.ConversationId, cancellationToken);
-
         return new ToolCallResult(isError, resultJson, errorMsg, allComplete);
     }
 
@@ -412,35 +403,51 @@ public class ChatService : IChatService
         CancellationToken cancellationToken = default)
     {
         var pendingNode = await _messageNodeRepository.GetByIdAsync(pendingNodeId, cancellationToken)
-            ?? throw new InvalidOperationException($"Pending tool node {pendingNodeId} not found");
+            ?? throw new InvalidOperationException($"Tool node {pendingNodeId} not found");
 
-        var meta = JsonSerializer.Deserialize<PendingToolCallMetadata>(pendingNode.Metadata ?? "{}", _jsonOptions);
+        var meta = TryDeserializeToolMeta(pendingNode.Metadata)
+            ?? throw new InvalidOperationException($"Failed to parse tool metadata for node {pendingNodeId}");
 
         const string deniedResult = "Denied by user";
 
-        // Обновляем узел статусом отклонения
-        var functionCallForResult = new FunctionCallContent(
-            meta?.FunctionName ?? string.Empty,
-            meta?.PluginName ?? string.Empty,
-            meta?.CallId ?? string.Empty);
-        var deniedContent = new FunctionResultContent(functionCallForResult, deniedResult);
-        var deniedChatMsg = deniedContent.ToChatMessage();
-
-        pendingNode.UpdateContent(deniedResult);
-        pendingNode.SetMetadata(ChatMessageSerializer.Serialize(deniedChatMsg));
-        await _messageNodeRepository.UpdateAsync(pendingNode, cancellationToken);
-
         _logger.LogInformation("[TOOL DENIED] Node {NodeId}: {PluginName}.{FunctionName}",
-            pendingNodeId, meta?.PluginName, meta?.FunctionName);
+            pendingNodeId, meta.PluginName, meta.FunctionName);
+
+        await UpdateToolNodeWithResultAsync(pendingNode, meta, deniedResult, cancellationToken);
 
         bool allComplete = await CheckAllToolsCompleteAsync(pendingNode.ConversationId, cancellationToken);
-
         return new ToolCallResult(false, deniedResult, null, allComplete);
     }
 
     /// <summary>
-    /// Проверяет, все ли tool-узлы текущего тёрна выполнены (нет ни одного с Content == PendingToolSentinel).
-    /// Проходит назад от ActiveLeafNodeId, собирая Tool-узлы до первого не-Tool узла.
+    /// Обновляет tool-узел результатом: заполняет ResultJson и SerializedChatMessage в ToolNodeMetadata.
+    /// Content узла не используется — все данные хранятся в Metadata.
+    /// </summary>
+    private async Task UpdateToolNodeWithResultAsync(
+        MessageNode node,
+        ToolNodeMetadata meta,
+        string resultJson,
+        CancellationToken cancellationToken)
+    {
+        var functionCallForResult = new FunctionCallContent(meta.FunctionName, meta.PluginName, meta.CallId);
+        var resultContent = new FunctionResultContent(functionCallForResult, resultJson);
+        var resultChatMsg = resultContent.ToChatMessage();
+
+        var updatedMeta = meta with
+        {
+            ResultJson = resultJson,
+            SerializedChatMessage = ChatMessageSerializer.Serialize(resultChatMsg)
+        };
+
+        node.SetMetadata(JsonSerializer.Serialize(updatedMeta, _jsonOptions));
+        await _messageNodeRepository.UpdateAsync(node, cancellationToken);
+    }
+
+    /// <summary>
+    /// Проверяет, все ли tool-узлы текущего тёрна выполнены.
+    /// Идёт назад от ActiveLeafNodeId, собирает Tool-узлы до первого не-Tool узла.
+    /// Pending определяется по ResultJson == null в ToolNodeMetadata.
+    /// Старые узлы без ToolNodeMetadata считаются completed.
     /// </summary>
     private async Task<bool> CheckAllToolsCompleteAsync(Guid conversationId, CancellationToken cancellationToken)
     {
@@ -454,7 +461,9 @@ public class ChatService : IChatService
             if (node.NodeType != MessageNodeType.Tool)
                 break;
 
-            if (node.Content == PendingToolSentinel)
+            var meta = TryDeserializeToolMeta(node.Metadata);
+            // meta == null → старый формат узла (без ToolNodeMetadata) → считаем completed
+            if (meta?.ResultJson == null && meta != null)
                 return false;
         }
 
@@ -462,13 +471,14 @@ public class ChatService : IChatService
     }
 
     /// <summary>
-    /// Создаёт pending tool-узел в БД: Content = PendingToolSentinel, Metadata = PendingToolCallMetadata JSON.
+    /// Создаёт tool-узел в БД с заданными метаданными.
+    /// Content узла пустой — все данные в Metadata (ToolNodeMetadata).
     /// Обновляет ActiveChildId родителя и ActiveLeafNodeId диалога.
     /// </summary>
-    private async Task<MessageNode> CreatePendingToolNodeAsync(
+    private async Task<MessageNode> CreateToolNodeAsync(
         Guid conversationId,
         Guid parentNodeId,
-        PendingToolCallMetadata pendingMeta,
+        ToolNodeMetadata toolMeta,
         CancellationToken cancellationToken)
     {
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
@@ -477,9 +487,8 @@ public class ChatService : IChatService
         var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
             ?? throw new InvalidOperationException($"Parent node {parentNodeId} not found");
 
-        var metaJson = JsonSerializer.Serialize(pendingMeta, _jsonOptions);
-        var node = new MessageNode(conversationId, MessageNodeType.Tool, PendingToolSentinel, parentNodeId);
-        node.SetMetadata(metaJson);
+        var node = new MessageNode(conversationId, MessageNodeType.Tool, string.Empty, parentNodeId);
+        node.SetMetadata(JsonSerializer.Serialize(toolMeta, _jsonOptions));
 
         await _messageNodeRepository.AddAsync(node, cancellationToken);
 
@@ -492,25 +501,79 @@ public class ChatService : IChatService
         return node;
     }
 
+    /// <summary>
+    /// Строит ChatHistory из узлов диалога.
+    /// Tool-узлы обрабатываются отдельно через GetToolChatMessageContent — они могут
+    /// использовать новый формат ToolNodeMetadata или старый ChatMessageContent.
+    /// </summary>
     private static ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages)
     {
         var chatHistory = new ChatHistory();
 
         foreach (var message in messages)
         {
-            var chatMessage = message.GetOrCreateChatMessageContent();
-
-            if (message.NodeType == MessageNodeType.Summary)
+            if (message.NodeType == MessageNodeType.Tool)
             {
+                var toolChatMsg = GetToolChatMessageContent(message);
+                if (toolChatMsg != null)
+                    chatHistory.Add(toolChatMsg);
+                // pending-узел (toolChatMsg == null) пропускается
+            }
+            else if (message.NodeType == MessageNodeType.Summary)
+            {
+                var chatMessage = message.GetOrCreateChatMessageContent();
                 chatHistory.AddSystemMessage($"[Previous conversation summary]: {chatMessage.Content}");
             }
             else
             {
-                chatHistory.Add(chatMessage);
+                chatHistory.Add(message.GetOrCreateChatMessageContent());
             }
         }
 
         return chatHistory;
+    }
+
+    /// <summary>
+    /// Извлекает ChatMessageContent из tool-узла.
+    /// Новый формат: берёт SerializedChatMessage из ToolNodeMetadata.
+    /// Старый формат (без ToolNodeMetadata): десериализует Metadata напрямую.
+    /// Возвращает null для pending-узлов (ResultJson == null).
+    /// </summary>
+    private static ChatMessageContent? GetToolChatMessageContent(MessageNode node)
+    {
+        var meta = TryDeserializeToolMeta(node.Metadata);
+
+        if (meta != null)
+        {
+            // Новый формат: pending → null, completed → десериализуем SerializedChatMessage
+            if (meta.ResultJson == null) return null;
+            if (string.IsNullOrEmpty(meta.SerializedChatMessage)) return null;
+
+            return ChatMessageSerializer.TryDeserialize(meta.SerializedChatMessage, out var cm) ? cm : null;
+        }
+
+        // Старый формат: Metadata содержит ChatMessageContent напрямую
+        return node.GetOrCreateChatMessageContent();
+    }
+
+    /// <summary>
+    /// Пытается десериализовать Metadata узла как ToolNodeMetadata.
+    /// Возвращает null если JSON не является ToolNodeMetadata (напр. старый ChatMessageContent формат).
+    /// Признак валидного ToolNodeMetadata: CallId != null.
+    /// </summary>
+    private static ToolNodeMetadata? TryDeserializeToolMeta(string? json)
+    {
+        if (string.IsNullOrEmpty(json)) return null;
+        try
+        {
+            var meta = JsonSerializer.Deserialize<ToolNodeMetadata>(json, _jsonOptions);
+            // CallId != null отличает ToolNodeMetadata от старого ChatMessageContent JSON
+            return meta?.CallId != null ? meta : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = false };
@@ -573,59 +636,47 @@ public class ChatService : IChatService
         return (idx + 1, total, idx > 0, idx < total - 1, prevId, nextId);
     }
 
+    /// <summary>
+    /// Маппит tool-узел в ToolResultDto.
+    /// Новый формат (ToolNodeMetadata): данные берутся непосредственно из метаданных.
+    /// Старый формат (ChatMessageContent): извлекает FunctionResultContent из Items.
+    /// </summary>
     private ToolResultDto MapToolNodeToDto(MessageNode node)
     {
-        bool isPending = node.Content == PendingToolSentinel;
-        string callId = string.Empty, pluginName = string.Empty, funcName = string.Empty, argsJson = string.Empty;
+        var meta = TryDeserializeToolMeta(node.Metadata);
 
-        if (!string.IsNullOrEmpty(node.Metadata))
+        if (meta != null)
         {
-            if (isPending)
+            return new ToolResultDto(
+                node.Id, node.ParentId, node.CreatedAt,
+                meta.CallId, meta.PluginName, meta.FunctionName,
+                meta.ResultJson ?? string.Empty,
+                IsPending: meta.ResultJson == null,
+                meta.ArgumentsJson);
+        }
+
+        // Старый формат: извлекаем FunctionResultContent из сериализованного ChatMessageContent
+        string callId = string.Empty, pluginName = string.Empty, funcName = string.Empty;
+        try
+        {
+            var chatMsg = node.GetOrCreateChatMessageContent();
+            var fnResult = chatMsg.Items.OfType<FunctionResultContent>().FirstOrDefault();
+            if (fnResult != null)
             {
-                // Pending-узел: Metadata содержит PendingToolCallMetadata JSON
-                try
-                {
-                    var meta = JsonSerializer.Deserialize<PendingToolCallMetadata>(node.Metadata, _jsonOptions);
-                    if (meta != null)
-                    {
-                        callId = meta.CallId;
-                        pluginName = meta.PluginName;
-                        funcName = meta.FunctionName;
-                        argsJson = meta.ArgumentsJson;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Could not parse pending tool metadata for node {NodeId}", node.Id);
-                }
+                callId = fnResult.CallId ?? string.Empty;
+                pluginName = fnResult.PluginName ?? string.Empty;
+                funcName = fnResult.FunctionName ?? string.Empty;
             }
-            else
-            {
-                // Выполненный узел: Metadata содержит сериализованный ChatMessageContent
-                try
-                {
-                    var chatMsg = node.GetOrCreateChatMessageContent();
-                    var fnResult = chatMsg.Items.OfType<FunctionResultContent>().FirstOrDefault();
-                    if (fnResult != null)
-                    {
-                        callId = fnResult.CallId ?? string.Empty;
-                        pluginName = fnResult.PluginName ?? string.Empty;
-                        funcName = fnResult.FunctionName ?? string.Empty;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Could not extract tool call info from node {NodeId}", node.Id);
-                }
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not extract tool call info from node {NodeId}", node.Id);
         }
 
         return new ToolResultDto(
             node.Id, node.ParentId, node.CreatedAt,
             callId, pluginName, funcName,
-            isPending ? string.Empty : node.Content,
-            isPending,
-            argsJson);
+            ResultJson: node.Content);
     }
 
     /// <summary>

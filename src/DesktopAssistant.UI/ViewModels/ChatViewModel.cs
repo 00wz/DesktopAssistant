@@ -396,7 +396,6 @@ public partial class ChatViewModel : ObservableObject
         CancellationToken cancellationToken)
     {
         TextChatMessageModel? activeAssistantModel = null;
-        var pendingToolModels = new Dictionary<string, ToolChatMessageModel>();
 
         try
         {
@@ -433,17 +432,6 @@ public partial class ChatViewModel : ObservableObject
                         break;
                 }
             }
-
-            // После завершения потока: авто-подтверждение pending tools если включено
-            if (IsAutoApproveTools)
-            {
-                var toApprove = pendingToolModels.Values
-                    .Where(m => m.Status == ToolCallStatus.Pending)
-                    .ToList();
-
-                foreach (var toolModel in toApprove)
-                    await ApproveToolAsync(toolModel);
-            }
         }
         catch (Exception ex)
         {
@@ -464,8 +452,12 @@ public partial class ChatViewModel : ObservableObject
                 Status = ToolCallStatus.Pending
             };
 
-            pendingToolModels[toolReq.CallId] = toolModel;
             Messages.Add(toolModel);
+
+            // Авто-подтверждение: запускаем параллельно без ожидания.
+            // ApproveToolAsync обрабатывает все исключения внутри.
+            if (IsAutoApproveTools)
+                _ = ApproveToolAsync(toolModel);
         }
 
         void Cleanup()
@@ -475,11 +467,6 @@ public partial class ChatViewModel : ObservableObject
                 Messages.Remove(activeAssistantModel);
                 activeAssistantModel = null;
             }
-
-            foreach (var toolModel in pendingToolModels.Values)
-                Messages.Remove(toolModel);
-
-            pendingToolModels.Clear();
         }
     }
 }
