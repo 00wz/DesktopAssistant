@@ -21,28 +21,21 @@ public sealed record AssistantTurnDto : StreamEvent
 /// </summary>
 public sealed record AssistantChunkDto(string Text) : StreamEvent;
 
-/// <summary>Tool-вызов, требующий подтверждения пользователя.
-/// Producer awaits Confirmation.Task после yield — producer заблокирован до разрешения TCS.
-/// Consumer должен вызвать Confirmation.TrySetResult(true/false) через действие пользователя.</summary>
+/// <summary>
+/// Tool-вызов требует подтверждения пользователя.
+/// PendingNodeId — ID узла в БД с Content == "__PENDING_TOOL__".
+/// Consumer создаёт карточку и вызывает ApproveToolCallAsync / DenyToolCallAsync по действию пользователя.
+/// </summary>
 public sealed record ToolCallRequestedDto(
     string CallId,
     string PluginName,
     string FunctionName,
     string ArgumentsJson,
-    TaskCompletionSource<bool> Confirmation) : StreamEvent;
-
-/// <summary>Tool начал выполнение (подтверждение получено, InvokeAsync вызван).</summary>
-public sealed record ToolCallExecutingDto(string CallId) : StreamEvent;
-
-/// <summary>Tool успешно завершён.</summary>
-public sealed record ToolCallCompletedDto(string CallId, string ResultJson) : StreamEvent;
-
-/// <summary>Tool завершился ошибкой или был отклонён пользователем.</summary>
-public sealed record ToolCallFailedDto(string CallId, string ErrorMessage) : StreamEvent;
+    Guid PendingNodeId) : StreamEvent;
 
 /// <summary>
-/// Последний элемент потока — все сообщения сохранены в БД.
-/// LastNodeId — ID последнего сохранённого узла (финальный ответ ассистента).
-/// Consumer использует это для: обновления ID последней UI-модели и сброса IsStreaming.
+/// Последний элемент тёрна — сообщение ассистента сохранено в БД.
+/// LastNodeId — ID сохранённого узла ассистента.
+/// Если в ответе есть tool-вызовы, этот ивент приходит ДО ToolCallRequestedDto.
 /// </summary>
 public sealed record AssistantResponseSavedDto(Guid LastNodeId) : StreamEvent;

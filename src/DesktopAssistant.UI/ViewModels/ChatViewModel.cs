@@ -239,25 +239,81 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Подтверждает выполнение tool-вызова
+    /// Подтверждает выполнение tool-вызова.
+    /// Вызывает stateless ApproveToolCallAsync по Id (== PendingNodeId в БД).
+    /// Если все tools завершены — инициирует следующий тёрн ассистента.
     /// </summary>
     [RelayCommand]
-    private void ApproveTool(ToolChatMessageModel model)
+    private async Task ApproveToolAsync(ToolChatMessageModel model)
     {
-        if (model.Confirmation == null || model.Confirmation.Task.IsCompleted) return;
-        model.Status = ToolCallStatus.Approved;
-        model.Confirmation.TrySetResult(true);
+        if (model.Status != ToolCallStatus.Pending) return;
+
+        model.Status = ToolCallStatus.Executing;
+
+        try
+        {
+            var result = await _chatService.ApproveToolCallAsync(model.Id);
+
+            model.Status = result.IsError ? ToolCallStatus.Failed : ToolCallStatus.Completed;
+            model.ResultJson = result.ResultJson;
+            if (result.ErrorMessage != null)
+                model.ErrorMessage = result.ErrorMessage;
+
+            if (result.AllToolsForTurnCompleted && CurrentConversation != null)
+            {
+                IsLoading = true;
+                await ProcessAssistantStreamAsync(
+                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, default),
+                    default);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving tool call {NodeId}", model.Id);
+            model.Status = ToolCallStatus.Failed;
+            model.ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     /// <summary>
-    /// Отклоняет выполнение tool-вызова
+    /// Отклоняет выполнение tool-вызова.
+    /// Если все tools завершены — инициирует следующий тёрн ассистента.
     /// </summary>
     [RelayCommand]
-    private void DenyTool(ToolChatMessageModel model)
+    private async Task DenyToolAsync(ToolChatMessageModel model)
     {
-        if (model.Confirmation == null || model.Confirmation.Task.IsCompleted) return;
-        model.Status = ToolCallStatus.Denied;
-        model.Confirmation.TrySetResult(false);
+        if (model.Status != ToolCallStatus.Pending) return;
+
+        model.Status = ToolCallStatus.Executing;
+
+        try
+        {
+            var result = await _chatService.DenyToolCallAsync(model.Id);
+
+            model.Status = ToolCallStatus.Denied;
+
+            if (result.AllToolsForTurnCompleted && CurrentConversation != null)
+            {
+                IsLoading = true;
+                await ProcessAssistantStreamAsync(
+                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, default),
+                    default);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error denying tool call {NodeId}", model.Id);
+            model.Status = ToolCallStatus.Failed;
+            model.ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
     /// <summary>
@@ -330,9 +386,10 @@ public partial class ChatViewModel : ObservableObject
     /// Обрабатывает IAsyncEnumerable поток событий от LLM.
     /// Создаёт и обновляет UI-модели по мере поступления событий.
     /// await foreach вызывается на UI-потоке: при каждом await MoveNextAsync() UI thread освобождается,
-    /// что позволяет обрабатывать события кнопок (Approve/Deny) пока producer ждёт TCS.
+    /// что позволяет обрабатывать другие сообщения пока producer пишет чанки.
     /// Чанки доставляются как AssistantChunkDto — процессируются на UI thread через SynchronizationContext.
     /// Исключения перехватываются внутри: устанавливается ErrorMessage и выполняется очистка UI.
+    /// После завершения потока: если IsAutoApproveTools и есть pending tools — авто-подтверждает их.
     /// </summary>
     private async Task ProcessAssistantStreamAsync(
         IAsyncEnumerable<StreamEvent> stream,
@@ -363,37 +420,6 @@ public partial class ChatViewModel : ObservableObject
                         activeAssistantModel?.AppendContent(chunk.Text);
                         break;
 
-                    case ToolCallRequestedDto toolReq:
-                        if (activeAssistantModel != null)
-                            activeAssistantModel.IsStreaming = false;
-                        HandleToolCallRequested(toolReq);
-                        break;
-
-                    case ToolCallExecutingDto exec:
-                        if (pendingToolModels.TryGetValue(exec.CallId, out var execModel))
-                            execModel.Status = ToolCallStatus.Executing;
-                        break;
-
-                    case ToolCallCompletedDto done:
-                        if (pendingToolModels.TryGetValue(done.CallId, out var doneModel))
-                        {
-                            doneModel.ResultJson = done.ResultJson;
-                            doneModel.Status = ToolCallStatus.Completed;
-                            pendingToolModels.Remove(done.CallId);
-                        }
-                        break;
-
-                    case ToolCallFailedDto fail:
-                        if (pendingToolModels.TryGetValue(fail.CallId, out var failModel))
-                        {
-                            failModel.ErrorMessage = fail.ErrorMessage;
-                            failModel.Status = fail.ErrorMessage == "Denied by user"
-                                ? ToolCallStatus.Denied
-                                : ToolCallStatus.Failed;
-                            pendingToolModels.Remove(fail.CallId);
-                        }
-                        break;
-
                     case AssistantResponseSavedDto saved:
                         if (activeAssistantModel != null)
                         {
@@ -401,7 +427,22 @@ public partial class ChatViewModel : ObservableObject
                             activeAssistantModel.Id = saved.LastNodeId;
                         }
                         break;
+
+                    case ToolCallRequestedDto toolReq:
+                        HandleToolCallRequested(toolReq);
+                        break;
                 }
+            }
+
+            // После завершения потока: авто-подтверждение pending tools если включено
+            if (IsAutoApproveTools)
+            {
+                var toApprove = pendingToolModels.Values
+                    .Where(m => m.Status == ToolCallStatus.Pending)
+                    .ToList();
+
+                foreach (var toolModel in toApprove)
+                    await ApproveToolAsync(toolModel);
             }
         }
         catch (Exception ex)
@@ -415,22 +456,16 @@ public partial class ChatViewModel : ObservableObject
         {
             var toolModel = new ToolChatMessageModel
             {
+                Id = toolReq.PendingNodeId,
                 CallId = toolReq.CallId,
                 PluginName = toolReq.PluginName,
                 FunctionName = toolReq.FunctionName,
                 ArgumentsJson = toolReq.ArgumentsJson,
-                Status = ToolCallStatus.Pending,
-                Confirmation = toolReq.Confirmation
+                Status = ToolCallStatus.Pending
             };
 
             pendingToolModels[toolReq.CallId] = toolModel;
             Messages.Add(toolModel);
-
-            if (IsAutoApproveTools)
-            {
-                toolModel.Status = ToolCallStatus.Approved;
-                toolReq.Confirmation.TrySetResult(true);
-            }
         }
 
         void Cleanup()
@@ -442,10 +477,7 @@ public partial class ChatViewModel : ObservableObject
             }
 
             foreach (var toolModel in pendingToolModels.Values)
-            {
-                toolModel.Confirmation?.TrySetCanceled();
                 Messages.Remove(toolModel);
-            }
 
             pendingToolModels.Clear();
         }

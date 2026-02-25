@@ -49,4 +49,17 @@ public interface IChatService
     /// Используется при создании sibling ветки (после редактирования сообщения).
     /// </summary>
     IAsyncEnumerable<StreamEvent> GetAssistantResponseAsync(Guid conversationId, Guid lastMessageId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Выполняет ожидающий tool-вызов (pendingNodeId — ID узла с Content == "__PENDING_TOOL__").
+    /// Stateless: все данные восстанавливаются из БД по pendingNodeId.
+    /// Обновляет узел результатом и возвращает ToolCallResult с флагом AllToolsForTurnCompleted.
+    /// </summary>
+    Task<ToolCallResult> ApproveToolCallAsync(Guid pendingNodeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Отклоняет ожидающий tool-вызов.
+    /// Обновляет узел статусом "Denied by user" и возвращает ToolCallResult.
+    /// </summary>
+    Task<ToolCallResult> DenyToolCallAsync(Guid pendingNodeId, CancellationToken cancellationToken = default);
 }

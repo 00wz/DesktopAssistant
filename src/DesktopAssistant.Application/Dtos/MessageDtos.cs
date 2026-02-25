@@ -33,7 +33,10 @@ public record AssistantMessageDto(
     Guid? NextSiblingId = null
 ) : MessageDto(Id, ParentId, CreatedAt);
 
-/// <summary>Результат выполнения tool-вызова.</summary>
+/// <summary>
+/// Результат выполнения tool-вызова.
+/// IsPending == true: узел сохранён в БД как __PENDING_TOOL__, ожидает подтверждения пользователя.
+/// </summary>
 public record ToolResultDto(
     Guid Id,
     Guid? ParentId,
@@ -41,7 +44,9 @@ public record ToolResultDto(
     string CallId,
     string PluginName,
     string FunctionName,
-    string ResultJson
+    string ResultJson,
+    bool IsPending = false,
+    string ArgumentsJson = ""
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>Сводный узел — сжатый контекст предыдущего диалога.</summary>

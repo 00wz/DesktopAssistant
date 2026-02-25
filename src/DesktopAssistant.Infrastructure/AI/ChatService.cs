@@ -9,13 +9,13 @@ using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Aggregation;
 using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.AI.Extensions;
+using DesktopAssistant.Infrastructure.AI.Serialization;
 using DesktopAssistant.Infrastructure.MCP.Plugins;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using DesktopAssistant.Infrastructure.AI.Enums;
 
 namespace DesktopAssistant.Infrastructure.AI;
 
@@ -34,6 +34,16 @@ public class ChatService : IChatService
     private readonly IMcpConfigurationService _mcpConfigurationService;
     private readonly ILogger<ChatService> _logger;
     private readonly ILoggerFactory _loggerFactory;
+
+    /// <summary>Sentinel-значение в Content узла ожидающего tool-вызова.</summary>
+    private const string PendingToolSentinel = "__PENDING_TOOL__";
+
+    /// <summary>Метаданные ожидающего tool-узла, сериализуются в MessageNode.Metadata.</summary>
+    private sealed record PendingToolCallMetadata(
+        string CallId,
+        string PluginName,
+        string FunctionName,
+        string ArgumentsJson);
 
     public ChatService(
         IKernelFactory kernelFactory,
@@ -256,7 +266,6 @@ public class ChatService : IChatService
         // Собираем контекст
         var contextMessages = await _conversationService.BuildContextAsync(lastMessageId.Value, cancellationToken);
         var chatHistory = BuildChatHistory(contextMessages);
-        var initialMessageCount = chatHistory.Count;
 
         var kernel = CreateKernelWithMcpTools();
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
@@ -265,116 +274,222 @@ public class ChatService : IChatService
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false)
         };
 
-        // Цикл обработки LLM-тёрнов с tool calls
-        while (!cancellationToken.IsCancellationRequested)
+        // Один LLM-тёрн: стримим ответ
+        yield return new AssistantTurnDto();
+
+        var aggregator = new StreamingChatMessageAggregator();
+        await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
+            chatHistory, executionSettings, kernel, cancellationToken))
         {
-            yield return new AssistantTurnDto();
+            aggregator.Append(chunk);
 
-            // Стримим ответ LLM, каждый непустой чанк — отдельный AssistantChunkDto
-            // yield нельзя внутри try/catch — исключения пробрасываются через итератор в consumer
-            var aggregator = new StreamingChatMessageAggregator();
-            await foreach (var chunk in chatCompletionService.GetStreamingChatMessageContentsAsync(
-                chatHistory, executionSettings, kernel, cancellationToken))
+            if (!string.IsNullOrEmpty(chunk.Content))
+                yield return new AssistantChunkDto(chunk.Content);
+        }
+
+        var assistantMessage = aggregator.Build();
+
+        // Сохраняем сообщение ассистента в БД немедленно
+        var assistantNode = await _conversationService.AddChatMessageAsync(
+            conversationId,
+            lastMessageId.Value,
+            assistantMessage,
+            cancellationToken: cancellationToken);
+
+        _logger.LogInformation("[ASSISTANT MESSAGE] Saved {NodeId} ({Length} chars)",
+            assistantNode.Id, assistantMessage.Content?.Length ?? 0);
+
+        // Уведомляем UI об ID сохранённого узла ассистента
+        yield return new AssistantResponseSavedDto(assistantNode.Id);
+
+        var functionCalls = FunctionCallContent.GetFunctionCalls(assistantMessage).ToList();
+
+        if (functionCalls.Count == 0)
+        {
+            // Path A: нет tool-вызовов — тёрн завершён
+            yield break;
+        }
+
+        // Path B: есть tool-вызовы — создаём pending-узлы в БД и сигнализируем UI
+        _logger.LogInformation("[FUNCTION CALLS] LLM requested {Count} function calls", functionCalls.Count);
+
+        var lastParentId = assistantNode.Id;
+        foreach (var functionCall in functionCalls)
+        {
+            var callId = functionCall.Id ?? Guid.NewGuid().ToString();
+            var argsJson = SerializeFunctionArgs(functionCall);
+            var pendingMeta = new PendingToolCallMetadata(
+                callId,
+                functionCall.PluginName ?? string.Empty,
+                functionCall.FunctionName,
+                argsJson);
+
+            var pendingNode = await CreatePendingToolNodeAsync(
+                conversationId, lastParentId, pendingMeta, cancellationToken);
+
+            lastParentId = pendingNode.Id;
+
+            _logger.LogDebug("[PENDING TOOL] Created node {NodeId} for {PluginName}.{FunctionName}",
+                pendingNode.Id, pendingMeta.PluginName, pendingMeta.FunctionName);
+
+            yield return new ToolCallRequestedDto(
+                callId,
+                pendingMeta.PluginName,
+                pendingMeta.FunctionName,
+                argsJson,
+                pendingNode.Id);
+        }
+        // Итератор завершается — поток событий закрыт до следующего GetAssistantResponseAsync
+    }
+
+    /// <inheritdoc />
+    public async Task<ToolCallResult> ApproveToolCallAsync(
+        Guid pendingNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        var pendingNode = await _messageNodeRepository.GetByIdAsync(pendingNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Pending tool node {pendingNodeId} not found");
+
+        if (pendingNode.Content != PendingToolSentinel)
+            throw new InvalidOperationException($"Node {pendingNodeId} is not a pending tool node (Content: {pendingNode.Content})");
+
+        var meta = JsonSerializer.Deserialize<PendingToolCallMetadata>(pendingNode.Metadata!, _jsonOptions)
+            ?? throw new InvalidOperationException($"Failed to parse pending tool metadata for node {pendingNodeId}");
+
+        var kernel = CreateKernelWithMcpTools();
+
+        string resultJson;
+        bool isError = false;
+        string? errorMsg = null;
+
+        try
+        {
+            _logger.LogDebug("[TOOL APPROVE] Invoking {PluginName}.{FunctionName}", meta.PluginName, meta.FunctionName);
+
+            KernelArguments? kernelArgs = null;
+            if (!string.IsNullOrEmpty(meta.ArgumentsJson) && meta.ArgumentsJson != "{}")
             {
-                aggregator.Append(chunk);
-
-                if (!string.IsNullOrEmpty(chunk.Content))
-                    yield return new AssistantChunkDto(chunk.Content);
+                var argsDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(meta.ArgumentsJson, _jsonOptions);
+                if (argsDict != null)
+                {
+                    kernelArgs = [];
+                    foreach (var kv in argsDict)
+                        kernelArgs[kv.Key] = kv.Value;
+                }
             }
 
-            var assistantMessage = aggregator.Build();
-            chatHistory.Add(assistantMessage);
+            var result = await kernel.InvokeAsync(meta.PluginName, meta.FunctionName, kernelArgs, cancellationToken);
+            resultJson = result.ToString() ?? string.Empty;
 
-            var functionCalls = FunctionCallContent.GetFunctionCalls(assistantMessage).ToList();
+            _logger.LogDebug("[TOOL RESULT] {PluginName}.{FunctionName} → {Result}",
+                meta.PluginName, meta.FunctionName, resultJson);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[TOOL ERROR] {PluginName}.{FunctionName} failed", meta.PluginName, meta.FunctionName);
+            resultJson = ex.Message;
+            isError = true;
+            errorMsg = ex.Message;
+        }
 
-            if (!functionCalls.Any())
-            {
-                _logger.LogInformation("[ASSISTANT MESSAGE] Response ({Length} chars):\n{Content}",
-                    assistantMessage.Content?.Length ?? 0, assistantMessage.Content);
+        // Обновляем узел реальным результатом
+        var functionCallForResult = new FunctionCallContent(meta.FunctionName, meta.PluginName, meta.CallId);
+        var resultContent = new FunctionResultContent(functionCallForResult, resultJson);
+        var resultChatMsg = resultContent.ToChatMessage();
+
+        pendingNode.UpdateContent(resultJson);
+        pendingNode.SetMetadata(ChatMessageSerializer.Serialize(resultChatMsg));
+        await _messageNodeRepository.UpdateAsync(pendingNode, cancellationToken);
+
+        bool allComplete = await CheckAllToolsCompleteAsync(pendingNode.ConversationId, cancellationToken);
+
+        return new ToolCallResult(isError, resultJson, errorMsg, allComplete);
+    }
+
+    /// <inheritdoc />
+    public async Task<ToolCallResult> DenyToolCallAsync(
+        Guid pendingNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        var pendingNode = await _messageNodeRepository.GetByIdAsync(pendingNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Pending tool node {pendingNodeId} not found");
+
+        var meta = JsonSerializer.Deserialize<PendingToolCallMetadata>(pendingNode.Metadata ?? "{}", _jsonOptions);
+
+        const string deniedResult = "Denied by user";
+
+        // Обновляем узел статусом отклонения
+        var functionCallForResult = new FunctionCallContent(
+            meta?.FunctionName ?? string.Empty,
+            meta?.PluginName ?? string.Empty,
+            meta?.CallId ?? string.Empty);
+        var deniedContent = new FunctionResultContent(functionCallForResult, deniedResult);
+        var deniedChatMsg = deniedContent.ToChatMessage();
+
+        pendingNode.UpdateContent(deniedResult);
+        pendingNode.SetMetadata(ChatMessageSerializer.Serialize(deniedChatMsg));
+        await _messageNodeRepository.UpdateAsync(pendingNode, cancellationToken);
+
+        _logger.LogInformation("[TOOL DENIED] Node {NodeId}: {PluginName}.{FunctionName}",
+            pendingNodeId, meta?.PluginName, meta?.FunctionName);
+
+        bool allComplete = await CheckAllToolsCompleteAsync(pendingNode.ConversationId, cancellationToken);
+
+        return new ToolCallResult(false, deniedResult, null, allComplete);
+    }
+
+    /// <summary>
+    /// Проверяет, все ли tool-узлы текущего тёрна выполнены (нет ни одного с Content == PendingToolSentinel).
+    /// Проходит назад от ActiveLeafNodeId, собирая Tool-узлы до первого не-Tool узла.
+    /// </summary>
+    private async Task<bool> CheckAllToolsCompleteAsync(Guid conversationId, CancellationToken cancellationToken)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+        if (conversation?.ActiveLeafNodeId == null)
+            return true;
+
+        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(
+            conversation.ActiveLeafNodeId.Value, cancellationToken))
+        {
+            if (node.NodeType != MessageNodeType.Tool)
                 break;
-            }
 
-            _logger.LogInformation("[FUNCTION CALLS] LLM requested {Count} function calls", functionCalls.Count);
-
-            foreach (var functionCall in functionCalls)
-            {
-                var callId = functionCall.Id ?? Guid.NewGuid().ToString();
-                var argsJson = SerializeFunctionArgs(functionCall);
-                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                yield return new ToolCallRequestedDto(
-                    callId,
-                    functionCall.PluginName ?? string.Empty,
-                    functionCall.FunctionName,
-                    argsJson,
-                    tcs);
-
-                // Producer ждёт решения пользователя; WaitAsync освобождает поток при отмене CT
-                bool approved = await tcs.Task.WaitAsync(cancellationToken);
-
-                if (!approved)
-                {
-                    _logger.LogInformation("[TOOL DENIED] {FunctionName} was denied by user", functionCall.FunctionName);
-                    chatHistory.Add(new FunctionResultContent(functionCall, "Denied by user.").ToChatMessage());
-                    yield return new ToolCallFailedDto(callId, "Denied by user");
-                    continue;
-                }
-
-                yield return new ToolCallExecutingDto(callId);
-
-                // yield нельзя использовать внутри try/catch — вычисляем результат отдельно
-                FunctionResultContent resultContent;
-                string? invokeError = null;
-                try
-                {
-                    _logger.LogDebug("[FUNCTION CALL] Invoking {PluginName}.{FunctionName}",
-                        functionCall.PluginName, functionCall.FunctionName);
-
-                    resultContent = await functionCall.InvokeAsync(kernel, cancellationToken);
-
-                    _logger.LogDebug("[FUNCTION RESULT] {PluginName}.{FunctionName} returned: {Result}",
-                        functionCall.PluginName, functionCall.FunctionName, resultContent.Result);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "[FUNCTION ERROR] {PluginName}.{FunctionName} failed",
-                        functionCall.PluginName, functionCall.FunctionName);
-                    resultContent = new FunctionResultContent(functionCall, ex);
-                    invokeError = ex.Message;
-                }
-
-                chatHistory.Add(resultContent.ToChatMessage());
-
-                if (invokeError == null)
-                    yield return new ToolCallCompletedDto(callId, resultContent.Result?.ToString() ?? string.Empty);
-                else
-                    yield return new ToolCallFailedDto(callId, invokeError);
-            }
+            if (node.Content == PendingToolSentinel)
+                return false;
         }
 
-        // Сохраняем все новые сообщения в БД (выполняется когда consumer вызывает последний MoveNextAsync)
-        var newMessages = chatHistory.Skip(initialMessageCount).ToList();
+        return true;
+    }
 
-        if (newMessages.Count == 0)
-            throw new InvalidOperationException("No new messages were generated by LLM");
+    /// <summary>
+    /// Создаёт pending tool-узел в БД: Content = PendingToolSentinel, Metadata = PendingToolCallMetadata JSON.
+    /// Обновляет ActiveChildId родителя и ActiveLeafNodeId диалога.
+    /// </summary>
+    private async Task<MessageNode> CreatePendingToolNodeAsync(
+        Guid conversationId,
+        Guid parentNodeId,
+        PendingToolCallMetadata pendingMeta,
+        CancellationToken cancellationToken)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
 
-        MessageNode? lastNode = null;
-        foreach (var message in newMessages)
-        {
-            var parentId = lastNode?.Id ?? lastMessageId.Value;
-            lastNode = await _conversationService.AddChatMessageAsync(
-                conversationId,
-                parentId,
-                message,
-                cancellationToken: cancellationToken);
+        var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Parent node {parentNodeId} not found");
 
-            _logger.LogDebug("[SAVED MESSAGE] {Role} message {MessageId}, parent: {ParentId}",
-                message.Role.Label, lastNode.Id, parentId);
-        }
+        var metaJson = JsonSerializer.Serialize(pendingMeta, _jsonOptions);
+        var node = new MessageNode(conversationId, MessageNodeType.Tool, PendingToolSentinel, parentNodeId);
+        node.SetMetadata(metaJson);
 
-        // Уведомляем consumer об ID последнего сохранённого узла
-        if (lastNode != null)
-            yield return new AssistantResponseSavedDto(lastNode.Id);
+        await _messageNodeRepository.AddAsync(node, cancellationToken);
+
+        parentNode.SetActiveChild(node.Id);
+        await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
+
+        conversation.SetActiveLeafNode(node.Id);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        return node;
     }
 
     private static ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages)
@@ -460,28 +575,57 @@ public class ChatService : IChatService
 
     private ToolResultDto MapToolNodeToDto(MessageNode node)
     {
-        string callId = string.Empty, pluginName = string.Empty, funcName = string.Empty;
+        bool isPending = node.Content == PendingToolSentinel;
+        string callId = string.Empty, pluginName = string.Empty, funcName = string.Empty, argsJson = string.Empty;
 
-        try
+        if (!string.IsNullOrEmpty(node.Metadata))
         {
-            var chatMsg = node.GetOrCreateChatMessageContent();
-            var fnResult = chatMsg.Items.OfType<FunctionResultContent>().FirstOrDefault();
-            if (fnResult != null)
+            if (isPending)
             {
-                callId = fnResult.CallId ?? string.Empty;
-                pluginName = fnResult.PluginName ?? string.Empty;
-                funcName = fnResult.FunctionName ?? string.Empty;
+                // Pending-узел: Metadata содержит PendingToolCallMetadata JSON
+                try
+                {
+                    var meta = JsonSerializer.Deserialize<PendingToolCallMetadata>(node.Metadata, _jsonOptions);
+                    if (meta != null)
+                    {
+                        callId = meta.CallId;
+                        pluginName = meta.PluginName;
+                        funcName = meta.FunctionName;
+                        argsJson = meta.ArgumentsJson;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not parse pending tool metadata for node {NodeId}", node.Id);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not extract tool call info from node {NodeId}", node.Id);
+            else
+            {
+                // Выполненный узел: Metadata содержит сериализованный ChatMessageContent
+                try
+                {
+                    var chatMsg = node.GetOrCreateChatMessageContent();
+                    var fnResult = chatMsg.Items.OfType<FunctionResultContent>().FirstOrDefault();
+                    if (fnResult != null)
+                    {
+                        callId = fnResult.CallId ?? string.Empty;
+                        pluginName = fnResult.PluginName ?? string.Empty;
+                        funcName = fnResult.FunctionName ?? string.Empty;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not extract tool call info from node {NodeId}", node.Id);
+                }
+            }
         }
 
         return new ToolResultDto(
             node.Id, node.ParentId, node.CreatedAt,
             callId, pluginName, funcName,
-            node.Content);
+            isPending ? string.Empty : node.Content,
+            isPending,
+            argsJson);
     }
 
     /// <summary>

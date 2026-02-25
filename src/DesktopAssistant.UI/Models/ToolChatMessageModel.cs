@@ -6,8 +6,7 @@ namespace DesktopAssistant.UI.Models;
 public enum ToolCallStatus
 {
     Pending,    // Ожидает подтверждения пользователя
-    Approved,   // Подтверждён, ещё не выполняется
-    Executing,  // Выполняется
+    Executing,  // Выполняется (ApproveToolCallAsync в процессе)
     Completed,  // Успешно завершён
     Failed,     // Завершился ошибкой
     Denied      // Отклонён пользователем
@@ -15,7 +14,8 @@ public enum ToolCallStatus
 
 /// <summary>
 /// Модель tool-вызова. Отображает имя инструмента, аргументы, результат и статус.
-/// При Status == Pending ожидает вызова Approve() или Deny() для разрешения TCS.
+/// При Status == Pending ожидает нажатия кнопок Approve/Deny.
+/// Id == PendingNodeId из БД — передаётся в ApproveToolCallAsync / DenyToolCallAsync.
 /// </summary>
 public partial class ToolChatMessageModel : ChatMessageModel
 {
@@ -45,15 +45,9 @@ public partial class ToolChatMessageModel : ChatMessageModel
     private ToolCallStatus _status = ToolCallStatus.Pending;
 
     public bool IsPending => Status == ToolCallStatus.Pending;
-    public bool IsExecuting => Status is ToolCallStatus.Approved or ToolCallStatus.Executing;
+    public bool IsExecuting => Status == ToolCallStatus.Executing;
     public bool IsCompleted => Status == ToolCallStatus.Completed;
     public bool IsFailed => Status is ToolCallStatus.Failed or ToolCallStatus.Denied;
-
-    /// <summary>
-    /// TCS для подтверждения/отклонения tool-вызова.
-    /// Не участвует в биндинге UI — управляется через команды ViewModel.
-    /// </summary>
-    public TaskCompletionSource<bool>? Confirmation { get; set; }
 
     public ToolChatMessageModel()
     {

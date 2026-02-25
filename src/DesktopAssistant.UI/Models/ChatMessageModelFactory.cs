@@ -41,8 +41,9 @@ public static class ChatMessageModelFactory
             CallId = t.CallId,
             PluginName = t.PluginName,
             FunctionName = t.FunctionName,
+            ArgumentsJson = t.ArgumentsJson,
             ResultJson = t.ResultJson,
-            Status = ToolCallStatus.Completed
+            Status = t.IsPending ? ToolCallStatus.Pending : ToolCallStatus.Completed
         },
 
         SummaryMessageDto s => new SummarizationChatMessageModel
