@@ -17,7 +17,7 @@ internal sealed record ToolNodeMetadata(
     string? ResultJson = null,
     string? SerializedChatMessage = null)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+    internal static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     /// <summary>
     /// Сериализует в JSON для хранения в MessageNode.Metadata.

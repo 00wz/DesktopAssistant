@@ -69,7 +69,7 @@ public class ToolCallExecutor
             if (!string.IsNullOrEmpty(meta.ArgumentsJson) && meta.ArgumentsJson != "{}")
             {
                 var argsDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-                    meta.ArgumentsJson, new JsonSerializerOptions { WriteIndented = false });
+                    meta.ArgumentsJson, ToolNodeMetadata.JsonOptions);
                 if (argsDict != null)
                 {
                     kernelArgs = [];

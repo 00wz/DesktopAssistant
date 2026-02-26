@@ -22,7 +22,6 @@ public class ChatService : IChatService
     private readonly LlmTurnExecutor _llmTurnExecutor;
     private readonly ToolCallExecutor _toolCallExecutor;
     private readonly ConversationService _conversationService;
-    private readonly IConversationRepository _conversationRepository;
     private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
     private readonly LlmOptions _llmOptions;
@@ -32,7 +31,6 @@ public class ChatService : IChatService
         LlmTurnExecutor llmTurnExecutor,
         ToolCallExecutor toolCallExecutor,
         ConversationService conversationService,
-        IConversationRepository conversationRepository,
         IMessageNodeRepository messageNodeRepository,
         IAssistantProfileRepository assistantRepository,
         IOptions<LlmOptions> llmOptions,
@@ -41,7 +39,6 @@ public class ChatService : IChatService
         _llmTurnExecutor = llmTurnExecutor;
         _toolCallExecutor = toolCallExecutor;
         _conversationService = conversationService;
-        _conversationRepository = conversationRepository;
         _messageNodeRepository = messageNodeRepository;
         _assistantRepository = assistantRepository;
         _llmOptions = llmOptions.Value;
@@ -107,7 +104,7 @@ public class ChatService : IChatService
         Guid conversationId,
         CancellationToken cancellationToken = default)
     {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
         if (conversation == null)
         {
             _logger.LogWarning("Conversation {ConversationId} not found", conversationId);
