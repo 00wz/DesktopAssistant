@@ -219,16 +219,6 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Очищает чат и создаёт новый диалог
-    /// </summary>
-    [RelayCommand]
-    private async Task NewChatAsync()
-    {
-        ConversationTitle = "Новый чат";
-        await InitializeAsync();
-    }
-
-    /// <summary>
     /// Начинает редактирование сообщения пользователя
     /// </summary>
     [RelayCommand]

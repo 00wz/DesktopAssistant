@@ -486,6 +486,7 @@ public class ChatService : IChatService
                 if (toolChatMsg != null)
                     chatHistory.Add(toolChatMsg);
                 // pending-узел (toolChatMsg == null) пропускается
+                // TODO: выбрасывать исключение в случае toolChatMsg == null, либо выполнять fixup.
             }
             else if (message.NodeType == MessageNodeType.Summary)
             {
