@@ -2,6 +2,7 @@ using System.Text.Json;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Application.Services;
+using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.AI.Serialization;
@@ -19,6 +20,7 @@ public class ToolCallExecutor(
     IMessageNodeRepository messageNodeRepository,
     ConversationService conversationService,
     ISecureCredentialStore credentialStore,
+    IKernelFactory kernelFactory,
     IMcpServerManager mcpServerManager,
     IMcpConfigurationService mcpConfigurationService,
     ILoggerFactory loggerFactory,
@@ -27,6 +29,7 @@ public class ToolCallExecutor(
     private readonly IMessageNodeRepository _messageNodeRepository = messageNodeRepository;
     private readonly ConversationService _conversationService = conversationService;
     private readonly ISecureCredentialStore _credentialStore = credentialStore;
+    private readonly IKernelFactory _kernelFactory = kernelFactory;
     private readonly IMcpServerManager _mcpServerManager = mcpServerManager;
     private readonly IMcpConfigurationService _mcpConfigurationService = mcpConfigurationService;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -140,9 +143,9 @@ public class ToolCallExecutor(
         await _messageNodeRepository.UpdateAsync(node, cancellationToken);
     }
 
-    private Kernel CreateKernelWithMcpTools(Domain.Entities.AssistantProfile profile, string apiKey)
+    private Kernel CreateKernelWithMcpTools(AssistantProfile profile, string apiKey)
     {
-        var kernel = KernelFactory.Create(profile, apiKey);
+        var kernel = _kernelFactory.Create(profile, apiKey);
 
         kernel.FunctionInvocationFilters.Add(
             new FunctionLoggingFilter(_loggerFactory.CreateLogger<FunctionLoggingFilter>()));

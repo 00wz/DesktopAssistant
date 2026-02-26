@@ -168,12 +168,16 @@ public partial class MainWindowViewModel : ObservableObject
         {
             NewConversationPanel = null;
 
-            var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
-            chatViewModel.ConversationTitle = parameters.Title;
+            // Создаём диалог в сервисном слое до инициализации ViewModel
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            var conversation = await chatService.CreateConversationAsync(
+                parameters.Title,
+                parameters.AssistantProfileId,
+                parameters.SystemPrompt);
 
-            await chatViewModel.InitializeAsync(
-                assistantProfileId: parameters.AssistantProfileId,
-                systemPrompt: parameters.SystemPrompt);
+            var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
+            await chatViewModel.InitializeAsync(conversation.Id);
 
             Chats.Add(chatViewModel);
             SelectedChat = chatViewModel;

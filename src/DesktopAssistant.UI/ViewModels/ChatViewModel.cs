@@ -81,13 +81,11 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Инициализирует новый диалог или загружает существующий.
-    /// При создании нового — передаёт profileId и systemPrompt из панели создания.
+    /// Загружает существующий диалог по ID.
+    /// Создание нового диалога — ответственность вызывающей стороны.
     /// </summary>
     public async Task InitializeAsync(
-        Guid? conversationId = null,
-        Guid? assistantProfileId = null,
-        string systemPrompt = "",
+        Guid conversationId,
         CancellationToken cancellationToken = default)
     {
         try
@@ -96,26 +94,12 @@ public partial class ChatViewModel : ObservableObject
             ErrorMessage = null;
             Messages.Clear();
 
-            if (conversationId.HasValue)
-            {
-                CurrentConversation = await _chatService.GetConversationAsync(conversationId.Value, cancellationToken);
+            CurrentConversation = await _chatService.GetConversationAsync(conversationId, cancellationToken)
+                ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
 
-                if (CurrentConversation != null)
-                {
-                    ConversationTitle = CurrentConversation.Title;
-                    await LoadMessagesAsync(cancellationToken);
-                    await LoadConversationSettingsAsync(cancellationToken);
-                }
-                else
-                {
-                    _logger.LogWarning("Conversation {ConversationId} not found", conversationId);
-                    await CreateNewConversationAsync(assistantProfileId, systemPrompt, cancellationToken);
-                }
-            }
-            else
-            {
-                await CreateNewConversationAsync(assistantProfileId, systemPrompt, cancellationToken);
-            }
+            ConversationTitle = CurrentConversation.Title;
+            await LoadMessagesAsync(cancellationToken);
+            await LoadConversationSettingsAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -126,23 +110,6 @@ public partial class ChatViewModel : ObservableObject
         {
             IsLoading = false;
         }
-    }
-
-    private async Task CreateNewConversationAsync(
-        Guid? profileId,
-        string systemPrompt,
-        CancellationToken cancellationToken)
-    {
-        CurrentConversation = await _chatService.CreateConversationAsync(
-            ConversationTitle,
-            profileId,
-            systemPrompt,
-            cancellationToken);
-
-        _currentLeafNodeId = CurrentConversation.ActiveLeafNodeId;
-        ConversationStatus = ConversationState.LastMessageIsAssistant;
-        await LoadConversationSettingsAsync(cancellationToken);
-        _logger.LogInformation("Created new conversation {ConversationId}", CurrentConversation.Id);
     }
 
     private async Task LoadMessagesAsync(CancellationToken cancellationToken)

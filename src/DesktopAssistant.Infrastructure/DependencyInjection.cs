@@ -30,9 +30,6 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));
 
-        // LLM Options (fallback, используется только KernelFactory.Create() без профиля)
-        services.Configure<LlmOptions>(configuration.GetSection("LlmOptions"));
-
         // Repositories
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<IMessageNodeRepository, MessageNodeRepository>();
@@ -46,7 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ConversationService>();
 
         // AI Services
-        services.AddSingleton<KernelFactory>();
+        services.AddSingleton<IKernelFactory, KernelFactory>();
         services.AddScoped<LlmTurnExecutor>();
         services.AddScoped<ToolCallExecutor>();
         services.AddScoped<IChatService, ChatService>();
@@ -77,22 +74,6 @@ public static class DependencyInjection
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var logger = scope.ServiceProvider.GetService<ILogger<AppDbContext>>();
 
-        // EnsureCreatedAsync не бросает исключение при несовместимой схеме —
-        // она просто ничего не делает если БД уже существует.
-        // Поэтому явно проверяем схему простым запросом после создания.
-        try
-        {
-            await dbContext.Database.EnsureCreatedAsync();
-            // Проверяем совместимость схемы
-            await dbContext.Database.ExecuteSqlRawAsync("SELECT SystemPrompt FROM Conversations LIMIT 1");
-        }
-        catch (Exception ex)
-        {
-            logger?.LogWarning(ex,
-                "Database schema incompatible. Recreating database — all existing data will be lost.");
-            await dbContext.Database.EnsureDeletedAsync();
-            await dbContext.Database.EnsureCreatedAsync();
-            logger?.LogInformation("Database recreated successfully.");
-        }
+        await dbContext.Database.EnsureCreatedAsync();
     }
 }

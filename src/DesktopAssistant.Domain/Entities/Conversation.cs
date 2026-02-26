@@ -10,7 +10,7 @@ public class Conversation : BaseEntity
     public string Title { get; private set; } = string.Empty;
     public Guid AssistantProfileId { get; private set; }
     public Guid? ActiveLeafNodeId { get; private set; }
-    public string? Summary { get; private set; }
+    public string? Summary { get; private set; }//TODO: не использжуется
     public int TotalTokenCount { get; private set; }
 
     /// <summary>Системный промпт диалога. Инжектируется первым в ChatHistory если не пустой.</summary>

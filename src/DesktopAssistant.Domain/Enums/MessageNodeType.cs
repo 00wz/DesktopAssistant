@@ -7,6 +7,7 @@ public enum MessageNodeType
 {
     /// <summary>
     /// Системный промпт
+    /// TODO: переименовать в Root
     /// </summary>
     System = 0,
     

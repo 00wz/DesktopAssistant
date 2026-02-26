@@ -22,6 +22,7 @@ namespace DesktopAssistant.Infrastructure.AI;
 public class LlmTurnExecutor(
     ConversationService conversationService,
     ISecureCredentialStore credentialStore,
+    IKernelFactory kernelFactory,
     IMcpServerManager mcpServerManager,
     IMcpConfigurationService mcpConfigurationService,
     ILoggerFactory loggerFactory,
@@ -29,6 +30,7 @@ public class LlmTurnExecutor(
 {
     private readonly ConversationService _conversationService = conversationService;
     private readonly ISecureCredentialStore _credentialStore = credentialStore;
+    private readonly IKernelFactory _kernelFactory = kernelFactory;
     private readonly IMcpServerManager _mcpServerManager = mcpServerManager;
     private readonly IMcpConfigurationService _mcpConfigurationService = mcpConfigurationService;
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -194,7 +196,7 @@ public class LlmTurnExecutor(
 
     private Kernel CreateKernelWithMcpTools(AssistantProfile profile, string apiKey)
     {
-        var kernel = KernelFactory.Create(profile, apiKey);
+        var kernel = _kernelFactory.Create(profile, apiKey);
 
         kernel.FunctionInvocationFilters.Add(
             new FunctionLoggingFilter(_loggerFactory.CreateLogger<FunctionLoggingFilter>()));
