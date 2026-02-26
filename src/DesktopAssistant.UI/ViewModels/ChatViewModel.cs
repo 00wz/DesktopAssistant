@@ -2,7 +2,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
-using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.Logging;
@@ -19,7 +18,7 @@ public partial class ChatViewModel : ObservableObject
     private readonly ILogger<ChatViewModel> _logger;
 
     [ObservableProperty]
-    private Conversation? _currentConversation;
+    private ConversationDto? _currentConversation;
 
     [ObservableProperty]
     private string _inputMessage = string.Empty;
@@ -75,8 +74,7 @@ public partial class ChatViewModel : ObservableObject
 
             if (conversationId.HasValue)
             {
-                var conversations = await _chatService.GetConversationsAsync(cancellationToken);
-                CurrentConversation = conversations.FirstOrDefault(c => c.Id == conversationId.Value);
+                CurrentConversation = await _chatService.GetConversationAsync(conversationId.Value, cancellationToken);
 
                 if (CurrentConversation != null)
                 {

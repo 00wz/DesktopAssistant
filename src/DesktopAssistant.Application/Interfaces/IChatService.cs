@@ -1,5 +1,4 @@
 using DesktopAssistant.Application.Dtos;
-using DesktopAssistant.Domain.Entities;
 
 namespace DesktopAssistant.Application.Interfaces;
 
@@ -9,10 +8,13 @@ namespace DesktopAssistant.Application.Interfaces;
 public interface IChatService
 {
     /// <summary>Создаёт новый диалог.</summary>
-    Task<Conversation> CreateConversationAsync(string title, string? systemPrompt = null, CancellationToken cancellationToken = default);
+    Task<ConversationDto> CreateConversationAsync(string title, string? systemPrompt = null, CancellationToken cancellationToken = default);
 
     /// <summary>Получает все активные диалоги.</summary>
-    Task<IEnumerable<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ConversationDto>> GetConversationsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Получает диалог по ID. Возвращает null если не найден.</summary>
+    Task<ConversationDto?> GetConversationAsync(Guid conversationId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Получает историю сообщений текущей активной ветки диалога в виде DTO.

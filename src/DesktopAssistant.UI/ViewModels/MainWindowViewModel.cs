@@ -62,7 +62,7 @@ public partial class MainWindowViewModel : ObservableObject
             using var scope = _scopeFactory.CreateScope();
             var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
             var conversations = await chatService.GetConversationsAsync();
-            
+
             SavedConversations.Clear();
             foreach (var conv in conversations.OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt))
             {

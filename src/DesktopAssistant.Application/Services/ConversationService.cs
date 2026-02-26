@@ -1,15 +1,13 @@
-using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace DesktopAssistant.Application.Services;
 
 /// <summary>
-/// Сервис для управления диалогами
+/// Сервис для управления деревом узлов диалога.
+/// Не зависит от LLM-инфраструктуры (Semantic Kernel).
 /// </summary>
 public class ConversationService
 {
@@ -59,14 +57,15 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Добавляет сообщение в диалог и обновляет активную ветку
-    /// TODO: удалить эту перегрузку
+    /// Добавляет узел в дерево диалога. Не зависит от SK-типов.
+    /// metadata — предсериализованная строка (или null).
     /// </summary>
-    public async Task<MessageNode> AddMessageAsync(
+    public async Task<MessageNode> AddNodeAsync(
         Guid conversationId,
         Guid parentNodeId,
         MessageNodeType nodeType,
         string content,
+        string? metadata = null,
         int tokenCount = 0,
         CancellationToken cancellationToken = default)
     {
@@ -77,81 +76,20 @@ public class ConversationService
             ?? throw new InvalidOperationException($"Parent message {parentNodeId} not found");
 
         var message = new MessageNode(conversationId, nodeType, content, parentNodeId, tokenCount);
+        if (metadata != null) message.SetMetadata(metadata);
+
         await _messageNodeRepository.AddAsync(message, cancellationToken);
 
-        // Обновляем ActiveChildId родителя и ActiveLeafNodeId диалога
         parentNode.SetActiveChild(message.Id);
         await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
 
         conversation.SetActiveLeafNode(message.Id);
         await _conversationRepository.UpdateAsync(conversation, cancellationToken);
 
-        _logger.LogDebug("Added message {MessageId} to conversation {ConversationId}",
-            message.Id, conversationId);
+        _logger.LogDebug("Added node {NodeId} ({NodeType}) to conversation {ConversationId}",
+            message.Id, nodeType, conversationId);
 
         return message;
-    }
-
-    /// <summary>
-    /// Добавляет сообщение с полным ChatMessageContent в диалог
-    /// </summary>
-    public async Task<MessageNode> AddChatMessageAsync(
-        Guid conversationId,
-        Guid parentNodeId,
-        ChatMessageContent chatMessage,
-        int tokenCount = 0,
-        CancellationToken cancellationToken = default)
-    {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-        var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
-            ?? throw new InvalidOperationException($"Parent message {parentNodeId} not found");
-
-        // Определяем тип узла по роли
-        var nodeType = chatMessage.Role.Label.ToLowerInvariant() switch
-        {
-            "system" => MessageNodeType.System,
-            "user" => MessageNodeType.User,
-            "assistant" => MessageNodeType.Assistant,
-            "tool" => MessageNodeType.Tool,
-            _ => MessageNodeType.Assistant
-        };
-
-        // Создаем узел с пустым контентом (SetChatMessageContent установит его)
-        var message = new MessageNode(conversationId, nodeType, string.Empty, parentNodeId, tokenCount);
-
-        // Используем extension method для сохранения ChatMessageContent
-        // (нужно будет добавить using для MessageNodeExtensions)
-        message.UpdateContent(chatMessage.Content ?? string.Empty);
-        message.SetMetadata(SerializeChatMessage(chatMessage));
-
-        await _messageNodeRepository.AddAsync(message, cancellationToken);
-
-        // Обновляем ActiveChildId родителя и ActiveLeafNodeId диалога
-        parentNode.SetActiveChild(message.Id);
-        await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
-
-        conversation.SetActiveLeafNode(message.Id);
-        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
-
-        _logger.LogDebug("Added chat message {MessageId} to conversation {ConversationId}",
-            message.Id, conversationId);
-
-        return message;
-    }
-
-    private string SerializeChatMessage(ChatMessageContent chatMessage)
-    {
-        // Используем System.Text.Json для сериализации
-        // TypeInfoResolver нужен для корректной полиморфной сериализации (FunctionCallContent, FunctionResultContent, etc.)
-        return System.Text.Json.JsonSerializer.Serialize(chatMessage, new System.Text.Json.JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
-        });
     }
 
     /// <summary>
@@ -164,11 +102,12 @@ public class ConversationService
         int tokenCount = 0,
         CancellationToken cancellationToken = default)
     {
-        var message = await AddMessageAsync(
+        var message = await AddNodeAsync(
             conversationId,
             parentNodeId,
             MessageNodeType.Summary,
             summaryContent,
+            metadata: null,
             tokenCount,
             cancellationToken);
 
@@ -211,6 +150,14 @@ public class ConversationService
     }
 
     /// <summary>
+    /// Получает диалог по ID
+    /// </summary>
+    public async Task<Conversation?> GetConversationAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+        => await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+
+    /// <summary>
     /// Получает все активные диалоги
     /// </summary>
     public async Task<IEnumerable<Conversation>> GetActiveConversationsAsync(
@@ -245,17 +192,14 @@ public class ConversationService
         var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
             ?? throw new InvalidOperationException($"Parent node {parentNodeId} not found");
 
-        // Находим новый лист
         var newChild = await _messageNodeRepository.GetByIdAsync(newChildId, cancellationToken)
             ?? throw new InvalidOperationException($"Child node {newChildId} not found");
 
-        // Обновляем активного ребенка родителя
         parentNode.SetActiveChild(newChildId);
         await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
 
         var leafNode = await FindLeafFromNodeAsync(newChild, cancellationToken);
 
-        // Обновляем активный лист диалога
         conversation.SetActiveLeafNode(leafNode.Id);
         await _conversationRepository.UpdateAsync(conversation, cancellationToken);
 
@@ -279,20 +223,5 @@ public class ConversationService
                 ?? throw new InvalidOperationException($"Active child not found");
         }
         return current;
-    }
-
-    /// <summary>
-    /// Получает текущий активный лист диалога
-    /// TODO: нигде не используется
-    /// </summary>
-    public async Task<MessageNode?> GetActiveLeafNodeAsync(
-        Guid conversationId,
-        CancellationToken cancellationToken = default)
-    {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
-        if (conversation?.ActiveLeafNodeId == null) return null;
-
-        return await _messageNodeRepository.GetByIdAsync(
-            conversation.ActiveLeafNodeId.Value, cancellationToken);
     }
 }

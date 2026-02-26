@@ -74,7 +74,7 @@ public class ChatService : IChatService
     }
 
     /// <inheritdoc />
-    public async Task<Conversation> CreateConversationAsync(
+    public async Task<ConversationDto> CreateConversationAsync(
         string title,
         string? systemPrompt = null,
         CancellationToken cancellationToken = default)
@@ -109,13 +109,23 @@ public class ChatService : IChatService
             cancellationToken);
 
         _logger.LogInformation("Created conversation {ConversationId}: {Title}", conversation.Id, title);
-        return conversation;
+        return MapToConversationDto(conversation);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ConversationDto>> GetConversationsAsync(CancellationToken cancellationToken = default)
     {
-        return await _conversationService.GetActiveConversationsAsync(cancellationToken);
+        var conversations = await _conversationService.GetActiveConversationsAsync(cancellationToken);
+        return conversations.Select(MapToConversationDto);
+    }
+
+    /// <inheritdoc />
+    public async Task<ConversationDto?> GetConversationAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
+        return conversation == null ? null : MapToConversationDto(conversation);
     }
 
     /// <inheritdoc />
@@ -184,10 +194,14 @@ public class ChatService : IChatService
         CancellationToken cancellationToken = default)
     {
         var userMessage = new ChatMessageContent(AuthorRole.User, content);
-        var userNode = await _conversationService.AddChatMessageAsync(
+        var metadata = ChatMessageSerializer.Serialize(userMessage);
+
+        var userNode = await _conversationService.AddNodeAsync(
             conversationId,
             parentNodeId,
-            userMessage,
+            MessageNodeType.User,
+            content,
+            metadata,
             cancellationToken: cancellationToken);
 
         _logger.LogInformation("[USER MESSAGE] {MessageId}:\n{Content}", userNode.Id, content);
@@ -259,10 +273,13 @@ public class ChatService : IChatService
         var assistantMessage = aggregator.Build();
 
         // Сохраняем сообщение ассистента в БД немедленно
-        var assistantNode = await _conversationService.AddChatMessageAsync(
+        var assistantMetadata = ChatMessageSerializer.Serialize(assistantMessage);
+        var assistantNode = await _conversationService.AddNodeAsync(
             conversationId,
             lastMessageId,
-            assistantMessage,
+            MessageNodeType.Assistant,
+            assistantMessage.Content ?? string.Empty,
+            assistantMetadata,
             cancellationToken: cancellationToken);
 
         _logger.LogInformation("[ASSISTANT MESSAGE] Saved {NodeId} ({Length} chars)",
@@ -439,9 +456,7 @@ public class ChatService : IChatService
     }
 
     /// <summary>
-    /// Создаёт tool-узел в БД с заданными метаданными.
-    /// Content узла пустой — все данные в Metadata (ToolNodeMetadata).
-    /// Обновляет ActiveChildId родителя и ActiveLeafNodeId диалога.
+    /// Создаёт pending tool-узел через ConversationService.
     /// </summary>
     private async Task<MessageNode> CreateToolNodeAsync(
         Guid conversationId,
@@ -449,24 +464,14 @@ public class ChatService : IChatService
         ToolNodeMetadata toolMeta,
         CancellationToken cancellationToken)
     {
-        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-        var parentNode = await _messageNodeRepository.GetByIdAsync(parentNodeId, cancellationToken)
-            ?? throw new InvalidOperationException($"Parent node {parentNodeId} not found");
-
-        var node = new MessageNode(conversationId, MessageNodeType.Tool, string.Empty, parentNodeId);
-        node.SetMetadata(JsonSerializer.Serialize(toolMeta, _jsonOptions));
-
-        await _messageNodeRepository.AddAsync(node, cancellationToken);
-
-        parentNode.SetActiveChild(node.Id);
-        await _messageNodeRepository.UpdateAsync(parentNode, cancellationToken);
-
-        conversation.SetActiveLeafNode(node.Id);
-        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
-
-        return node;
+        var metadataJson = JsonSerializer.Serialize(toolMeta, _jsonOptions);
+        return await _conversationService.AddNodeAsync(
+            conversationId,
+            parentNodeId,
+            MessageNodeType.Tool,
+            string.Empty,
+            metadataJson,
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -680,4 +685,7 @@ public class ChatService : IChatService
 
         return kernel;
     }
+
+    private static ConversationDto MapToConversationDto(Conversation c) =>
+        new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt);
 }
