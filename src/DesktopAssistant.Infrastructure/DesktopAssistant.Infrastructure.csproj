@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>DesktopAssistant.Infrastructure</RootNamespace>
+    <UserSecretsId>159456da-8295-433b-bac9-41f56e3ddde6</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -54,6 +55,9 @@
     
     <!-- HTTP -->
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+
+    <!-- Windows DPAPI for secure credential storage -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>

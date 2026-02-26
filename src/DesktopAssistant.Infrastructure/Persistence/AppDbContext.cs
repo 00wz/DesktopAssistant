@@ -27,6 +27,7 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Title).HasMaxLength(500);
             entity.Property(e => e.Summary).HasMaxLength(10000);
+            entity.Property(e => e.SystemPrompt).HasMaxLength(10000);
             entity.HasQueryFilter(e => !e.IsDeleted);
 
             entity.HasOne(e => e.AssistantProfile)
@@ -74,7 +75,6 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.WakeWord).HasMaxLength(100);
-            entity.Property(e => e.SystemPrompt).IsRequired();
             entity.Property(e => e.VoiceName).HasMaxLength(200);
             entity.Property(e => e.ModelId).HasMaxLength(200);
             entity.Property(e => e.BaseUrl).HasMaxLength(500);

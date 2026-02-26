@@ -29,20 +29,22 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Создаёт новый диалог
+    /// Создаёт новый диалог с якорным корневым узлом.
+    /// Системный промпт хранится в Conversation.SystemPrompt и инжектируется в BuildChatHistory.
     /// </summary>
     public async Task<Conversation> CreateConversationAsync(
         string title,
         Guid assistantProfileId,
+        string systemPrompt = "",
         CancellationToken cancellationToken = default)
     {
-        var assistant = await _assistantRepository.GetByIdAsync(assistantProfileId, cancellationToken)
+        _ = await _assistantRepository.GetByIdAsync(assistantProfileId, cancellationToken)
             ?? throw new InvalidOperationException($"Assistant profile {assistantProfileId} not found");
 
-        var conversation = new Conversation(title, assistantProfileId);
+        var conversation = new Conversation(title, assistantProfileId, systemPrompt);
 
-        // Добавляем системный промпт как корневое сообщение
-        var rootMessage = conversation.AddRootMessage(assistant.SystemPrompt);
+        // Добавляем якорный корневой узел (пустой System-узел как точка входа в дерево)
+        var rootMessage = conversation.AddRootMessage();
 
         await _conversationRepository.AddAsync(conversation, cancellationToken);
 
@@ -147,6 +149,46 @@ public class ConversationService
         }
         messages.Reverse();
         return messages;
+    }
+
+    /// <summary>
+    /// Возвращает системный промпт диалога
+    /// </summary>
+    public async Task<string> GetSystemPromptAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+        return conversation?.SystemPrompt ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Обновляет системный промпт диалога
+    /// </summary>
+    public async Task UpdateSystemPromptAsync(
+        Guid conversationId,
+        string systemPrompt,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        conversation.UpdateSystemPrompt(systemPrompt);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogInformation("Updated system prompt for conversation {ConversationId}", conversationId);
+    }
+
+    /// <summary>
+    /// Возвращает профиль ассистента для указанного диалога
+    /// </summary>
+    public async Task<AssistantProfile?> GetAssistantProfileAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
+        if (conversation == null) return null;
+        return await _assistantRepository.GetByIdAsync(conversation.AssistantProfileId, cancellationToken);
     }
 
     /// <summary>

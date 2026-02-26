@@ -14,16 +14,15 @@
         MinWidth="700"
         MinHeight="500"
         WindowStartupLocation="CenterScreen">
-    
+
     <Grid ColumnDefinitions="Auto,*">
         <!-- Боковая панель со списком диалогов -->
-        <Border Grid.Column="0" 
+        <Border Grid.Column="0"
                 Background="#2D2D30"
                 Width="260"
                 IsVisible="{Binding IsSidebarVisible}">
             <Grid RowDefinitions="Auto,*">
-                <!-- Заголовок боковой панели -->
-                <Border Grid.Row="0" 
+                <Border Grid.Row="0"
                         Background="#3E3E42"
                         Padding="15,10">
                     <Grid ColumnDefinitions="*,Auto">
@@ -42,17 +41,14 @@
                         </Button>
                     </Grid>
                 </Border>
-                
-                <!-- Список сохранённых диалогов -->
+
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <!-- Пустое состояние -->
                         <TextBlock Text="Нет сохранённых диалогов"
                                    Foreground="#888888"
                                    Margin="15,20"
                                    IsVisible="{Binding !SavedConversations.Count}"/>
-                        
-                        <!-- Список диалогов -->
+
                         <ItemsControl ItemsSource="{Binding SavedConversations}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="models:ConversationListItem">
@@ -86,15 +82,14 @@
                 </ScrollViewer>
             </Grid>
         </Border>
-        
+
         <!-- Основная область -->
         <Grid Grid.Column="1" RowDefinitions="Auto,*">
             <!-- Панель инструментов -->
-            <Border Grid.Row="0" 
-                    Background="#F0F0F0" 
+            <Border Grid.Row="0"
+                    Background="#F0F0F0"
                     Padding="10,5">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <!-- Кнопка скрытия/показа боковой панели -->
                     <Button Grid.Column="0"
                             Command="{Binding ToggleSidebarCommand}"
                             ToolTip.Tip="Показать/скрыть панель диалогов"
@@ -103,68 +98,230 @@
                             Margin="0,0,10,0">
                         <TextBlock Text="☰" FontSize="16"/>
                     </Button>
-                    
                     <TextBlock Grid.Column="1"
                                Text="Desktop Assistant"
                                FontSize="18"
                                FontWeight="Bold"
                                VerticalAlignment="Center"/>
-                    
                     <Button Grid.Column="2"
                             Command="{Binding CreateNewChatCommand}"
                             Content="+ Новый чат"
                             Padding="15,8"/>
                 </Grid>
             </Border>
-            
-            <!-- TabControl с чатами -->
-            <TabControl Grid.Row="1"
-                        ItemsSource="{Binding Chats}"
-                        SelectedIndex="{Binding SelectedTabIndex}"
-                        SelectedItem="{Binding SelectedChat}"
-                        TabStripPlacement="Top"
-                        IsVisible="{Binding Chats.Count}">
-                <TabControl.ItemTemplate>
-                    <DataTemplate DataType="vm:ChatViewModel">
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <TextBlock Text="{Binding ConversationTitle}"
-                                       VerticalAlignment="Center"/>
-                            <Button Content="×"
-                                    FontSize="14"
-                                    Padding="5,0"
-                                    Background="Transparent"
-                                    Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).CloseChatCommand}"
-                                    CommandParameter="{Binding}"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </TabControl.ItemTemplate>
-                <TabControl.ContentTemplate>
-                    <DataTemplate DataType="vm:ChatViewModel">
-                        <views:ChatView DataContext="{Binding}"/>
-                    </DataTemplate>
-                </TabControl.ContentTemplate>
-            </TabControl>
-            
-            <!-- Пустое состояние -->
-            <Border Grid.Row="1"
-                    IsVisible="{Binding !Chats.Count}"
-                    Background="#FAFAFA">
-                <StackPanel VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Spacing="20">
-                    <TextBlock Text="Добро пожаловать в Desktop Assistant!"
-                               FontSize="24"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="Выберите диалог из списка слева или создайте новый"
-                               FontSize="14"
-                               Foreground="Gray"
-                               HorizontalAlignment="Center"/>
-                    <Button Content="Начать новый чат"
-                            Command="{Binding CreateNewChatCommand}"
-                            HorizontalAlignment="Center"
-                            Padding="20,10"/>
-                </StackPanel>
-            </Border>
+
+            <!-- Контентная область -->
+            <Grid Grid.Row="1">
+
+                <!-- TabControl с чатами -->
+                <TabControl ItemsSource="{Binding Chats}"
+                            SelectedIndex="{Binding SelectedTabIndex}"
+                            SelectedItem="{Binding SelectedChat}"
+                            TabStripPlacement="Top"
+                            IsVisible="{Binding Chats.Count}">
+                    <TabControl.ItemTemplate>
+                        <DataTemplate DataType="vm:ChatViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <TextBlock Text="{Binding ConversationTitle}" VerticalAlignment="Center"/>
+                                <Button Content="×"
+                                        FontSize="14"
+                                        Padding="5,0"
+                                        Background="Transparent"
+                                        Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).CloseChatCommand}"
+                                        CommandParameter="{Binding}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </TabControl.ItemTemplate>
+                    <TabControl.ContentTemplate>
+                        <DataTemplate DataType="vm:ChatViewModel">
+                            <views:ChatView DataContext="{Binding}"/>
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                </TabControl>
+
+                <!-- Пустое состояние -->
+                <Border Background="#FAFAFA"
+                        IsVisible="{Binding !Chats.Count}">
+                    <StackPanel VerticalAlignment="Center"
+                                HorizontalAlignment="Center"
+                                Spacing="20"
+                                IsVisible="{Binding !IsNewConversationPanelVisible}">
+                        <TextBlock Text="Добро пожаловать в Desktop Assistant!"
+                                   FontSize="24"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="Выберите диалог из списка слева или создайте новый"
+                                   FontSize="14"
+                                   Foreground="Gray"
+                                   HorizontalAlignment="Center"/>
+                        <Button Content="Начать новый чат"
+                                Command="{Binding CreateNewChatCommand}"
+                                HorizontalAlignment="Center"
+                                Padding="20,10"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Inline-панель создания нового диалога (поверх остальных) -->
+                <Border IsVisible="{Binding IsNewConversationPanelVisible}"
+                        Background="#FAFAFA">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Border MaxWidth="580"
+                                HorizontalAlignment="Center"
+                                Margin="20,30,20,20"
+                                DataContext="{Binding NewConversationPanel}"
+                                x:DataType="vm:NewConversationPanelViewModel">
+                            <StackPanel Spacing="16">
+                                <TextBlock Text="Новый диалог"
+                                           FontSize="22"
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"/>
+
+                                <!-- Заголовок -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Название диалога" FontSize="13" Foreground="#555"/>
+                                    <TextBox Text="{Binding ConversationTitle, Mode=TwoWay}"
+                                             Watermark="Например: Помощник по коду"/>
+                                </StackPanel>
+
+                                <!-- Профиль ассистента -->
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="Профиль ассистента"
+                                                   FontSize="13"
+                                                   Foreground="#555"
+                                                   VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1"
+                                                Command="{Binding ToggleCreateProfileModeCommand}"
+                                                FontSize="12"
+                                                Padding="10,4"
+                                                Background="Transparent">
+                                            <Button.Content>
+                                                <Panel>
+                                                    <TextBlock Text="Отмена" IsVisible="{Binding IsCreateProfileMode}"/>
+                                                    <TextBlock Text="+ Новый профиль" IsVisible="{Binding !IsCreateProfileMode}"/>
+                                                </Panel>
+                                            </Button.Content>
+                                        </Button>
+                                    </Grid>
+
+                                    <ComboBox ItemsSource="{Binding AvailableProfiles}"
+                                              SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                                              HorizontalAlignment="Stretch"
+                                              IsVisible="{Binding !IsCreateProfileMode}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding ModelId}"
+                                                               Foreground="#888"
+                                                               FontSize="11"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <TextBlock Text="Нет доступных профилей. Создайте первый профиль."
+                                               Foreground="#CC8800"
+                                               FontSize="12"
+                                               IsVisible="{Binding !AvailableProfiles.Count}"/>
+                                </StackPanel>
+
+                                <!-- Форма создания нового профиля -->
+                                <Border IsVisible="{Binding IsCreateProfileMode}"
+                                        Background="#EEF2FF"
+                                        CornerRadius="8"
+                                        Padding="16">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Новый профиль ассистента"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"/>
+
+                                        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Название *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding NewProfileName, Mode=TwoWay}" Watermark="Мой ассистент" Margin="0,0,0,6"/>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Base URL *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewProfileBaseUrl, Mode=TwoWay}" Watermark="https://api.openai.com/v1" Margin="0,0,0,6"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Model ID *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewProfileModelId, Mode=TwoWay}" Watermark="gpt-4o-mini" Margin="0,0,0,6"/>
+
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="API Key *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewProfileApiKey, Mode=TwoWay}" PasswordChar="•" Watermark="sk-..." Margin="0,0,0,6"/>
+
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Temperature" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                                            <NumericUpDown Grid.Row="4" Grid.Column="1"
+                                                           Value="{Binding NewProfileTemperature, Mode=TwoWay}"
+                                                           Minimum="0" Maximum="2" Increment="0.1"
+                                                           FormatString="F1"
+                                                           Margin="0,0,0,6"/>
+
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Max Tokens" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
+                                            <NumericUpDown Grid.Row="5" Grid.Column="1"
+                                                           Value="{Binding NewProfileMaxTokens, Mode=TwoWay}"
+                                                           Minimum="256" Maximum="128000" Increment="256"
+                                                           Margin="0,0,0,6"/>
+                                        </Grid>
+
+                                        <CheckBox Content="Профиль по умолчанию"
+                                                  IsChecked="{Binding NewProfileIsDefault, Mode=TwoWay}"
+                                                  FontSize="12"/>
+
+                                        <ProgressBar IsIndeterminate="True"
+                                                     IsVisible="{Binding IsLoading}"
+                                                     Height="3"/>
+
+                                        <Button Content="Создать профиль"
+                                                Command="{Binding CreateProfileCommand}"
+                                                IsEnabled="{Binding !IsLoading}"
+                                                HorizontalAlignment="Right"
+                                                Padding="16,8"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Системный промпт -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Системный промпт (необязательно)"
+                                               FontSize="13"
+                                               Foreground="#555"/>
+                                    <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             MinHeight="80"
+                                             MaxHeight="200"
+                                             Watermark="Вы — полезный ИИ-ассистент..."/>
+                                </StackPanel>
+
+                                <!-- Ошибка -->
+                                <Border Background="#FFE0E0"
+                                        Padding="10"
+                                        CornerRadius="4"
+                                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Text="{Binding ErrorMessage}"
+                                               Foreground="#CC0000"
+                                               TextWrapping="Wrap"/>
+                                </Border>
+
+                                <!-- Кнопки -->
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Right"
+                                            Spacing="10"
+                                            Margin="0,8,0,0">
+                                    <Button Content="Отмена"
+                                            Command="{Binding CancelCommand}"
+                                            Padding="16,10"/>
+                                    <Button Content="Создать диалог"
+                                            Command="{Binding ConfirmCommand}"
+                                            IsEnabled="{Binding !IsLoading}"
+                                            Padding="20,10"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                </Border>
+
+            </Grid>
         </Grid>
     </Grid>
 </Window>

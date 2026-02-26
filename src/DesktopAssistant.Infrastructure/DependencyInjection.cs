@@ -5,9 +5,11 @@ using DesktopAssistant.Infrastructure.AI;
 using DesktopAssistant.Infrastructure.MCP.Services;
 using DesktopAssistant.Infrastructure.Persistence;
 using DesktopAssistant.Infrastructure.Persistence.Repositories;
+using DesktopAssistant.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace DesktopAssistant.Infrastructure;
@@ -24,11 +26,11 @@ public static class DependencyInjection
         // Database
         var connectionString = configuration["Database:ConnectionString"]
             ?? "Data Source=desktop_assistant.db";
-        
+
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite(connectionString));
 
-        // LLM Options
+        // LLM Options (fallback, используется только KernelFactory.Create() без профиля)
         services.Configure<LlmOptions>(configuration.GetSection("LlmOptions"));
 
         // Repositories
@@ -37,11 +39,14 @@ public static class DependencyInjection
         services.AddScoped<IAssistantProfileRepository, AssistantProfileRepository>();
         services.AddScoped<IAppSettingsRepository, AppSettingsRepository>();
 
+        // Security — DPAPI-хранилище API-ключей
+        services.AddScoped<ISecureCredentialStore, DpapiCredentialStore>();
+
         // Application Services
         services.AddScoped<ConversationService>();
 
         // AI Services
-        services.AddSingleton<IKernelFactory, KernelFactory>();
+        services.AddSingleton<KernelFactory>();
         services.AddScoped<LlmTurnExecutor>();
         services.AddScoped<ToolCallExecutor>();
         services.AddScoped<IChatService, ChatService>();
@@ -70,8 +75,24 @@ public static class DependencyInjection
     {
         using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        
-        // Создаём базу данных если её нет
-        await dbContext.Database.EnsureCreatedAsync();
+        var logger = scope.ServiceProvider.GetService<ILogger<AppDbContext>>();
+
+        // EnsureCreatedAsync не бросает исключение при несовместимой схеме —
+        // она просто ничего не делает если БД уже существует.
+        // Поэтому явно проверяем схему простым запросом после создания.
+        try
+        {
+            await dbContext.Database.EnsureCreatedAsync();
+            // Проверяем совместимость схемы
+            await dbContext.Database.ExecuteSqlRawAsync("SELECT SystemPrompt FROM Conversations LIMIT 1");
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex,
+                "Database schema incompatible. Recreating database — all existing data will be lost.");
+            await dbContext.Database.EnsureDeletedAsync();
+            await dbContext.Database.EnsureCreatedAsync();
+            logger?.LogInformation("Database recreated successfully.");
+        }
     }
 }

@@ -47,6 +47,25 @@ public partial class ChatViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowResumePanel))]
     private ConversationState _conversationStatus;
 
+    // ── Настройки диалога ────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    private bool _isSettingsPanelVisible;
+
+    /// <summary>Системный промпт диалога — редактируется пользователем.</summary>
+    [ObservableProperty]
+    private string _systemPrompt = string.Empty;
+
+    /// <summary>Имя активного профиля ассистента.</summary>
+    [ObservableProperty]
+    private string _assistantProfileName = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<AssistantProfileDto> _availableProfiles = [];
+
+    [ObservableProperty]
+    private AssistantProfileDto? _selectedProfile;
+
     public bool ShowInputPanel => ConversationStatus == ConversationState.LastMessageIsAssistant;
     public bool ShowResumePanel => ConversationStatus == ConversationState.LastMessageIsUser ||
                                    ConversationStatus == ConversationState.AllToolCallsCompleted;
@@ -62,9 +81,14 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Инициализирует новый диалог или загружает существующий
+    /// Инициализирует новый диалог или загружает существующий.
+    /// При создании нового — передаёт profileId и systemPrompt из панели создания.
     /// </summary>
-    public async Task InitializeAsync(Guid? conversationId = null, CancellationToken cancellationToken = default)
+    public async Task InitializeAsync(
+        Guid? conversationId = null,
+        Guid? assistantProfileId = null,
+        string systemPrompt = "",
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -80,16 +104,17 @@ public partial class ChatViewModel : ObservableObject
                 {
                     ConversationTitle = CurrentConversation.Title;
                     await LoadMessagesAsync(cancellationToken);
+                    await LoadConversationSettingsAsync(cancellationToken);
                 }
                 else
                 {
                     _logger.LogWarning("Conversation {ConversationId} not found", conversationId);
-                    await CreateNewConversationAsync(cancellationToken);
+                    await CreateNewConversationAsync(assistantProfileId, systemPrompt, cancellationToken);
                 }
             }
             else
             {
-                await CreateNewConversationAsync(cancellationToken);
+                await CreateNewConversationAsync(assistantProfileId, systemPrompt, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -103,14 +128,20 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    private async Task CreateNewConversationAsync(CancellationToken cancellationToken)
+    private async Task CreateNewConversationAsync(
+        Guid? profileId,
+        string systemPrompt,
+        CancellationToken cancellationToken)
     {
         CurrentConversation = await _chatService.CreateConversationAsync(
             ConversationTitle,
-            cancellationToken: cancellationToken);
+            profileId,
+            systemPrompt,
+            cancellationToken);
 
         _currentLeafNodeId = CurrentConversation.ActiveLeafNodeId;
         ConversationStatus = ConversationState.LastMessageIsAssistant;
+        await LoadConversationSettingsAsync(cancellationToken);
         _logger.LogInformation("Created new conversation {ConversationId}", CurrentConversation.Id);
     }
 
@@ -136,9 +167,73 @@ public partial class ChatViewModel : ObservableObject
             ConversationStatus = await _chatService.GetConversationStateAsync(_currentLeafNodeId.Value, cancellationToken);
     }
 
-    /// <summary>
-    /// Отправляет сообщение AI-ассистенту
-    /// </summary>
+    private async Task LoadConversationSettingsAsync(CancellationToken cancellationToken)
+    {
+        if (CurrentConversation == null) return;
+
+        try
+        {
+            var settings = await _chatService.GetConversationSettingsAsync(CurrentConversation.Id, cancellationToken);
+            if (settings == null) return;
+
+            SystemPrompt = settings.SystemPrompt;
+            AssistantProfileName = settings.Profile.Name;
+
+            var profiles = await _chatService.GetAssistantProfilesAsync(cancellationToken);
+            AvailableProfiles = new ObservableCollection<AssistantProfileDto>(profiles);
+            SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.Id == settings.AssistantProfileId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading conversation settings");
+        }
+    }
+
+    // ── Настройки диалога ────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void ToggleSettingsPanel()
+    {
+        IsSettingsPanelVisible = !IsSettingsPanelVisible;
+    }
+
+    [RelayCommand]
+    private async Task SaveSystemPromptAsync()
+    {
+        if (CurrentConversation == null) return;
+
+        try
+        {
+            await _chatService.UpdateConversationSystemPromptAsync(CurrentConversation.Id, SystemPrompt);
+            _logger.LogInformation("System prompt updated for conversation {ConversationId}", CurrentConversation.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving system prompt");
+            ErrorMessage = $"Ошибка сохранения системного промпта: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task ChangeProfileAsync(AssistantProfileDto? profile)
+    {
+        if (CurrentConversation == null || profile == null) return;
+
+        try
+        {
+            await _chatService.ChangeConversationProfileAsync(CurrentConversation.Id, profile.Id);
+            SelectedProfile = profile;
+            AssistantProfileName = profile.Name;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing profile");
+            ErrorMessage = $"Ошибка смены профиля: {ex.Message}";
+        }
+    }
+
+    // ── Отправка сообщений ───────────────────────────────────────────────────
+
     [RelayCommand(CanExecute = nameof(CanSendMessage))]
     private async Task SendMessageAsync()
     {
@@ -195,9 +290,6 @@ public partial class ChatViewModel : ObservableObject
         ResumeCommand.NotifyCanExecuteChanged();
     }
 
-    /// <summary>
-    /// Возобновляет диалог: вызывается когда последнее сообщение — пользователя или все tool-вызовы завершены.
-    /// </summary>
     [RelayCommand(CanExecute = nameof(CanResume))]
     private async Task ResumeAsync()
     {
@@ -216,9 +308,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Начинает редактирование сообщения пользователя
-    /// </summary>
     [RelayCommand]
     private void StartEditMessage(TextChatMessageModel message)
     {
@@ -226,9 +315,6 @@ public partial class ChatViewModel : ObservableObject
         message.EditedContent = message.Content;
     }
 
-    /// <summary>
-    /// Сохраняет отредактированное сообщение и создаёт альтернативную ветвь (sibling)
-    /// </summary>
     [RelayCommand]
     private async Task SaveEditedMessageAsync(TextChatMessageModel message)
     {
@@ -245,17 +331,14 @@ public partial class ChatViewModel : ObservableObject
 
             var editedText = message.EditedContent.Trim();
 
-            // Создаём sibling — новый узел от того же родителя
             var userDto = await _chatService.AddUserMessageAsync(
                 CurrentConversation.Id,
                 message.ParentId.Value,
                 editedText,
                 cancellationToken: default);
 
-            // Перезагружаем историю с новой веткой
             await LoadMessagesAsync(default);
 
-            // Получаем ответ ассистента для новой ветки, начиная с userDto.Id
             await ProcessAssistantStreamAsync(
                 _chatService.GetAssistantResponseAsync(CurrentConversation.Id, userDto.Id, default),
                 default);
@@ -276,9 +359,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Отменяет редактирование сообщения
-    /// </summary>
     [RelayCommand]
     private void CancelEditMessage(TextChatMessageModel message)
     {
@@ -286,11 +366,6 @@ public partial class ChatViewModel : ObservableObject
         message.EditedContent = string.Empty;
     }
 
-    /// <summary>
-    /// Подтверждает выполнение tool-вызова.
-    /// Вызывает stateless ApproveToolCallAsync по Id (== PendingNodeId в БД).
-    /// Если все tools завершены — инициирует следующий тёрн ассистента.
-    /// </summary>
     [RelayCommand]
     private async Task ApproveToolAsync(ToolChatMessageModel model)
     {
@@ -330,10 +405,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Отклоняет выполнение tool-вызова.
-    /// Если все tools завершены — инициирует следующий тёрн ассистента.
-    /// </summary>
     [RelayCommand]
     private async Task DenyToolAsync(ToolChatMessageModel model)
     {
@@ -370,9 +441,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Переходит к предыдущему sibling сообщению
-    /// </summary>
     [RelayCommand]
     private async Task NavigateToPreviousSiblingAsync(ChatMessageModel message)
     {
@@ -390,7 +458,7 @@ public partial class ChatViewModel : ObservableObject
                 message.PreviousSiblingId.Value,
                 cancellationToken: default);
 
-            await InitializeAsync(CurrentConversation.Id, default);
+            await InitializeAsync(CurrentConversation.Id, cancellationToken: default);
         }
         catch (Exception ex)
         {
@@ -403,9 +471,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Переходит к следующему sibling сообщению
-    /// </summary>
     [RelayCommand]
     private async Task NavigateToNextSiblingAsync(ChatMessageModel message)
     {
@@ -423,7 +488,7 @@ public partial class ChatViewModel : ObservableObject
                 message.NextSiblingId.Value,
                 cancellationToken: default);
 
-            await InitializeAsync(CurrentConversation.Id, default);
+            await InitializeAsync(CurrentConversation.Id, cancellationToken: default);
         }
         catch (Exception ex)
         {
@@ -436,15 +501,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Обрабатывает IAsyncEnumerable поток событий от LLM.
-    /// Создаёт и обновляет UI-модели по мере поступления событий.
-    /// await foreach вызывается на UI-потоке: при каждом await MoveNextAsync() UI thread освобождается,
-    /// что позволяет обрабатывать другие сообщения пока producer пишет чанки.
-    /// Чанки доставляются как AssistantChunkDto — процессируются на UI thread через SynchronizationContext.
-    /// Исключения перехватываются внутри: устанавливается ErrorMessage и выполняется очистка UI.
-    /// После завершения потока: если IsAutoApproveTools и есть pending tools — авто-подтверждает их.
-    /// </summary>
     private async Task ProcessAssistantStreamAsync(
         IAsyncEnumerable<StreamEvent> stream,
         CancellationToken cancellationToken)
@@ -513,8 +569,6 @@ public partial class ChatViewModel : ObservableObject
 
             Messages.Add(toolModel);
 
-            // Авто-подтверждение: запускаем параллельно без ожидания.
-            // ApproveToolAsync обрабатывает все исключения внутри.
             if (IsAutoApproveTools)
                 _ = ApproveToolAsync(toolModel);
         }

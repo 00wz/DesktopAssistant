@@ -7,7 +7,6 @@ using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Extensions;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -24,7 +23,7 @@ public class ChatService : IChatService
     private readonly ConversationService _conversationService;
     private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
-    private readonly LlmOptions _llmOptions;
+    private readonly ISecureCredentialStore _credentialStore;
     private readonly ILogger<ChatService> _logger;
 
     public ChatService(
@@ -33,7 +32,7 @@ public class ChatService : IChatService
         ConversationService conversationService,
         IMessageNodeRepository messageNodeRepository,
         IAssistantProfileRepository assistantRepository,
-        IOptions<LlmOptions> llmOptions,
+        ISecureCredentialStore credentialStore,
         ILogger<ChatService> logger)
     {
         _llmTurnExecutor = llmTurnExecutor;
@@ -41,42 +40,107 @@ public class ChatService : IChatService
         _conversationService = conversationService;
         _messageNodeRepository = messageNodeRepository;
         _assistantRepository = assistantRepository;
-        _llmOptions = llmOptions.Value;
+        _credentialStore = credentialStore;
         _logger = logger;
     }
+
+    // ── Управление профилями ─────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<AssistantProfileDto>> GetAssistantProfilesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var profiles = await _assistantRepository.GetAllAsync(cancellationToken);
+        return profiles.Select(MapToProfileDto);
+    }
+
+    /// <inheritdoc />
+    public async Task<AssistantProfileDto> CreateAssistantProfileAsync(
+        string name,
+        string baseUrl,
+        string modelId,
+        string apiKey,
+        double temperature = 0.7,
+        int maxTokens = 4096,
+        bool isDefault = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (isDefault)
+        {
+            // Сбрасываем флаг default у предыдущего профиля
+            var currentDefault = await _assistantRepository.GetDefaultAsync(cancellationToken);
+            if (currentDefault != null)
+            {
+                currentDefault.UnsetDefault();
+                await _assistantRepository.UpdateAsync(currentDefault, cancellationToken);
+            }
+        }
+
+        var profile = new AssistantProfile(name, baseUrl, modelId,
+            temperature: temperature, maxTokens: maxTokens, isDefault: isDefault);
+
+        await _assistantRepository.AddAsync(profile, cancellationToken);
+
+        _credentialStore.SetApiKey(profile.Id, apiKey);
+
+        _logger.LogInformation("Created assistant profile {ProfileId}: {Name}", profile.Id, name);
+
+        return MapToProfileDto(profile);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateAssistantProfileAsync(
+        Guid id,
+        string name,
+        string baseUrl,
+        string modelId,
+        double temperature,
+        int maxTokens,
+        CancellationToken cancellationToken = default)
+    {
+        var profile = await _assistantRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {id} not found");
+
+        profile.UpdateName(name);
+        profile.UpdateModelSettings(baseUrl, modelId, temperature, maxTokens);
+        await _assistantRepository.UpdateAsync(profile, cancellationToken);
+
+        _logger.LogInformation("Updated assistant profile {ProfileId}: {Name}", id, name);
+    }
+
+    /// <inheritdoc />
+    public Task SetAssistantProfileApiKeyAsync(Guid id, string apiKey, CancellationToken cancellationToken = default)
+    {
+        _credentialStore.SetApiKey(id, apiKey);
+        _logger.LogInformation("Updated API key for profile {ProfileId}", id);
+        return Task.CompletedTask;
+    }
+
+    // ── Управление диалогами ─────────────────────────────────────────────────
 
     /// <inheritdoc />
     public async Task<ConversationDto> CreateConversationAsync(
         string title,
-        string? systemPrompt = null,
+        Guid? assistantProfileId = null,
+        string systemPrompt = "",
         CancellationToken cancellationToken = default)
     {
-        var assistant = await _assistantRepository.GetDefaultAsync(cancellationToken);
+        AssistantProfile profile;
 
-        if (assistant == null)
+        if (assistantProfileId.HasValue)
         {
-            assistant = new AssistantProfile(
-                name: "Default Assistant",
-                systemPrompt: systemPrompt ?? "You are a helpful AI assistant.",
-                baseUrl: _llmOptions.BaseUrl,
-                modelId: _llmOptions.Model,
-                isDefault: true);
-            await _assistantRepository.AddAsync(assistant, cancellationToken);
-            _logger.LogInformation("Created default assistant profile");
+            profile = await _assistantRepository.GetByIdAsync(assistantProfileId.Value, cancellationToken)
+                ?? throw new InvalidOperationException($"Assistant profile {assistantProfileId} not found");
         }
-        else if (!string.IsNullOrEmpty(systemPrompt))
+        else
         {
-            assistant = new AssistantProfile(
-                name: $"Assistant for {title}",
-                systemPrompt: systemPrompt,
-                baseUrl: _llmOptions.BaseUrl,
-                modelId: _llmOptions.Model,
-                isDefault: false);
-            await _assistantRepository.AddAsync(assistant, cancellationToken);
+            profile = await _assistantRepository.GetDefaultAsync(cancellationToken)
+                ?? throw new InvalidOperationException(
+                    "No default assistant profile found. Please create an assistant profile first.");
         }
 
         var conversation = await _conversationService.CreateConversationAsync(
-            title, assistant.Id, cancellationToken);
+            title, profile.Id, systemPrompt, cancellationToken);
 
         _logger.LogInformation("Created conversation {ConversationId}: {Title}", conversation.Id, title);
         return MapToConversationDto(conversation);
@@ -97,6 +161,61 @@ public class ChatService : IChatService
     {
         var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
         return conversation == null ? null : MapToConversationDto(conversation);
+    }
+
+    /// <inheritdoc />
+    public async Task<ConversationSettingsDto?> GetConversationSettingsAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
+        if (conversation == null) return null;
+
+        var profile = await _assistantRepository.GetByIdAsync(conversation.AssistantProfileId, cancellationToken);
+        if (profile == null) return null;
+
+        return new ConversationSettingsDto(
+            conversationId,
+            conversation.SystemPrompt,
+            profile.Id,
+            MapToProfileDto(profile));
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateConversationSystemPromptAsync(
+        Guid conversationId,
+        string systemPrompt,
+        CancellationToken cancellationToken = default)
+    {
+        await _conversationService.UpdateSystemPromptAsync(conversationId, systemPrompt, cancellationToken);
+        _logger.LogInformation("Updated system prompt for conversation {ConversationId}", conversationId);
+    }
+
+    /// <inheritdoc />
+    public async Task ChangeConversationProfileAsync(
+        Guid conversationId,
+        Guid newProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await _assistantRepository.GetByIdAsync(newProfileId, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {newProfileId} not found");
+
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        conversation.UpdateAssistantProfile(newProfileId);
+
+        // ConversationService не имеет прямого Update — обращаемся через IConversationRepository
+        // Через ConversationService UpdateSystemPrompt — это вызовет save.
+        // Вместо этого добавим UpdateSystemPromptAsync который также вызывает UpdateAsync.
+        // Для профиля используем тот же подход: обновляем через UpdateSystemPromptAsync (он уже сохраняет).
+        // Но нам нужен доступ к репозиторию. Лучше добавить метод в ConversationService.
+        // Временно — вызываем UpdateSystemPromptAsync чтобы triggering SaveChanges:
+        await _conversationService.UpdateSystemPromptAsync(
+            conversationId, conversation.SystemPrompt, cancellationToken);
+
+        _logger.LogInformation("Changed profile for conversation {ConversationId} to {ProfileId}",
+            conversationId, newProfileId);
     }
 
     /// <inheritdoc />
@@ -128,14 +247,14 @@ public class ChatService : IChatService
             .Distinct()
             .ToList();
 
-        var siblingsMap = new Dictionary<Guid, List<MessageNode>>();
+        Dictionary<Guid, List<MessageNode>> siblingsMap = [];
         foreach (var parentId in parentIds)
         {
             var siblings = (await _messageNodeRepository.GetChildrenAsync(parentId, cancellationToken)).ToList();
             siblingsMap[parentId] = siblings;
         }
 
-        return visibleNodes.Select(n => MapNodeToDto(n, siblingsMap)).ToList();
+        return [.. visibleNodes.Select(n => MapNodeToDto(n, siblingsMap))];
     }
 
     /// <inheritdoc />
@@ -240,6 +359,10 @@ public class ChatService : IChatService
     private static ConversationDto MapToConversationDto(Conversation c) =>
         new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt);
 
+    private AssistantProfileDto MapToProfileDto(AssistantProfile p) =>
+        new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.IsDefault,
+            _credentialStore.HasApiKey(p.Id));
+
     private MessageDto MapNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {
         var (currentIndex, total, hasPrev, hasNext, prevId, nextId) = ComputeSiblingInfo(node, siblingsMap);
@@ -285,11 +408,6 @@ public class ChatService : IChatService
         return (idx + 1, total, idx > 0, idx < total - 1, prevId, nextId);
     }
 
-    /// <summary>
-    /// Маппит tool-узел в ToolResultDto.
-    /// Новый формат (ToolNodeMetadata): данные из метаданных.
-    /// Старый формат (ChatMessageContent): извлекает FunctionResultContent из Items.
-    /// </summary>
     private ToolResultDto MapToolNodeToDto(MessageNode node)
     {
         var meta = ToolNodeMetadata.TryDeserialize(node.Metadata);

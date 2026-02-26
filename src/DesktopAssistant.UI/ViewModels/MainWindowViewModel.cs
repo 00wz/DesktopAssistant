@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Interfaces;
@@ -29,6 +29,13 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private ConversationListItem? _selectedConversation;
 
+    /// <summary>Панель создания нового диалога (null если скрыта).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNewConversationPanelVisible))]
+    private NewConversationPanelViewModel? _newConversationPanel;
+
+    public bool IsNewConversationPanelVisible => NewConversationPanel != null;
+
     public ObservableCollection<ChatViewModel> Chats { get; } = new();
     public ObservableCollection<ConversationListItem> SavedConversations { get; } = new();
 
@@ -47,7 +54,6 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     public async Task InitializeAsync()
     {
-        // При запуске загружаем список сохранённых диалогов
         await LoadSavedConversationsAsync();
         _logger.LogInformation("Main window initialized");
     }
@@ -73,7 +79,7 @@ public partial class MainWindowViewModel : ObservableObject
                     UpdatedAt = conv.UpdatedAt ?? conv.CreatedAt
                 });
             }
-            
+
             _logger.LogDebug("Loaded {Count} saved conversations", SavedConversations.Count);
         }
         catch (Exception ex)
@@ -90,9 +96,11 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (item == null) return;
 
+        // Скрываем панель создания если открыта
+        NewConversationPanel = null;
+
         try
         {
-            // Проверяем, не открыт ли уже этот диалог
             var existingChat = Chats.FirstOrDefault(c => c.CurrentConversation?.Id == item.Id);
             if (existingChat != null)
             {
@@ -103,11 +111,11 @@ public partial class MainWindowViewModel : ObservableObject
 
             var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
             await chatViewModel.InitializeAsync(item.Id);
-            
+
             Chats.Add(chatViewModel);
             SelectedChat = chatViewModel;
             SelectedTabIndex = Chats.Count - 1;
-            
+
             _logger.LogInformation("Opened conversation {ConversationId}: {Title}", item.Id, item.Title);
         }
         catch (Exception ex)
@@ -126,26 +134,54 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Создаёт новую вкладку чата
+    /// Открывает inline-панель создания нового диалога
     /// </summary>
     [RelayCommand]
     public async Task CreateNewChatAsync()
     {
         try
         {
+            var panel = _serviceProvider.GetRequiredService<NewConversationPanelViewModel>();
+
+            panel.OnConfirm = async (parameters) =>
+            {
+                await OpenNewChatWithParamsAsync(parameters);
+            };
+
+            panel.OnCancel = () =>
+            {
+                NewConversationPanel = null;
+            };
+
+            await panel.LoadProfilesAsync();
+            NewConversationPanel = panel;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening new chat panel");
+        }
+    }
+
+    private async Task OpenNewChatWithParamsAsync(NewConversationParams parameters)
+    {
+        try
+        {
+            NewConversationPanel = null;
+
             var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
-            chatViewModel.ConversationTitle = $"Чат {Chats.Count + 1}";
-            
-            await chatViewModel.InitializeAsync();
-            
+            chatViewModel.ConversationTitle = parameters.Title;
+
+            await chatViewModel.InitializeAsync(
+                assistantProfileId: parameters.AssistantProfileId,
+                systemPrompt: parameters.SystemPrompt);
+
             Chats.Add(chatViewModel);
             SelectedChat = chatViewModel;
             SelectedTabIndex = Chats.Count - 1;
-            
-            // Обновляем список сохранённых диалогов
+
             await LoadSavedConversationsAsync();
-            
-            _logger.LogInformation("Created new chat tab");
+
+            _logger.LogInformation("Created new chat: {Title}", parameters.Title);
         }
         catch (Exception ex)
         {
@@ -164,17 +200,12 @@ public partial class MainWindowViewModel : ObservableObject
         var index = Chats.IndexOf(chat);
         Chats.Remove(chat);
 
-        // При закрытии последней вкладки показываем приветственный экран
         if (Chats.Count > 0)
         {
             if (index >= Chats.Count)
-            {
                 SelectedTabIndex = Chats.Count - 1;
-            }
             else
-            {
                 SelectedTabIndex = index;
-            }
         }
         else
         {

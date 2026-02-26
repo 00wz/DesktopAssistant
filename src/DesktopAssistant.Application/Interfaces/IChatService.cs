@@ -7,14 +7,61 @@ namespace DesktopAssistant.Application.Interfaces;
 /// </summary>
 public interface IChatService
 {
-    /// <summary>Создаёт новый диалог.</summary>
-    Task<ConversationDto> CreateConversationAsync(string title, string? systemPrompt = null, CancellationToken cancellationToken = default);
+    // ── Управление профилями ассистента ────────────────────────────────────
+
+    /// <summary>Возвращает все профили ассистента.</summary>
+    Task<IEnumerable<AssistantProfileDto>> GetAssistantProfilesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Создаёт новый профиль ассистента. API-ключ сохраняется в защищённом хранилище.</summary>
+    Task<AssistantProfileDto> CreateAssistantProfileAsync(
+        string name,
+        string baseUrl,
+        string modelId,
+        string apiKey,
+        double temperature = 0.7,
+        int maxTokens = 4096,
+        bool isDefault = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Обновляет настройки профиля (без API-ключа).</summary>
+    Task UpdateAssistantProfileAsync(
+        Guid id,
+        string name,
+        string baseUrl,
+        string modelId,
+        double temperature,
+        int maxTokens,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Обновляет API-ключ профиля в защищённом хранилище.</summary>
+    Task SetAssistantProfileApiKeyAsync(Guid id, string apiKey, CancellationToken cancellationToken = default);
+
+    // ── Управление диалогами ────────────────────────────────────────────────
+
+    /// <summary>
+    /// Создаёт новый диалог.
+    /// Если assistantProfileId не задан — используется профиль по умолчанию.
+    /// </summary>
+    Task<ConversationDto> CreateConversationAsync(
+        string title,
+        Guid? assistantProfileId = null,
+        string systemPrompt = "",
+        CancellationToken cancellationToken = default);
 
     /// <summary>Получает все активные диалоги.</summary>
     Task<IEnumerable<ConversationDto>> GetConversationsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Получает диалог по ID. Возвращает null если не найден.</summary>
     Task<ConversationDto?> GetConversationAsync(Guid conversationId, CancellationToken cancellationToken = default);
+
+    /// <summary>Возвращает настройки диалога (системный промпт, профиль).</summary>
+    Task<ConversationSettingsDto?> GetConversationSettingsAsync(Guid conversationId, CancellationToken cancellationToken = default);
+
+    /// <summary>Обновляет системный промпт диалога.</summary>
+    Task UpdateConversationSystemPromptAsync(Guid conversationId, string systemPrompt, CancellationToken cancellationToken = default);
+
+    /// <summary>Меняет профиль ассистента для диалога.</summary>
+    Task ChangeConversationProfileAsync(Guid conversationId, Guid newProfileId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Получает историю сообщений текущей активной ветки диалога в виде DTO.

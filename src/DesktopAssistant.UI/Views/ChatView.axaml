@@ -24,7 +24,7 @@
 
     <UserControl.DataTemplates>
 
-        <!-- TextChatMessageModel — text bubble for user and assistant messages -->
+        <!-- TextChatMessageModel -->
         <DataTemplate DataType="models:TextChatMessageModel">
             <Border Margin="5"
                     Padding="12"
@@ -33,14 +33,10 @@
                     Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
                     HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
                 <StackPanel>
-
-                    <!-- View mode -->
                     <StackPanel IsVisible="{Binding !IsEditing}">
                         <TextBlock Text="{Binding Content}"
                                    TextWrapping="Wrap"
                                    Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
-
-                        <!-- Edit button (user messages only) -->
                         <Button Content="✏️"
                                 IsVisible="{Binding IsUser}"
                                 Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
@@ -49,10 +45,9 @@
                                 Margin="0,5,0,0"
                                 Padding="5,2"
                                 Background="Transparent"
-                                ToolTip.Tip="Edit message"/>
+                                ToolTip.Tip="Редактировать"/>
                     </StackPanel>
 
-                    <!-- Edit mode -->
                     <StackPanel IsVisible="{Binding IsEditing}">
                         <TextBox Text="{Binding EditedContent, Mode=TwoWay}"
                                  TextWrapping="Wrap"
@@ -60,16 +55,15 @@
                                  MinHeight="60"
                                  Margin="0,0,0,5"/>
                         <StackPanel Orientation="Horizontal" Spacing="5">
-                            <Button Content="Save"
+                            <Button Content="Сохранить"
                                     Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SaveEditedMessageCommand}"
                                     CommandParameter="{Binding}"/>
-                            <Button Content="Cancel"
+                            <Button Content="Отмена"
                                     Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"
                                     CommandParameter="{Binding}"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Sibling navigation -->
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Center"
                                 Margin="0,5,0,0"
@@ -79,7 +73,7 @@
                                 CommandParameter="{Binding}"
                                 IsEnabled="{Binding HasPreviousSibling}"
                                 Padding="8,2"
-                                ToolTip.Tip="Previous version"/>
+                                ToolTip.Tip="Предыдущая версия"/>
                         <TextBlock VerticalAlignment="Center" Margin="10,0"
                                    Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}">
                             <Run Text="{Binding CurrentSiblingIndex}"/>
@@ -91,10 +85,9 @@
                                 CommandParameter="{Binding}"
                                 IsEnabled="{Binding HasNextSibling}"
                                 Padding="8,2"
-                                ToolTip.Tip="Next version"/>
+                                ToolTip.Tip="Следующая версия"/>
                     </StackPanel>
 
-                    <!-- Streaming indicator -->
                     <ProgressBar IsIndeterminate="True"
                                  IsVisible="{Binding IsStreaming}"
                                  Height="3"
@@ -103,7 +96,7 @@
             </Border>
         </DataTemplate>
 
-        <!-- ToolChatMessageModel — collapsible tool call card -->
+        <!-- ToolChatMessageModel -->
         <DataTemplate DataType="models:ToolChatMessageModel">
             <Border Background="#F0F4FF"
                     CornerRadius="8"
@@ -115,13 +108,9 @@
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock Text="🔧" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding PluginName}"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding PluginName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text="." VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding FunctionName}"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding FunctionName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding Status}"
                                        Foreground="Gray"
                                        FontSize="11"
@@ -129,35 +118,24 @@
                                        Margin="6,0,0,0"/>
                         </StackPanel>
                     </Expander.Header>
-
                     <StackPanel Margin="4" Spacing="6">
-
-                        <!-- Arguments -->
                         <TextBlock Text="{Binding ArgumentsJson}"
                                    FontFamily="Courier New,Monospace"
                                    FontSize="11"
                                    TextWrapping="Wrap"
                                    Foreground="#333333"/>
-
-                        <!-- Result (completed) -->
                         <TextBlock Text="{Binding ResultJson}"
                                    IsVisible="{Binding IsCompleted}"
                                    FontFamily="Courier New,Monospace"
                                    FontSize="11"
                                    TextWrapping="Wrap"
                                    Foreground="#226622"/>
-
-                        <!-- Error (failed or denied) -->
                         <TextBlock Text="{Binding ErrorMessage}"
                                    IsVisible="{Binding IsFailed}"
                                    TextWrapping="Wrap"
                                    Foreground="#CC2222"
                                    FontSize="11"/>
-
-                        <!-- Approve / Deny buttons (pending) -->
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="8"
-                                    IsVisible="{Binding IsPending}">
+                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPending}">
                             <Button Content="Подтвердить"
                                     Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
                                     CommandParameter="{Binding}"
@@ -171,17 +149,13 @@
                                     Foreground="White"
                                     Padding="10,5"/>
                         </StackPanel>
-
-                        <!-- Executing indicator -->
-                        <ProgressBar IsIndeterminate="True"
-                                     IsVisible="{Binding IsExecuting}"
-                                     Height="3"/>
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
                     </StackPanel>
                 </Expander>
             </Border>
         </DataTemplate>
 
-        <!-- SummarizationChatMessageModel — compact summary plaque -->
+        <!-- SummarizationChatMessageModel -->
         <DataTemplate DataType="models:SummarizationChatMessageModel">
             <Border Background="#FFF9E6"
                     CornerRadius="6"
@@ -191,13 +165,8 @@
                     HorizontalAlignment="Stretch">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="📋" VerticalAlignment="Center"/>
-                    <TextBlock Text="Сводка"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Status}"
-                               Foreground="Gray"
-                               FontSize="11"
-                               VerticalAlignment="Center"/>
+                    <TextBlock Text="Сводка" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Status}" Foreground="Gray" FontSize="11" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding SummaryContent}"
                                IsVisible="{Binding !IsInProgress}"
                                TextWrapping="NoWrap"
@@ -216,41 +185,128 @@
 
     </UserControl.DataTemplates>
 
-    <Grid RowDefinitions="*,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-        <!-- Messages list -->
-        <ScrollViewer Grid.Row="0"
+        <!-- Заголовок чата с кнопкой настроек -->
+        <Border Grid.Row="0"
+                Background="#F5F5F5"
+                Padding="10,6"
+                BorderBrush="#E0E0E0"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding ConversationTitle}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding AssistantProfileName}"
+                               FontSize="12"
+                               Foreground="#666"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding AssistantProfileName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Command="{Binding ToggleSettingsPanelCommand}"
+                        ToolTip.Tip="Настройки диалога"
+                        Background="Transparent"
+                        Padding="8,4">
+                    <TextBlock Text="⚙" FontSize="16"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Панель настроек диалога -->
+        <Border Grid.Row="1"
+                Background="#F8F8FF"
+                Padding="12"
+                BorderBrush="#DDEEFF"
+                BorderThickness="0,0,0,1"
+                IsVisible="{Binding IsSettingsPanelVisible}">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Настройки диалога"
+                           FontSize="14"
+                           FontWeight="SemiBold"/>
+
+                <!-- Профиль -->
+                <Grid ColumnDefinitions="120,*">
+                    <TextBlock Grid.Column="0"
+                               Text="Профиль:"
+                               FontSize="12"
+                               Foreground="#555"
+                               VerticalAlignment="Center"/>
+                    <ComboBox Grid.Column="1"
+                              ItemsSource="{Binding AvailableProfiles}"
+                              SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding ModelId}"
+                                               Foreground="#888"
+                                               FontSize="11"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </Grid>
+
+                <!-- Кнопка применить профиль -->
+                <Button Content="Применить профиль"
+                        Command="{Binding ChangeProfileCommand}"
+                        CommandParameter="{Binding SelectedProfile}"
+                        HorizontalAlignment="Right"
+                        Padding="12,6"
+                        FontSize="12"/>
+
+                <!-- Системный промпт -->
+                <TextBlock Text="Системный промпт:" FontSize="12" Foreground="#555"/>
+                <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MinHeight="80"
+                         MaxHeight="160"
+                         Watermark="Системный промпт пуст..."/>
+
+                <Button Content="Сохранить промпт"
+                        Command="{Binding SaveSystemPromptCommand}"
+                        HorizontalAlignment="Right"
+                        Padding="12,6"
+                        FontSize="12"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Список сообщений -->
+        <ScrollViewer Grid.Row="2"
                       Name="MessagesScrollViewer"
                       VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Messages}"
-                          Margin="10"/>
+            <ItemsControl ItemsSource="{Binding Messages}" Margin="10"/>
         </ScrollViewer>
 
-        <!-- Error message -->
-        <Border Grid.Row="1"
-                Background="#FFE0E0"
-                Padding="10"
-                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-            <TextBlock Text="{Binding ErrorMessage}"
-                       Foreground="#CC0000"
-                       TextWrapping="Wrap"/>
-        </Border>
-
-        <!-- Input panel -->
-        <Border Grid.Row="2"
+        <!-- Панель ввода -->
+        <Border Grid.Row="3"
                 Background="#F5F5F5"
                 Padding="10">
             <StackPanel Spacing="6">
+
+                <!-- Ошибка -->
+                <Border Background="#FFE0E0"
+                        Padding="10"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Foreground="#CC0000"
+                               TextWrapping="Wrap"/>
+                </Border>
 
                 <!-- Auto-approve toggle -->
                 <CheckBox Content="Авто-подтверждение tools"
                           IsChecked="{Binding IsAutoApproveTools, Mode=TwoWay}"
                           FontSize="12"/>
 
-                <!-- Input row: visible when last message is from assistant -->
-                <Grid ColumnDefinitions="*,Auto"
-                      IsVisible="{Binding ShowInputPanel}">
+                <!-- Ввод сообщения -->
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
                     <TextBox Grid.Column="0"
                              Text="{Binding InputMessage, Mode=TwoWay}"
                              Watermark="Введите сообщение..."
@@ -264,7 +320,6 @@
                             <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
                         </TextBox.KeyBindings>
                     </TextBox>
-
                     <Button Grid.Column="1"
                             Command="{Binding SendMessageCommand}"
                             IsEnabled="{Binding !IsLoading}"
@@ -273,29 +328,21 @@
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center">
                         <Panel>
-                            <TextBlock Text="Отправить"
-                                       IsVisible="{Binding !IsLoading}"/>
-                            <ProgressBar IsIndeterminate="True"
-                                         IsVisible="{Binding IsLoading}"
-                                         Width="40"
-                                         Height="4"/>
+                            <TextBlock Text="Отправить" IsVisible="{Binding !IsLoading}"/>
+                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
                         </Panel>
                     </Button>
                 </Grid>
 
-                <!-- Resume button: visible when last message is user's or all tools completed -->
+                <!-- Кнопка Resume -->
                 <Button IsVisible="{Binding ShowResumePanel}"
                         Command="{Binding ResumeCommand}"
                         HorizontalAlignment="Stretch"
                         Height="40"
                         HorizontalContentAlignment="Center">
                     <Panel>
-                        <TextBlock Text="Возобновить"
-                                   IsVisible="{Binding !IsLoading}"/>
-                        <ProgressBar IsIndeterminate="True"
-                                     IsVisible="{Binding IsLoading}"
-                                     Width="40"
-                                     Height="4"/>
+                        <TextBlock Text="Возобновить" IsVisible="{Binding !IsLoading}"/>
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
                     </Panel>
                 </Button>
             </StackPanel>

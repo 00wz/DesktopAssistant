@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.AI.Serialization;
@@ -14,30 +15,22 @@ namespace DesktopAssistant.Infrastructure.AI;
 /// Выполняет или отклоняет ожидающий tool-вызов.
 /// Stateless: все данные восстанавливаются из БД по pendingNodeId.
 /// </summary>
-public class ToolCallExecutor
+public class ToolCallExecutor(
+    IMessageNodeRepository messageNodeRepository,
+    ConversationService conversationService,
+    ISecureCredentialStore credentialStore,
+    IMcpServerManager mcpServerManager,
+    IMcpConfigurationService mcpConfigurationService,
+    ILoggerFactory loggerFactory,
+    ILogger<ToolCallExecutor> logger)
 {
-    private readonly IMessageNodeRepository _messageNodeRepository;
-    private readonly IKernelFactory _kernelFactory;
-    private readonly IMcpServerManager _mcpServerManager;
-    private readonly IMcpConfigurationService _mcpConfigurationService;
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly ILogger<ToolCallExecutor> _logger;
-
-    public ToolCallExecutor(
-        IMessageNodeRepository messageNodeRepository,
-        IKernelFactory kernelFactory,
-        IMcpServerManager mcpServerManager,
-        IMcpConfigurationService mcpConfigurationService,
-        ILoggerFactory loggerFactory,
-        ILogger<ToolCallExecutor> logger)
-    {
-        _messageNodeRepository = messageNodeRepository;
-        _kernelFactory = kernelFactory;
-        _mcpServerManager = mcpServerManager;
-        _mcpConfigurationService = mcpConfigurationService;
-        _loggerFactory = loggerFactory;
-        _logger = logger;
-    }
+    private readonly IMessageNodeRepository _messageNodeRepository = messageNodeRepository;
+    private readonly ConversationService _conversationService = conversationService;
+    private readonly ISecureCredentialStore _credentialStore = credentialStore;
+    private readonly IMcpServerManager _mcpServerManager = mcpServerManager;
+    private readonly IMcpConfigurationService _mcpConfigurationService = mcpConfigurationService;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
+    private readonly ILogger<ToolCallExecutor> _logger = logger;
 
     /// <summary>
     /// Выполняет pending tool-вызов и обновляет узел результатом.
@@ -55,7 +48,14 @@ public class ToolCallExecutor
         if (meta.ResultJson != null)
             throw new InvalidOperationException($"Node {pendingNodeId} is not pending (already has result)");
 
-        var kernel = CreateKernelWithMcpTools();
+        var profile = await _conversationService.GetAssistantProfileAsync(pendingNode.ConversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"AssistantProfile not found for conversation {pendingNode.ConversationId}");
+
+        var apiKey = _credentialStore.GetApiKey(profile.Id)
+            ?? throw new InvalidOperationException(
+                $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
+
+        var kernel = CreateKernelWithMcpTools(profile, apiKey);
 
         string resultJson;
         bool isError = false;
@@ -140,9 +140,9 @@ public class ToolCallExecutor
         await _messageNodeRepository.UpdateAsync(node, cancellationToken);
     }
 
-    private Kernel CreateKernelWithMcpTools()
+    private Kernel CreateKernelWithMcpTools(Domain.Entities.AssistantProfile profile, string apiKey)
     {
-        var kernel = _kernelFactory.Create();
+        var kernel = KernelFactory.Create(profile, apiKey);
 
         kernel.FunctionInvocationFilters.Add(
             new FunctionLoggingFilter(_loggerFactory.CreateLogger<FunctionLoggingFilter>()));

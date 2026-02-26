@@ -1,23 +1,24 @@
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
-/// Профиль AI-ассистента с настройками для диалога.
+/// Профиль AI-ассистента с настройками подключения к LLM.
+/// API-ключ хранится отдельно в защищённом хранилище (DPAPI) и привязан к Id профиля.
+/// Системный промпт хранится в Conversation.SystemPrompt.
 /// </summary>
 public class AssistantProfile : BaseEntity
 {
     public string Name { get; private set; } = string.Empty;
     public string? WakeWord { get; private set; }
-    public string SystemPrompt { get; private set; } = string.Empty;
     public string? VoiceName { get; private set; }
-    
+
     // LLM настройки (OpenAI-совместимый API)
     public string BaseUrl { get; private set; } = string.Empty;
     public string ModelId { get; private set; } = string.Empty;
     public double Temperature { get; private set; } = 0.7;
     public int MaxTokens { get; private set; } = 4096;
-    
+
     public bool IsDefault { get; private set; }
-    
+
     // Навигационные свойства
     public ICollection<Conversation> Conversations { get; private set; } = new List<Conversation>();
 
@@ -25,7 +26,6 @@ public class AssistantProfile : BaseEntity
 
     public AssistantProfile(
         string name,
-        string systemPrompt,
         string baseUrl,
         string modelId,
         string? wakeWord = null,
@@ -35,7 +35,6 @@ public class AssistantProfile : BaseEntity
         bool isDefault = false)
     {
         Name = name;
-        SystemPrompt = systemPrompt;
         BaseUrl = baseUrl;
         ModelId = modelId;
         WakeWord = wakeWord ?? name.ToLowerInvariant();
@@ -54,12 +53,6 @@ public class AssistantProfile : BaseEntity
     public void UpdateWakeWord(string wakeWord)
     {
         WakeWord = wakeWord;
-        MarkAsUpdated();
-    }
-
-    public void UpdateSystemPrompt(string systemPrompt)
-    {
-        SystemPrompt = systemPrompt;
         MarkAsUpdated();
     }
 

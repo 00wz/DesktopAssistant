@@ -19,30 +19,20 @@ namespace DesktopAssistant.Infrastructure.AI;
 /// <summary>
 /// Выполняет один LLM-тёрн: собирает контекст, стримит ответ, сохраняет узлы, создаёт pending tool-узлы.
 /// </summary>
-public class LlmTurnExecutor
+public class LlmTurnExecutor(
+    ConversationService conversationService,
+    ISecureCredentialStore credentialStore,
+    IMcpServerManager mcpServerManager,
+    IMcpConfigurationService mcpConfigurationService,
+    ILoggerFactory loggerFactory,
+    ILogger<LlmTurnExecutor> logger)
 {
-    private readonly ConversationService _conversationService;
-    private readonly IKernelFactory _kernelFactory;
-    private readonly IMcpServerManager _mcpServerManager;
-    private readonly IMcpConfigurationService _mcpConfigurationService;
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly ILogger<LlmTurnExecutor> _logger;
-
-    public LlmTurnExecutor(
-        ConversationService conversationService,
-        IKernelFactory kernelFactory,
-        IMcpServerManager mcpServerManager,
-        IMcpConfigurationService mcpConfigurationService,
-        ILoggerFactory loggerFactory,
-        ILogger<LlmTurnExecutor> logger)
-    {
-        _conversationService = conversationService;
-        _kernelFactory = kernelFactory;
-        _mcpServerManager = mcpServerManager;
-        _mcpConfigurationService = mcpConfigurationService;
-        _loggerFactory = loggerFactory;
-        _logger = logger;
-    }
+    private readonly ConversationService _conversationService = conversationService;
+    private readonly ISecureCredentialStore _credentialStore = credentialStore;
+    private readonly IMcpServerManager _mcpServerManager = mcpServerManager;
+    private readonly IMcpConfigurationService _mcpConfigurationService = mcpConfigurationService;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
+    private readonly ILogger<LlmTurnExecutor> _logger = logger;
 
     /// <summary>
     /// Запускает один LLM-тёрн начиная с lastMessageId.
@@ -62,10 +52,19 @@ public class LlmTurnExecutor
         Guid lastMessageId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
-        var chatHistory = BuildChatHistory(contextMessages);
+        // Загружаем системный промпт и профиль из диалога
+        var systemPrompt = await _conversationService.GetSystemPromptAsync(conversationId, cancellationToken);
+        var profile = await _conversationService.GetAssistantProfileAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"AssistantProfile not found for conversation {conversationId}");
 
-        var kernel = CreateKernelWithMcpTools();
+        var apiKey = _credentialStore.GetApiKey(profile.Id)
+            ?? throw new InvalidOperationException(
+                $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
+
+        var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
+        var chatHistory = BuildChatHistory(contextMessages, systemPrompt);
+
+        var kernel = CreateKernelWithMcpTools(profile, apiKey);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var executionSettings = new OpenAIPromptExecutionSettings
         {
@@ -135,20 +134,29 @@ public class LlmTurnExecutor
 
     /// <summary>
     /// Строит ChatHistory из узлов диалога.
+    /// Системный промпт инжектируется первым если не пустой.
+    /// System-узлы из дерева (пустые якорные узлы) пропускаются.
     /// </summary>
-    private static ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages)
+    private static ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages, string systemPrompt)
     {
         var chatHistory = new ChatHistory();
 
+        if (!string.IsNullOrWhiteSpace(systemPrompt))
+            chatHistory.AddSystemMessage(systemPrompt);
+
         foreach (var message in messages)
         {
-            if (message.NodeType == MessageNodeType.Tool)
+            if (message.NodeType == MessageNodeType.System)
+            {
+                // Пустые якорные System-узлы пропускаются
+                continue;
+            }
+            else if (message.NodeType == MessageNodeType.Tool)
             {
                 var toolChatMsg = GetToolChatMessageContent(message);
                 if (toolChatMsg != null)
                     chatHistory.Add(toolChatMsg);
                 // pending-узел (toolChatMsg == null) пропускается
-                // TODO: выбрасывать исключение, либо выполнять fixup.
             }
             else if (message.NodeType == MessageNodeType.Summary)
             {
@@ -184,9 +192,9 @@ public class LlmTurnExecutor
         return node.GetOrCreateChatMessageContent();
     }
 
-    private Kernel CreateKernelWithMcpTools()
+    private Kernel CreateKernelWithMcpTools(AssistantProfile profile, string apiKey)
     {
-        var kernel = _kernelFactory.Create();
+        var kernel = KernelFactory.Create(profile, apiKey);
 
         kernel.FunctionInvocationFilters.Add(
             new FunctionLoggingFilter(_loggerFactory.CreateLogger<FunctionLoggingFilter>()));
