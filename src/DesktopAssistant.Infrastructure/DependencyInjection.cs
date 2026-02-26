@@ -42,6 +42,8 @@ public static class DependencyInjection
 
         // AI Services
         services.AddSingleton<IKernelFactory, KernelFactory>();
+        services.AddScoped<LlmTurnExecutor>();
+        services.AddScoped<ToolCallExecutor>();
         services.AddScoped<IChatService, ChatService>();
 
         // MCP Services

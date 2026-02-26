@@ -1,0 +1,170 @@
+using System.Text.Json;
+using DesktopAssistant.Application.Dtos;
+using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Domain.Interfaces;
+using DesktopAssistant.Infrastructure.AI.Filters;
+using DesktopAssistant.Infrastructure.AI.Serialization;
+using DesktopAssistant.Infrastructure.MCP.Plugins;
+using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+
+namespace DesktopAssistant.Infrastructure.AI;
+
+/// <summary>
+/// Выполняет или отклоняет ожидающий tool-вызов.
+/// Stateless: все данные восстанавливаются из БД по pendingNodeId.
+/// </summary>
+public class ToolCallExecutor
+{
+    private readonly IMessageNodeRepository _messageNodeRepository;
+    private readonly IKernelFactory _kernelFactory;
+    private readonly IMcpServerManager _mcpServerManager;
+    private readonly IMcpConfigurationService _mcpConfigurationService;
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<ToolCallExecutor> _logger;
+
+    public ToolCallExecutor(
+        IMessageNodeRepository messageNodeRepository,
+        IKernelFactory kernelFactory,
+        IMcpServerManager mcpServerManager,
+        IMcpConfigurationService mcpConfigurationService,
+        ILoggerFactory loggerFactory,
+        ILogger<ToolCallExecutor> logger)
+    {
+        _messageNodeRepository = messageNodeRepository;
+        _kernelFactory = kernelFactory;
+        _mcpServerManager = mcpServerManager;
+        _mcpConfigurationService = mcpConfigurationService;
+        _loggerFactory = loggerFactory;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Выполняет pending tool-вызов и обновляет узел результатом.
+    /// </summary>
+    public async Task<ToolCallResult> ApproveAsync(
+        Guid pendingNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        var pendingNode = await _messageNodeRepository.GetByIdAsync(pendingNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Tool node {pendingNodeId} not found");
+
+        var meta = ToolNodeMetadata.TryDeserialize(pendingNode.Metadata)
+            ?? throw new InvalidOperationException($"Failed to parse tool metadata for node {pendingNodeId}");
+
+        if (meta.ResultJson != null)
+            throw new InvalidOperationException($"Node {pendingNodeId} is not pending (already has result)");
+
+        var kernel = CreateKernelWithMcpTools();
+
+        string resultJson;
+        bool isError = false;
+        string? errorMsg = null;
+
+        try
+        {
+            _logger.LogDebug("[TOOL APPROVE] Invoking {PluginName}.{FunctionName}", meta.PluginName, meta.FunctionName);
+
+            KernelArguments? kernelArgs = null;
+            if (!string.IsNullOrEmpty(meta.ArgumentsJson) && meta.ArgumentsJson != "{}")
+            {
+                var argsDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                    meta.ArgumentsJson, new JsonSerializerOptions { WriteIndented = false });
+                if (argsDict != null)
+                {
+                    kernelArgs = [];
+                    foreach (var kv in argsDict)
+                        kernelArgs[kv.Key] = kv.Value;
+                }
+            }
+
+            var result = await kernel.InvokeAsync(meta.PluginName, meta.FunctionName, kernelArgs, cancellationToken);
+            resultJson = result.ToString() ?? string.Empty;
+
+            _logger.LogDebug("[TOOL RESULT] {PluginName}.{FunctionName} → {Result}",
+                meta.PluginName, meta.FunctionName, resultJson);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[TOOL ERROR] {PluginName}.{FunctionName} failed", meta.PluginName, meta.FunctionName);
+            resultJson = ex.Message;
+            isError = true;
+            errorMsg = ex.Message;
+        }
+
+        await UpdateToolNodeWithResultAsync(pendingNode, meta, resultJson, cancellationToken);
+
+        return new ToolCallResult(isError, resultJson, errorMsg);
+    }
+
+    /// <summary>
+    /// Отклоняет pending tool-вызов, записывая статус "Denied by user".
+    /// </summary>
+    public async Task<ToolCallResult> DenyAsync(
+        Guid pendingNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        var pendingNode = await _messageNodeRepository.GetByIdAsync(pendingNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Tool node {pendingNodeId} not found");
+
+        var meta = ToolNodeMetadata.TryDeserialize(pendingNode.Metadata)
+            ?? throw new InvalidOperationException($"Failed to parse tool metadata for node {pendingNodeId}");
+
+        const string deniedResult = "Denied by user";
+
+        _logger.LogInformation("[TOOL DENIED] Node {NodeId}: {PluginName}.{FunctionName}",
+            pendingNodeId, meta.PluginName, meta.FunctionName);
+
+        await UpdateToolNodeWithResultAsync(pendingNode, meta, deniedResult, cancellationToken);
+
+        return new ToolCallResult(false, deniedResult, null);
+    }
+
+    private async Task UpdateToolNodeWithResultAsync(
+        Domain.Entities.MessageNode node,
+        ToolNodeMetadata meta,
+        string resultJson,
+        CancellationToken cancellationToken)
+    {
+        var functionCallForResult = new FunctionCallContent(meta.FunctionName, meta.PluginName, meta.CallId);
+        var resultContent = new FunctionResultContent(functionCallForResult, resultJson);
+        var resultChatMsg = resultContent.ToChatMessage();
+
+        var updatedMeta = meta with
+        {
+            ResultJson = resultJson,
+            SerializedChatMessage = ChatMessageSerializer.Serialize(resultChatMsg)
+        };
+
+        node.SetMetadata(updatedMeta.ToJson());
+        await _messageNodeRepository.UpdateAsync(node, cancellationToken);
+    }
+
+    private Kernel CreateKernelWithMcpTools()
+    {
+        var kernel = _kernelFactory.Create();
+
+        kernel.FunctionInvocationFilters.Add(
+            new FunctionLoggingFilter(_loggerFactory.CreateLogger<FunctionLoggingFilter>()));
+
+        kernel.ImportPluginFromObject(
+            new CoreToolsPlugin(_loggerFactory.CreateLogger<CoreToolsPlugin>()), "CoreTools");
+
+        kernel.ImportPluginFromObject(
+            new McpManagementPlugin(
+                _loggerFactory.CreateLogger<McpManagementPlugin>(),
+                _mcpServerManager,
+                _mcpConfigurationService),
+            "McpManagement");
+
+        if (_mcpServerManager.GetConnectedServers().Count > 0)
+        {
+            var mcpToolsPlugin = new McpToolsPlugin(
+                _mcpServerManager,
+                _loggerFactory.CreateLogger<McpToolsPlugin>());
+            mcpToolsPlugin.RegisterToolsToKernel(kernel);
+        }
+
+        return kernel;
+    }
+}
