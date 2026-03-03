@@ -1,0 +1,47 @@
+using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Domain.Entities;
+using DesktopAssistant.Infrastructure.AI.Filters;
+using DesktopAssistant.Infrastructure.MCP.Plugins;
+using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+
+namespace DesktopAssistant.Infrastructure.AI;
+
+/// <summary>
+/// Создаёт полностью сконфигурированное ядро для выполнения агентских тёрнов:
+/// LLM-коннектор + фильтры + все плагины (CoreTools, McpManagement, MCP-инструменты).
+/// </summary>
+public class AgentKernelFactory(
+    IKernelFactory kernelFactory,
+    IMcpServerManager mcpServerManager,
+    IMcpConfigurationService mcpConfigurationService,
+    ILoggerFactory loggerFactory)
+{
+    public Kernel Create(AssistantProfile profile, string apiKey)
+    {
+        var kernel = kernelFactory.Create(profile, apiKey);
+
+        kernel.FunctionInvocationFilters.Add(
+            new FunctionLoggingFilter(loggerFactory.CreateLogger<FunctionLoggingFilter>()));
+
+        kernel.ImportPluginFromObject(
+            new CoreToolsPlugin(loggerFactory.CreateLogger<CoreToolsPlugin>()), "CoreTools");
+
+        kernel.ImportPluginFromObject(
+            new McpManagementPlugin(
+                loggerFactory.CreateLogger<McpManagementPlugin>(),
+                mcpServerManager,
+                mcpConfigurationService),
+            "McpManagement");
+
+        if (mcpServerManager.GetConnectedServers().Count > 0)
+        {
+            var mcpToolsPlugin = new McpToolsPlugin(
+                mcpServerManager,
+                loggerFactory.CreateLogger<McpToolsPlugin>());
+            mcpToolsPlugin.RegisterToolsToKernel(kernel);
+        }
+
+        return kernel;
+    }
+}

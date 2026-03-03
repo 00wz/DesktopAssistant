@@ -2,11 +2,8 @@ using System.Text.Json;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Application.Services;
-using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
-using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.AI.Serialization;
-using DesktopAssistant.Infrastructure.MCP.Plugins;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
@@ -20,19 +17,13 @@ public class ToolCallExecutor(
     IMessageNodeRepository messageNodeRepository,
     ConversationService conversationService,
     ISecureCredentialStore credentialStore,
-    IKernelFactory kernelFactory,
-    IMcpServerManager mcpServerManager,
-    IMcpConfigurationService mcpConfigurationService,
-    ILoggerFactory loggerFactory,
+    AgentKernelFactory agentKernelFactory,
     ILogger<ToolCallExecutor> logger)
 {
     private readonly IMessageNodeRepository _messageNodeRepository = messageNodeRepository;
     private readonly ConversationService _conversationService = conversationService;
     private readonly ISecureCredentialStore _credentialStore = credentialStore;
-    private readonly IKernelFactory _kernelFactory = kernelFactory;
-    private readonly IMcpServerManager _mcpServerManager = mcpServerManager;
-    private readonly IMcpConfigurationService _mcpConfigurationService = mcpConfigurationService;
-    private readonly ILoggerFactory _loggerFactory = loggerFactory;
+    private readonly AgentKernelFactory _agentKernelFactory = agentKernelFactory;
     private readonly ILogger<ToolCallExecutor> _logger = logger;
 
     /// <summary>
@@ -58,7 +49,7 @@ public class ToolCallExecutor(
             ?? throw new InvalidOperationException(
                 $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
 
-        var kernel = CreateKernelWithMcpTools(profile, apiKey);
+        var kernel = _agentKernelFactory.Create(profile, apiKey);
 
         string resultJson;
         bool isError = false;
@@ -143,31 +134,4 @@ public class ToolCallExecutor(
         await _messageNodeRepository.UpdateAsync(node, cancellationToken);
     }
 
-    private Kernel CreateKernelWithMcpTools(AssistantProfile profile, string apiKey)
-    {
-        var kernel = _kernelFactory.Create(profile, apiKey);
-
-        kernel.FunctionInvocationFilters.Add(
-            new FunctionLoggingFilter(_loggerFactory.CreateLogger<FunctionLoggingFilter>()));
-
-        kernel.ImportPluginFromObject(
-            new CoreToolsPlugin(_loggerFactory.CreateLogger<CoreToolsPlugin>()), "CoreTools");
-
-        kernel.ImportPluginFromObject(
-            new McpManagementPlugin(
-                _loggerFactory.CreateLogger<McpManagementPlugin>(),
-                _mcpServerManager,
-                _mcpConfigurationService),
-            "McpManagement");
-
-        if (_mcpServerManager.GetConnectedServers().Count > 0)
-        {
-            var mcpToolsPlugin = new McpToolsPlugin(
-                _mcpServerManager,
-                _loggerFactory.CreateLogger<McpToolsPlugin>());
-            mcpToolsPlugin.RegisterToolsToKernel(kernel);
-        }
-
-        return kernel;
-    }
 }
