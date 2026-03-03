@@ -80,24 +80,4 @@ public class MessageNode : BaseEntity
             current = current.ActiveChild;
         return current;
     }
-
-    /// <summary>
-    /// Создаёт дочерний узел (ответвление от текущего сообщения)
-    /// </summary>
-    public MessageNode CreateChild(MessageNodeType nodeType, string content, int tokenCount = 0, string? metadata = null)
-    {
-        var child = new MessageNode(ConversationId, nodeType, content, Id, tokenCount, metadata);
-        Children.Add(child);
-        SetActiveChild(child.Id); // Автоматически устанавливаем как активного
-        return child;
-    }
-
-    /// <summary>
-    /// Создаёт узел суммаризации как дочерний к текущему
-    /// </summary>
-    public MessageNode CreateSummaryNode(string summaryContent, int tokenCount = 0)
-    {
-        return CreateChild(MessageNodeType.Summary, summaryContent, tokenCount,
-            metadata: $"{{\"summarizedAt\":\"{DateTime.UtcNow:O}\"}}");
-    }
 }

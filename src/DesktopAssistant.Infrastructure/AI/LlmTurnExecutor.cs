@@ -86,6 +86,18 @@ public class LlmTurnExecutor(
 
         var assistantMessage = aggregator.Build();
 
+        if (assistantMessage.Metadata?.TryGetValue("Usage", out var usage) == true
+    && usage is OpenAI.Chat.ChatTokenUsage tokenUsage)
+        {
+            Console.WriteLine($"Input tokens: {tokenUsage.InputTokenCount}");
+            Console.WriteLine($"Output tokens: {tokenUsage.OutputTokenCount}");
+            Console.WriteLine($"Total tokens: {tokenUsage.TotalTokenCount}");
+        }
+        else
+        {
+            Console.WriteLine($"NO USAGE FOUND");
+        }
+
         var assistantMetadata = ChatMessageSerializer.Serialize(assistantMessage);
         var assistantNode = await _conversationService.AddNodeAsync(
             conversationId,
@@ -155,19 +167,18 @@ public class LlmTurnExecutor(
             }
             else if (message.NodeType == MessageNodeType.Tool)
             {
-                var toolChatMsg = GetToolChatMessageContent(message);
-                if (toolChatMsg != null)
-                    chatHistory.Add(toolChatMsg);
-                // pending-узел (toolChatMsg == null) пропускается
+                var toolChatMsg = GetToolChatMessageContent(message)
+                    ?? throw new InvalidOperationException(
+                        $"Tool node {message.Id} has no result — cannot build chat history with a pending tool call");
+                chatHistory.Add(toolChatMsg);
             }
             else if (message.NodeType == MessageNodeType.Summary)
             {
-                var chatMessage = message.GetOrCreateChatMessageContent();
-                chatHistory.AddSystemMessage($"[Previous conversation summary]: {chatMessage.Content}");
+                // not implemented yet
             }
             else
             {
-                chatHistory.Add(message.GetOrCreateChatMessageContent());
+                chatHistory.Add(message.GetChatMessageContent());
             }
         }
 
@@ -182,16 +193,13 @@ public class LlmTurnExecutor(
     /// </summary>
     private static ChatMessageContent? GetToolChatMessageContent(MessageNode node)
     {
-        var meta = ToolNodeMetadata.TryDeserialize(node.Metadata);
+        var meta = ToolNodeMetadata.TryDeserialize(node.Metadata)
+            ?? throw new InvalidOperationException(
+                $"Failed to deserialize ToolNodeMetadata for node {node.Id}");
 
-        if (meta != null)
-        {
-            if (meta.ResultJson == null) return null;
-            if (string.IsNullOrEmpty(meta.SerializedChatMessage)) return null;
-            return ChatMessageSerializer.TryDeserialize(meta.SerializedChatMessage, out var cm) ? cm : null;
-        }
-
-        return node.GetOrCreateChatMessageContent();
+        if (meta.ResultJson == null) return null;
+        if (string.IsNullOrEmpty(meta.SerializedChatMessage)) return null;
+        return ChatMessageSerializer.TryDeserialize(meta.SerializedChatMessage, out var cm) ? cm : null;
     }
 
     private Kernel CreateKernelWithMcpTools(AssistantProfile profile, string apiKey)

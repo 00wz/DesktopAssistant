@@ -4,7 +4,6 @@ using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
-using DesktopAssistant.Infrastructure.AI.Extensions;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
@@ -363,7 +362,7 @@ public class ChatService : IChatService
         new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.IsDefault,
             _credentialStore.HasApiKey(p.Id));
 
-    private MessageDto MapNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
+    private static MessageDto MapNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {
         var (currentIndex, total, hasPrev, hasNext, prevId, nextId) = ComputeSiblingInfo(node, siblingsMap);
 
@@ -408,41 +407,17 @@ public class ChatService : IChatService
         return (idx + 1, total, idx > 0, idx < total - 1, prevId, nextId);
     }
 
-    private ToolResultDto MapToolNodeToDto(MessageNode node)
+    private static ToolResultDto MapToolNodeToDto(MessageNode node)
     {
-        var meta = ToolNodeMetadata.TryDeserialize(node.Metadata);
-
-        if (meta != null)
-        {
-            return new ToolResultDto(
-                node.Id, node.ParentId, node.CreatedAt,
-                meta.CallId, meta.PluginName, meta.FunctionName,
-                meta.ResultJson ?? string.Empty,
-                IsPending: meta.ResultJson == null,
-                meta.ArgumentsJson);
-        }
-
-        // Старый формат: извлекаем FunctionResultContent из сериализованного ChatMessageContent
-        string callId = string.Empty, pluginName = string.Empty, funcName = string.Empty;
-        try
-        {
-            var chatMsg = node.GetOrCreateChatMessageContent();
-            var fnResult = chatMsg.Items.OfType<FunctionResultContent>().FirstOrDefault();
-            if (fnResult != null)
-            {
-                callId = fnResult.CallId ?? string.Empty;
-                pluginName = fnResult.PluginName ?? string.Empty;
-                funcName = fnResult.FunctionName ?? string.Empty;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not extract tool call info from node {NodeId}", node.Id);
-        }
+        var meta = ToolNodeMetadata.TryDeserialize(node.Metadata)
+            ?? throw new InvalidOperationException(
+                $"Failed to deserialize ToolNodeMetadata for node {node.Id}");
 
         return new ToolResultDto(
             node.Id, node.ParentId, node.CreatedAt,
-            callId, pluginName, funcName,
-            ResultJson: node.Content);
+            meta.CallId, meta.PluginName, meta.FunctionName,
+            meta.ResultJson ?? string.Empty,
+            IsPending: meta.ResultJson == null,
+            meta.ArgumentsJson);
     }
 }
