@@ -85,18 +85,7 @@ public class LlmTurnExecutor(
         }
 
         var assistantMessage = aggregator.Build();
-
-        if (assistantMessage.Metadata?.TryGetValue("Usage", out var usage) == true
-    && usage is OpenAI.Chat.ChatTokenUsage tokenUsage)
-        {
-            Console.WriteLine($"Input tokens: {tokenUsage.InputTokenCount}");
-            Console.WriteLine($"Output tokens: {tokenUsage.OutputTokenCount}");
-            Console.WriteLine($"Total tokens: {tokenUsage.TotalTokenCount}");
-        }
-        else
-        {
-            Console.WriteLine($"NO USAGE FOUND");
-        }
+        WriteUsageToConsole(assistantMessage);
 
         var assistantMetadata = ChatMessageSerializer.Serialize(assistantMessage);
         var assistantNode = await _conversationService.AddNodeAsync(
@@ -143,6 +132,21 @@ public class LlmTurnExecutor(
                 pendingNode.Id, toolMeta.PluginName, toolMeta.FunctionName);
 
             yield return new ToolCallRequestedDto(callId, toolMeta.PluginName, toolMeta.FunctionName, argsJson, pendingNode.Id);
+        }
+    }
+
+    private static void WriteUsageToConsole(ChatMessageContent message)
+    {
+        if (message.Metadata?.TryGetValue("Usage", out var usage) == true
+    && usage is OpenAI.Chat.ChatTokenUsage tokenUsage)
+        {
+            Console.WriteLine($"Input tokens: {tokenUsage.InputTokenCount}");
+            Console.WriteLine($"Output tokens: {tokenUsage.OutputTokenCount}");
+            Console.WriteLine($"Total tokens: {tokenUsage.TotalTokenCount}");
+        }
+        else
+        {
+            Console.WriteLine($"NO USAGE FOUND");
         }
     }
 

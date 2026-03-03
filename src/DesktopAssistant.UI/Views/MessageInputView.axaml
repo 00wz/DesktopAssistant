@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="120"
+             x:Class="DesktopAssistant.UI.Views.MessageInputView"
+             x:DataType="vm:ChatViewModel">
+
+    <Border Background="#F5F5F5" Padding="10">
+        <StackPanel Spacing="6">
+
+            <!-- Ошибка -->
+            <Border Background="#FFE0E0"
+                    Padding="10"
+                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#CC0000"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Auto-approve toggle -->
+            <CheckBox Content="Авто-подтверждение tools"
+                      IsChecked="{Binding IsAutoApproveTools, Mode=TwoWay}"
+                      FontSize="12"/>
+
+            <!-- Ввод сообщения -->
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
+                <TextBox Grid.Column="0"
+                         Text="{Binding InputMessage, Mode=TwoWay}"
+                         Watermark="Введите сообщение..."
+                         AcceptsReturn="False"
+                         TextWrapping="Wrap"
+                         MinHeight="40"
+                         MaxHeight="120"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
+                    </TextBox.KeyBindings>
+                </TextBox>
+                <Button Grid.Column="1"
+                        Command="{Binding SendMessageCommand}"
+                        IsEnabled="{Binding !IsLoading}"
+                        Width="80"
+                        Height="40"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center">
+                    <Panel>
+                        <TextBlock Text="Отправить" IsVisible="{Binding !IsLoading}"/>
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
+                    </Panel>
+                </Button>
+            </Grid>
+
+            <!-- Кнопка Resume -->
+            <Button IsVisible="{Binding ShowResumePanel}"
+                    Command="{Binding ResumeCommand}"
+                    HorizontalAlignment="Stretch"
+                    Height="40"
+                    HorizontalContentAlignment="Center">
+                <Panel>
+                    <TextBlock Text="Возобновить" IsVisible="{Binding !IsLoading}"/>
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
+                </Panel>
+            </Button>
+        </StackPanel>
+    </Border>
+</UserControl>

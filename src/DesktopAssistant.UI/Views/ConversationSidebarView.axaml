@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             mc:Ignorable="d" d:DesignWidth="260" d:DesignHeight="600"
+             x:Class="DesktopAssistant.UI.Views.ConversationSidebarView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0"
+                Background="#3E3E42"
+                Padding="15,10">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0"
+                           Text="Диалоги"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           VerticalAlignment="Center"/>
+                <Button Grid.Column="1"
+                        Command="{Binding CreateNewChatCommand}"
+                        ToolTip.Tip="Новый чат"
+                        Background="Transparent"
+                        Padding="8,4">
+                    <TextBlock Text="+" FontSize="18" Foreground="White"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Нет сохранённых диалогов"
+                           Foreground="#888888"
+                           Margin="15,20"
+                           IsVisible="{Binding !SavedConversations.Count}"/>
+
+                <ItemsControl ItemsSource="{Binding SavedConversations}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="models:ConversationListItem">
+                            <Button Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenConversationCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="Transparent"
+                                    Padding="15,10"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    CornerRadius="0">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover">
+                                        <Setter Property="Background" Value="#3E3E42"/>
+                                    </Style>
+                                </Button.Styles>
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="{Binding Title}"
+                                               FontSize="13"
+                                               Foreground="White"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="1"/>
+                                    <TextBlock Text="{Binding FormattedDate}"
+                                               FontSize="11"
+                                               Foreground="#888888"/>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

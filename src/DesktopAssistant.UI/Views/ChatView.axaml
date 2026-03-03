@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
              xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
              xmlns:converters="using:DesktopAssistant.UI.Converters"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
              x:Class="DesktopAssistant.UI.Views.ChatView"
@@ -216,66 +217,8 @@
         </Border>
 
         <!-- Панель настроек диалога -->
-        <Border Grid.Row="1"
-                Background="#F8F8FF"
-                Padding="12"
-                BorderBrush="#DDEEFF"
-                BorderThickness="0,0,0,1"
-                IsVisible="{Binding IsSettingsPanelVisible}">
-            <StackPanel Spacing="10">
-                <TextBlock Text="Настройки диалога"
-                           FontSize="14"
-                           FontWeight="SemiBold"/>
-
-                <!-- Профиль -->
-                <Grid ColumnDefinitions="120,*">
-                    <TextBlock Grid.Column="0"
-                               Text="Профиль:"
-                               FontSize="12"
-                               Foreground="#555"
-                               VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1"
-                              ItemsSource="{Binding AvailableProfiles}"
-                              SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                              HorizontalAlignment="Stretch">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding ModelId}"
-                                               Foreground="#888"
-                                               FontSize="11"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </Grid>
-
-                <!-- Кнопка применить профиль -->
-                <Button Content="Применить профиль"
-                        Command="{Binding ChangeProfileCommand}"
-                        CommandParameter="{Binding SelectedProfile}"
-                        HorizontalAlignment="Right"
-                        Padding="12,6"
-                        FontSize="12"/>
-
-                <!-- Системный промпт -->
-                <TextBlock Text="Системный промпт:" FontSize="12" Foreground="#555"/>
-                <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
-                         AcceptsReturn="True"
-                         TextWrapping="Wrap"
-                         MinHeight="80"
-                         MaxHeight="160"
-                         Watermark="Системный промпт пуст..."/>
-
-                <Button Content="Сохранить промпт"
-                        Command="{Binding SaveSystemPromptCommand}"
-                        HorizontalAlignment="Right"
-                        Padding="12,6"
-                        FontSize="12"/>
-            </StackPanel>
-        </Border>
+        <views:ChatSettingsPanelView Grid.Row="1"
+                                     IsVisible="{Binding IsSettingsPanelVisible}"/>
 
         <!-- Список сообщений -->
         <ScrollViewer Grid.Row="2"
@@ -286,67 +229,7 @@
         </ScrollViewer>
 
         <!-- Панель ввода -->
-        <Border Grid.Row="3"
-                Background="#F5F5F5"
-                Padding="10">
-            <StackPanel Spacing="6">
-
-                <!-- Ошибка -->
-                <Border Background="#FFE0E0"
-                        Padding="10"
-                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding ErrorMessage}"
-                               Foreground="#CC0000"
-                               TextWrapping="Wrap"/>
-                </Border>
-
-                <!-- Auto-approve toggle -->
-                <CheckBox Content="Авто-подтверждение tools"
-                          IsChecked="{Binding IsAutoApproveTools, Mode=TwoWay}"
-                          FontSize="12"/>
-
-                <!-- Ввод сообщения -->
-                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
-                    <TextBox Grid.Column="0"
-                             Text="{Binding InputMessage, Mode=TwoWay}"
-                             Watermark="Введите сообщение..."
-                             AcceptsReturn="False"
-                             TextWrapping="Wrap"
-                             MinHeight="40"
-                             MaxHeight="120"
-                             VerticalContentAlignment="Center"
-                             Margin="0,0,10,0">
-                        <TextBox.KeyBindings>
-                            <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
-                        </TextBox.KeyBindings>
-                    </TextBox>
-                    <Button Grid.Column="1"
-                            Command="{Binding SendMessageCommand}"
-                            IsEnabled="{Binding !IsLoading}"
-                            Width="80"
-                            Height="40"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center">
-                        <Panel>
-                            <TextBlock Text="Отправить" IsVisible="{Binding !IsLoading}"/>
-                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
-                        </Panel>
-                    </Button>
-                </Grid>
-
-                <!-- Кнопка Resume -->
-                <Button IsVisible="{Binding ShowResumePanel}"
-                        Command="{Binding ResumeCommand}"
-                        HorizontalAlignment="Stretch"
-                        Height="40"
-                        HorizontalContentAlignment="Center">
-                    <Panel>
-                        <TextBlock Text="Возобновить" IsVisible="{Binding !IsLoading}"/>
-                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
-                    </Panel>
-                </Button>
-            </StackPanel>
-        </Border>
+        <views:MessageInputView Grid.Row="3"/>
 
     </Grid>
 </UserControl>

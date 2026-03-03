@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="220"
+             x:Class="DesktopAssistant.UI.Views.ChatSettingsPanelView"
+             x:DataType="vm:ChatViewModel">
+
+    <Border Background="#F8F8FF"
+            Padding="12"
+            BorderBrush="#DDEEFF"
+            BorderThickness="0,0,0,1">
+        <StackPanel Spacing="10">
+            <TextBlock Text="Настройки диалога"
+                       FontSize="14"
+                       FontWeight="SemiBold"/>
+
+            <!-- Профиль -->
+            <Grid ColumnDefinitions="120,*">
+                <TextBlock Grid.Column="0"
+                           Text="Профиль:"
+                           FontSize="12"
+                           Foreground="#555"
+                           VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding AvailableProfiles}"
+                          SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding ModelId}"
+                                           Foreground="#888"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </Grid>
+
+            <!-- Кнопка применить профиль -->
+            <Button Content="Применить профиль"
+                    Command="{Binding ChangeProfileCommand}"
+                    CommandParameter="{Binding SelectedProfile}"
+                    HorizontalAlignment="Right"
+                    Padding="12,6"
+                    FontSize="12"/>
+
+            <!-- Системный промпт -->
+            <TextBlock Text="Системный промпт:" FontSize="12" Foreground="#555"/>
+            <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     MinHeight="80"
+                     MaxHeight="160"
+                     Watermark="Системный промпт пуст..."/>
+
+            <Button Content="Сохранить промпт"
+                    Command="{Binding SaveSystemPromptCommand}"
+                    HorizontalAlignment="Right"
+                    Padding="12,6"
+                    FontSize="12"/>
+        </StackPanel>
+    </Border>
+</UserControl>
