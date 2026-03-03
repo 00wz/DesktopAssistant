@@ -64,7 +64,7 @@ public class LlmTurnExecutor(
                 $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
 
         var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
-        var chatHistory = BuildChatHistory(contextMessages, systemPrompt);
+        var chatHistory = contextMessages.ToChatHistory(systemPrompt);
 
         var kernel = CreateKernelWithMcpTools(profile, apiKey);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
@@ -144,62 +144,6 @@ public class LlmTurnExecutor(
 
             yield return new ToolCallRequestedDto(callId, toolMeta.PluginName, toolMeta.FunctionName, argsJson, pendingNode.Id);
         }
-    }
-
-    /// <summary>
-    /// Строит ChatHistory из узлов диалога.
-    /// Системный промпт инжектируется первым если не пустой.
-    /// System-узлы из дерева (пустые якорные узлы) пропускаются.
-    /// </summary>
-    private static ChatHistory BuildChatHistory(IEnumerable<MessageNode> messages, string systemPrompt)
-    {
-        var chatHistory = new ChatHistory();
-
-        if (!string.IsNullOrWhiteSpace(systemPrompt))
-            chatHistory.AddSystemMessage(systemPrompt);
-
-        foreach (var message in messages)
-        {
-            if (message.NodeType == MessageNodeType.System)
-            {
-                // Пустые якорные System-узлы пропускаются
-                continue;
-            }
-            else if (message.NodeType == MessageNodeType.Tool)
-            {
-                var toolChatMsg = GetToolChatMessageContent(message)
-                    ?? throw new InvalidOperationException(
-                        $"Tool node {message.Id} has no result — cannot build chat history with a pending tool call");
-                chatHistory.Add(toolChatMsg);
-            }
-            else if (message.NodeType == MessageNodeType.Summary)
-            {
-                // not implemented yet
-            }
-            else
-            {
-                chatHistory.Add(message.GetChatMessageContent());
-            }
-        }
-
-        return chatHistory;
-    }
-
-    /// <summary>
-    /// Извлекает ChatMessageContent из tool-узла.
-    /// Новый формат: берёт SerializedChatMessage из ToolNodeMetadata.
-    /// Старый формат: десериализует Metadata напрямую.
-    /// Возвращает null для pending-узлов (ResultJson == null).
-    /// </summary>
-    private static ChatMessageContent? GetToolChatMessageContent(MessageNode node)
-    {
-        var meta = ToolNodeMetadata.TryDeserialize(node.Metadata)
-            ?? throw new InvalidOperationException(
-                $"Failed to deserialize ToolNodeMetadata for node {node.Id}");
-
-        if (meta.ResultJson == null) return null;
-        if (string.IsNullOrEmpty(meta.SerializedChatMessage)) return null;
-        return ChatMessageSerializer.TryDeserialize(meta.SerializedChatMessage, out var cm) ? cm : null;
     }
 
     private Kernel CreateKernelWithMcpTools(AssistantProfile profile, string apiKey)
