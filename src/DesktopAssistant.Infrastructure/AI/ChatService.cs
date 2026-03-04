@@ -123,22 +123,7 @@ public class ChatService : IChatService
         Guid newProfileId,
         CancellationToken cancellationToken = default)
     {
-        _ = await _assistantRepository.GetByIdAsync(newProfileId, cancellationToken)
-            ?? throw new InvalidOperationException($"Assistant profile {newProfileId} not found");
-
-        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-        conversation.UpdateAssistantProfile(newProfileId);
-
-        // ConversationService не имеет прямого Update — обращаемся через IConversationRepository
-        // Через ConversationService UpdateSystemPrompt — это вызовет save.
-        // Вместо этого добавим UpdateSystemPromptAsync который также вызывает UpdateAsync.
-        // Для профиля используем тот же подход: обновляем через UpdateSystemPromptAsync (он уже сохраняет).
-        // Но нам нужен доступ к репозиторию. Лучше добавить метод в ConversationService.
-        // Временно — вызываем UpdateSystemPromptAsync чтобы triggering SaveChanges:
-        await _conversationService.UpdateSystemPromptAsync(
-            conversationId, conversation.SystemPrompt, cancellationToken);
+        await _conversationService.UpdateAssistantProfileAsync(conversationId, newProfileId, cancellationToken);
 
         _logger.LogInformation("Changed profile for conversation {ConversationId} to {ProfileId}",
             conversationId, newProfileId);

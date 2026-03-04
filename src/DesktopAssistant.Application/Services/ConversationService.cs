@@ -163,6 +163,27 @@ public class ConversationService
     }
 
     /// <summary>
+    /// Меняет профиль ассистента для диалога
+    /// </summary>
+    public async Task UpdateAssistantProfileAsync(
+        Guid conversationId,
+        Guid newProfileId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        _ = await _assistantRepository.GetByIdAsync(newProfileId, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {newProfileId} not found");
+
+        conversation.UpdateAssistantProfile(newProfileId);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogInformation("Changed profile for conversation {ConversationId} to {ProfileId}",
+            conversationId, newProfileId);
+    }
+
+    /// <summary>
     /// Обновляет системный промпт диалога
     /// </summary>
     public async Task UpdateSystemPromptAsync(
