@@ -253,29 +253,62 @@ public class ChatService : IChatService
         Guid lastNodeId,
         CancellationToken cancellationToken = default)
     {
-        bool foundTools = false;
         bool hasPending = false;
+        var seenCallIds = new HashSet<string>();
 
         await foreach (var node in _messageNodeRepository.TraverseToRootAsync(lastNodeId, cancellationToken))
         {
-            if (node.NodeType != MessageNodeType.Tool)
+            if (node.NodeType == MessageNodeType.Tool)
             {
-                if (!foundTools)
+                var meta = ToolNodeMetadata.TryDeserialize(node.Metadata);
+                if (meta != null)
                 {
-                    return node.NodeType == MessageNodeType.User
-                        ? ConversationState.LastMessageIsUser
-                        : ConversationState.LastMessageIsAssistant;
+                    seenCallIds.Add(meta.CallId);
+                    if (meta.ResultJson == null)
+                        hasPending = true;
                 }
+                continue;
+            }
+
+            if (node.NodeType == MessageNodeType.Assistant)
+            {
+                var toolCallIds = ExtractToolCallIds(node);
+
+                if (seenCallIds.Count == 0 && toolCallIds.Count == 0)
+                    return ConversationState.LastMessageIsAssistant;
+
+                if (!toolCallIds.SetEquals(seenCallIds))
+                    return ConversationState.ToolCallIdMismatch;
+
                 break;
             }
 
-            foundTools = true;
-            var meta = ToolNodeMetadata.TryDeserialize(node.Metadata);
-            if (meta != null && meta.ResultJson == null)
-                hasPending = true;
+            if (seenCallIds.Count > 0)
+                throw new InvalidOperationException(
+                    $"Unexpected node type {node.NodeType} (id {node.Id}) encountered after tool result nodes.");
+
+            switch (node.NodeType)
+            {
+                case MessageNodeType.User:
+                    return ConversationState.LastMessageIsUser;
+                /// узлы типов <see cref="MessageNodeType.System"/> и <see cref="MessageNodeType.Summary"/> пока приравниваем к сообщениям ассистента.
+                default:
+                    return ConversationState.LastMessageIsAssistant;
+            }
         }
 
         return hasPending ? ConversationState.HasPendingToolCalls : ConversationState.AllToolCallsCompleted;
+    }
+
+    private static HashSet<string> ExtractToolCallIds(MessageNode node)
+    {
+        if (!ChatMessageSerializer.TryDeserialize(node.Metadata, out var msg) || msg == null)
+            return [];
+        return msg.Items
+            .OfType<FunctionCallContent>()
+            .Select(fc => fc.Id)
+            .Where(id => id != null)
+            .ToHashSet()!;
     }
 
     // ── DTO mapping ─────────────────────────────────────────────────────────
