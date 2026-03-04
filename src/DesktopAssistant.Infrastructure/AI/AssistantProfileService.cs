@@ -99,6 +99,12 @@ public class AssistantProfileService : IAssistantProfileService
         _ = await _assistantRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException($"Assistant profile {id} not found");
 
+        if (await GetDefaultProfileIdAsync(cancellationToken) == id)
+            await _appSettingsRepository.SetAsync(AppSettings.Keys.DefaultProfileId, string.Empty, cancellationToken: cancellationToken);
+
+        if (await GetSummarizationProfileIdAsync(cancellationToken) == id)
+            await _appSettingsRepository.SetAsync(AppSettings.Keys.SummarizationProfileId, string.Empty, cancellationToken: cancellationToken);
+
         await _assistantRepository.DeleteAsync(id, cancellationToken);
         _logger.LogInformation("Deleted assistant profile {ProfileId}", id);
     }
