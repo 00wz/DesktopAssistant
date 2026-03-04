@@ -70,7 +70,7 @@
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <NumericUpDown Grid.Row="5" Grid.Column="1"
                                Value="{Binding MaxTokens, Mode=TwoWay}"
-                               Minimum="256" Maximum="128000" Increment="256"
+                               Minimum="256" Maximum="2000000" Increment="1024"
                                Margin="0,0,0,6"/>
             </Grid>
 
