@@ -12,15 +12,18 @@ namespace DesktopAssistant.Infrastructure.AI;
 public class AssistantProfileService : IAssistantProfileService
 {
     private readonly IAssistantProfileRepository _assistantRepository;
+    private readonly IAppSettingsRepository _appSettingsRepository;
     private readonly ISecureCredentialStore _credentialStore;
     private readonly ILogger<AssistantProfileService> _logger;
 
     public AssistantProfileService(
         IAssistantProfileRepository assistantRepository,
+        IAppSettingsRepository appSettingsRepository,
         ISecureCredentialStore credentialStore,
         ILogger<AssistantProfileService> logger)
     {
         _assistantRepository = assistantRepository;
+        _appSettingsRepository = appSettingsRepository;
         _credentialStore = credentialStore;
         _logger = logger;
     }
@@ -30,7 +33,8 @@ public class AssistantProfileService : IAssistantProfileService
         CancellationToken cancellationToken = default)
     {
         var profiles = await _assistantRepository.GetAllAsync(cancellationToken);
-        return profiles.Select(MapToDto);
+        var defaultId = await GetDefaultProfileIdAsync(cancellationToken);
+        return profiles.Select(p => MapToDto(p, defaultId));
     }
 
     /// <inheritdoc />
@@ -44,25 +48,19 @@ public class AssistantProfileService : IAssistantProfileService
         bool isDefault = false,
         CancellationToken cancellationToken = default)
     {
-        if (isDefault)
-        {
-            var currentDefault = await _assistantRepository.GetDefaultAsync(cancellationToken);
-            if (currentDefault != null)
-            {
-                currentDefault.UnsetDefault();
-                await _assistantRepository.UpdateAsync(currentDefault, cancellationToken);
-            }
-        }
-
         var profile = new AssistantProfile(name, baseUrl, modelId,
-            temperature: temperature, maxTokens: maxTokens, isDefault: isDefault);
+            temperature: temperature, maxTokens: maxTokens);
 
         await _assistantRepository.AddAsync(profile, cancellationToken);
         _credentialStore.SetApiKey(profile.Id, apiKey);
 
+        if (isDefault)
+            await StoreDefaultProfileIdAsync(profile.Id, cancellationToken);
+
         _logger.LogInformation("Created assistant profile {ProfileId}: {Name}", profile.Id, name);
 
-        return MapToDto(profile);
+        var defaultId = await GetDefaultProfileIdAsync(cancellationToken);
+        return MapToDto(profile, defaultId);
     }
 
     /// <inheritdoc />
@@ -109,19 +107,24 @@ public class AssistantProfileService : IAssistantProfileService
         var profile = await _assistantRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException($"Assistant profile {id} not found");
 
-        var currentDefault = await _assistantRepository.GetDefaultAsync(cancellationToken);
-        if (currentDefault != null && currentDefault.Id != id)
-        {
-            currentDefault.UnsetDefault();
-            await _assistantRepository.UpdateAsync(currentDefault, cancellationToken);
-        }
-
-        profile.SetAsDefault();
-        await _assistantRepository.UpdateAsync(profile, cancellationToken);
+        await StoreDefaultProfileIdAsync(id, cancellationToken);
         _logger.LogInformation("Set default assistant profile {ProfileId}: {Name}", id, profile.Name);
     }
 
-    private AssistantProfileDto MapToDto(AssistantProfile p) =>
-        new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.IsDefault,
+    private async Task<Guid?> GetDefaultProfileIdAsync(CancellationToken cancellationToken)
+    {
+        var value = await _appSettingsRepository.GetValueAsync(AppSettings.Keys.DefaultProfileId, cancellationToken);
+        return Guid.TryParse(value, out var id) ? id : null;
+    }
+
+    private Task StoreDefaultProfileIdAsync(Guid profileId, CancellationToken cancellationToken) =>
+        _appSettingsRepository.SetAsync(
+            AppSettings.Keys.DefaultProfileId,
+            profileId.ToString(),
+            "Default assistant profile ID",
+            cancellationToken);
+
+    private AssistantProfileDto MapToDto(AssistantProfile p, Guid? defaultId) =>
+        new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
             _credentialStore.HasApiKey(p.Id));
 }

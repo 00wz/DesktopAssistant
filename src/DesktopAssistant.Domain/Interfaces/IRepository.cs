@@ -40,7 +40,6 @@ public interface IMessageNodeRepository : IRepository<MessageNode>
 /// </summary>
 public interface IAssistantProfileRepository : IRepository<AssistantProfile>
 {
-    Task<AssistantProfile?> GetDefaultAsync(CancellationToken cancellationToken = default);
     Task<AssistantProfile?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
 }
 

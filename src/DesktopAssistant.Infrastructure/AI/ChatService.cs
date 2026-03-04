@@ -21,6 +21,7 @@ public class ChatService : IChatService
     private readonly ConversationService _conversationService;
     private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
+    private readonly IAppSettingsRepository _appSettingsRepository;
     private readonly ISecureCredentialStore _credentialStore;
     private readonly ILogger<ChatService> _logger;
 
@@ -30,6 +31,7 @@ public class ChatService : IChatService
         ConversationService conversationService,
         IMessageNodeRepository messageNodeRepository,
         IAssistantProfileRepository assistantRepository,
+        IAppSettingsRepository appSettingsRepository,
         ISecureCredentialStore credentialStore,
         ILogger<ChatService> logger)
     {
@@ -38,6 +40,7 @@ public class ChatService : IChatService
         _conversationService = conversationService;
         _messageNodeRepository = messageNodeRepository;
         _assistantRepository = assistantRepository;
+        _appSettingsRepository = appSettingsRepository;
         _credentialStore = credentialStore;
         _logger = logger;
     }
@@ -60,9 +63,14 @@ public class ChatService : IChatService
         }
         else
         {
-            profile = await _assistantRepository.GetDefaultAsync(cancellationToken)
+            var defaultIdStr = await _appSettingsRepository.GetValueAsync(
+                AppSettings.Keys.DefaultProfileId, cancellationToken);
+            if (!Guid.TryParse(defaultIdStr, out var defaultId))
+                throw new InvalidOperationException(
+                    "No default assistant profile configured. Please set a default profile first.");
+            profile = await _assistantRepository.GetByIdAsync(defaultId, cancellationToken)
                 ?? throw new InvalidOperationException(
-                    "No default assistant profile found. Please create an assistant profile first.");
+                    "Default assistant profile not found. Please set a valid default profile.");
         }
 
         var conversation = await _conversationService.CreateConversationAsync(
@@ -104,7 +112,7 @@ public class ChatService : IChatService
             conversationId,
             conversation.SystemPrompt,
             profile.Id,
-            MapToProfileDto(profile));
+            await MapToProfileDtoAsync(profile, cancellationToken));
     }
 
     /// <inheritdoc />
@@ -270,9 +278,15 @@ public class ChatService : IChatService
     private static ConversationDto MapToConversationDto(Conversation c) =>
         new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt);
 
-    private AssistantProfileDto MapToProfileDto(AssistantProfile p) =>
-        new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.IsDefault,
+    private async Task<AssistantProfileDto> MapToProfileDtoAsync(
+        AssistantProfile p, CancellationToken cancellationToken)
+    {
+        var defaultIdStr = await _appSettingsRepository.GetValueAsync(
+            AppSettings.Keys.DefaultProfileId, cancellationToken);
+        Guid.TryParse(defaultIdStr, out var defaultId);
+        return new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
             _credentialStore.HasApiKey(p.Id));
+    }
 
     private static MessageDto MapNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {

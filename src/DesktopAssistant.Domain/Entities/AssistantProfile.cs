@@ -17,8 +17,6 @@ public class AssistantProfile : BaseEntity
     public double Temperature { get; private set; } = 0.7;
     public int MaxTokens { get; private set; } = 4096;
 
-    public bool IsDefault { get; private set; }
-
     // Навигационные свойства
     public ICollection<Conversation> Conversations { get; private set; } = new List<Conversation>();
 
@@ -31,8 +29,7 @@ public class AssistantProfile : BaseEntity
         string? wakeWord = null,
         string? voiceName = null,
         double temperature = 0.7,
-        int maxTokens = 4096,
-        bool isDefault = false)
+        int maxTokens = 4096)
     {
         Name = name;
         BaseUrl = baseUrl;
@@ -41,7 +38,6 @@ public class AssistantProfile : BaseEntity
         VoiceName = voiceName;
         Temperature = temperature;
         MaxTokens = maxTokens;
-        IsDefault = isDefault;
     }
 
     public void UpdateName(string name)
@@ -71,15 +67,4 @@ public class AssistantProfile : BaseEntity
         MarkAsUpdated();
     }
 
-    public void SetAsDefault()
-    {
-        IsDefault = true;
-        MarkAsUpdated();
-    }
-
-    public void UnsetDefault()
-    {
-        IsDefault = false;
-        MarkAsUpdated();
-    }
 }

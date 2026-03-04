@@ -89,12 +89,6 @@ public class AssistantProfileRepository : BaseRepository<AssistantProfile>, IAss
     {
     }
 
-    public async Task<AssistantProfile?> GetDefaultAsync(CancellationToken cancellationToken = default)
-    {
-        return await _dbSet
-            .FirstOrDefaultAsync(a => a.IsDefault, cancellationToken);
-    }
-
     public async Task<AssistantProfile?> GetByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         return await _dbSet
