@@ -73,6 +73,15 @@
                                                    Foreground="White"
                                                    FontSize="10"/>
                                     </Border>
+                                    <!-- Бейдж "Суммаризация" -->
+                                    <Border Background="#F3E5F5"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            IsVisible="{Binding IsSummarizationProfile}">
+                                        <TextBlock Text="Суммаризация"
+                                                   Foreground="#6A1B9A"
+                                                   FontSize="10"/>
+                                    </Border>
                                     <!-- Бейдж "API ключ задан" -->
                                     <Border Background="#E8F5E9"
                                             CornerRadius="4"
@@ -102,6 +111,12 @@
                                         FontSize="11"
                                         Padding="10,5"
                                         IsVisible="{Binding !IsDefault}"/>
+                                <Button Content="Суммаризация"
+                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetSummarizationCommand}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="11"
+                                        Padding="10,5"
+                                        IsVisible="{Binding !IsSummarizationProfile}"/>
                                 <Button Content="Изменить"
                                         Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).StartEditCommand}"
                                         CommandParameter="{Binding}"

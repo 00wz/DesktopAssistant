@@ -9,7 +9,8 @@ public record AssistantProfileDto(
     double Temperature,
     int MaxTokens,
     bool IsDefault,
-    bool HasApiKey);
+    bool HasApiKey,
+    bool IsSummarizationProfile);
 
 /// <summary>Настройки конкретного диалога: системный промпт и профиль.</summary>
 public record ConversationSettingsDto(

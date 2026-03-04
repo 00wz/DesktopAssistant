@@ -34,7 +34,8 @@ public class AssistantProfileService : IAssistantProfileService
     {
         var profiles = await _assistantRepository.GetAllAsync(cancellationToken);
         var defaultId = await GetDefaultProfileIdAsync(cancellationToken);
-        return profiles.Select(p => MapToDto(p, defaultId));
+        var summarizationId = await GetSummarizationProfileIdAsync(cancellationToken);
+        return profiles.Select(p => MapToDto(p, defaultId, summarizationId));
     }
 
     /// <inheritdoc />
@@ -60,7 +61,8 @@ public class AssistantProfileService : IAssistantProfileService
         _logger.LogInformation("Created assistant profile {ProfileId}: {Name}", profile.Id, name);
 
         var defaultId = await GetDefaultProfileIdAsync(cancellationToken);
-        return MapToDto(profile, defaultId);
+        var summarizationId = await GetSummarizationProfileIdAsync(cancellationToken);
+        return MapToDto(profile, defaultId, summarizationId);
     }
 
     /// <inheritdoc />
@@ -111,9 +113,29 @@ public class AssistantProfileService : IAssistantProfileService
         _logger.LogInformation("Set default assistant profile {ProfileId}: {Name}", id, profile.Name);
     }
 
+    /// <inheritdoc />
+    public async Task SetSummarizationProfileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var profile = await _assistantRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {id} not found");
+
+        await _appSettingsRepository.SetAsync(
+            AppSettings.Keys.SummarizationProfileId,
+            id.ToString(),
+            "Summarization assistant profile ID",
+            cancellationToken);
+        _logger.LogInformation("Set summarization assistant profile {ProfileId}: {Name}", id, profile.Name);
+    }
+
     private async Task<Guid?> GetDefaultProfileIdAsync(CancellationToken cancellationToken)
     {
         var value = await _appSettingsRepository.GetValueAsync(AppSettings.Keys.DefaultProfileId, cancellationToken);
+        return Guid.TryParse(value, out var id) ? id : null;
+    }
+
+    private async Task<Guid?> GetSummarizationProfileIdAsync(CancellationToken cancellationToken)
+    {
+        var value = await _appSettingsRepository.GetValueAsync(AppSettings.Keys.SummarizationProfileId, cancellationToken);
         return Guid.TryParse(value, out var id) ? id : null;
     }
 
@@ -124,7 +146,7 @@ public class AssistantProfileService : IAssistantProfileService
             "Default assistant profile ID",
             cancellationToken);
 
-    private AssistantProfileDto MapToDto(AssistantProfile p, Guid? defaultId) =>
+    private AssistantProfileDto MapToDto(AssistantProfile p, Guid? defaultId, Guid? summarizationId) =>
         new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
-            _credentialStore.HasApiKey(p.Id));
+            _credentialStore.HasApiKey(p.Id), p.Id == summarizationId);
 }

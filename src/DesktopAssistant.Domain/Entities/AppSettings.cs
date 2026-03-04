@@ -30,5 +30,6 @@ public class AppSettings : BaseEntity
     public static class Keys
     {
         public const string DefaultProfileId = "App:DefaultProfileId";
+        public const string SummarizationProfileId = "App:SummarizationProfileId";
     }
 }

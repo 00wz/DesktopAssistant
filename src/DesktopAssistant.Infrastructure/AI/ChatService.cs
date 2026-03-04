@@ -284,8 +284,11 @@ public class ChatService : IChatService
         var defaultIdStr = await _appSettingsRepository.GetValueAsync(
             AppSettings.Keys.DefaultProfileId, cancellationToken);
         Guid.TryParse(defaultIdStr, out var defaultId);
+        var summarizationIdStr = await _appSettingsRepository.GetValueAsync(
+            AppSettings.Keys.SummarizationProfileId, cancellationToken);
+        Guid.TryParse(summarizationIdStr, out var summarizationId);
         return new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
-            _credentialStore.HasApiKey(p.Id));
+            _credentialStore.HasApiKey(p.Id), p.Id == summarizationId);
     }
 
     private static MessageDto MapNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)

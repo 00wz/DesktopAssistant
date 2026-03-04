@@ -124,4 +124,20 @@ public partial class ProfilesSettingsViewModel : ObservableObject
             ErrorMessage = $"Ошибка установки профиля по умолчанию: {ex.Message}";
         }
     }
+
+    [RelayCommand]
+    private async Task SetSummarizationAsync(AssistantProfileDto profile)
+    {
+        try
+        {
+            ErrorMessage = null;
+            await _profileService.SetSummarizationProfileAsync(profile.Id);
+            await LoadProfilesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting summarization profile {ProfileId}", profile.Id);
+            ErrorMessage = $"Ошибка установки профиля суммаризации: {ex.Message}";
+        }
+    }
 }

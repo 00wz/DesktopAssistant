@@ -39,4 +39,7 @@ public interface IAssistantProfileService
 
     /// <summary>Устанавливает указанный профиль как профиль по умолчанию, снимая флаг с предыдущего.</summary>
     Task SetDefaultAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Устанавливает указанный профиль как профиль для суммаризации контекста.</summary>
+    Task SetSummarizationProfileAsync(Guid id, CancellationToken cancellationToken = default);
 }
