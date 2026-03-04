@@ -211,11 +211,7 @@
                            Foreground="#999"
                            VerticalAlignment="Center"
                            Margin="0,0,8,0"
-                           IsVisible="{Binding LastOutputTokenCount, Converter={StaticResource IntGreaterThanConverter}}">
-                    <Run Text="↑"/>
-                    <Run Text="{Binding LastInputTokenCount}"/>
-                    <Run Text=" ↓"/>
-                    <Run Text="{Binding LastOutputTokenCount}"/>
+                           IsVisible="{Binding LastTotalTokenCount, Converter={StaticResource IntGreaterThanConverter}}">
                     <Run Text=" Σ"/>
                     <Run Text="{Binding LastTotalTokenCount}"/>
                 </TextBlock>

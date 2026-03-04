@@ -66,14 +66,9 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private AssistantProfileDto? _selectedProfile;
 
-    // ── Статистика токенов последнего ответа ─────────────────────────────────
-
-    [ObservableProperty]
-    private int _lastInputTokenCount;
-
-    [ObservableProperty]
-    private int _lastOutputTokenCount;
-
+    /// <summary>
+    /// Статистика токенов последнего ответа
+    /// </summary>
     [ObservableProperty]
     private int _lastTotalTokenCount;
 
@@ -144,8 +139,6 @@ public partial class ChatViewModel : ObservableObject
 
         if (lastAssistantDto != null)
         {
-            LastInputTokenCount = lastAssistantDto.InputTokenCount;
-            LastOutputTokenCount = lastAssistantDto.OutputTokenCount;
             LastTotalTokenCount = lastAssistantDto.TotalTokenCount;
         }
 
@@ -524,8 +517,6 @@ public partial class ChatViewModel : ObservableObject
                             activeAssistantModel.Id = saved.LastNodeId;
                         }
                         _currentLeafNodeId = saved.LastNodeId;
-                        LastInputTokenCount = saved.InputTokenCount;
-                        LastOutputTokenCount = saved.OutputTokenCount;
                         LastTotalTokenCount = saved.TotalTokenCount;
                         break;
 
