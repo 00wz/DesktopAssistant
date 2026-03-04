@@ -194,7 +194,7 @@
                 Padding="10,6"
                 BorderBrush="#E0E0E0"
                 BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{Binding ConversationTitle}"
                                FontSize="14"
@@ -206,7 +206,20 @@
                                VerticalAlignment="Center"
                                IsVisible="{Binding AssistantProfileName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
-                <Button Grid.Column="1"
+                <TextBlock Grid.Column="1"
+                           FontSize="11"
+                           Foreground="#999"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           IsVisible="{Binding LastOutputTokenCount, Converter={StaticResource IntGreaterThanConverter}}">
+                    <Run Text="↑"/>
+                    <Run Text="{Binding LastInputTokenCount}"/>
+                    <Run Text=" ↓"/>
+                    <Run Text="{Binding LastOutputTokenCount}"/>
+                    <Run Text=" Σ"/>
+                    <Run Text="{Binding LastTotalTokenCount}"/>
+                </TextBlock>
+                <Button Grid.Column="2"
                         Command="{Binding ToggleSettingsPanelCommand}"
                         ToolTip.Tip="Настройки диалога"
                         Background="Transparent"
@@ -230,6 +243,7 @@
 
         <!-- Панель ввода -->
         <views:MessageInputView Grid.Row="3"/>
+
 
     </Grid>
 </UserControl>

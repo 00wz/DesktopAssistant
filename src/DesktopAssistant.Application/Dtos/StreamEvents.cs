@@ -38,4 +38,4 @@ public sealed record ToolCallRequestedDto(
 /// LastNodeId — ID сохранённого узла ассистента.
 /// Если в ответе есть tool-вызовы, этот ивент приходит ДО ToolCallRequestedDto.
 /// </summary>
-public sealed record AssistantResponseSavedDto(Guid LastNodeId) : StreamEvent;
+public sealed record AssistantResponseSavedDto(Guid LastNodeId, int InputTokenCount = 0, int OutputTokenCount = 0, int TotalTokenCount = 0) : StreamEvent;

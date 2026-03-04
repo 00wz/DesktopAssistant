@@ -30,7 +30,10 @@ public record AssistantMessageDto(
     bool HasPreviousSibling = false,
     bool HasNextSibling = false,
     Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null
+    Guid? NextSiblingId = null,
+    int InputTokenCount = 0,
+    int OutputTokenCount = 0,
+    int TotalTokenCount = 0
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>

@@ -76,7 +76,8 @@ public class LlmTurnExecutor(
         }
 
         var assistantMessage = aggregator.Build();
-        WriteUsageToConsole(assistantMessage);
+        var (inputTokenCount, outputTokenCount, totalTokenCount) = TokenUsageHelper.Extract(assistantMessage);
+        LogUsage(inputTokenCount, outputTokenCount, totalTokenCount);
 
         var assistantMetadata = ChatMessageSerializer.Serialize(assistantMessage);
         var assistantNode = await _conversationService.AddNodeAsync(
@@ -90,7 +91,7 @@ public class LlmTurnExecutor(
         _logger.LogInformation("[ASSISTANT MESSAGE] Saved {NodeId} ({Length} chars)",
             assistantNode.Id, assistantMessage.Content?.Length ?? 0);
 
-        yield return new AssistantResponseSavedDto(assistantNode.Id);
+        yield return new AssistantResponseSavedDto(assistantNode.Id, inputTokenCount, outputTokenCount, totalTokenCount);
 
         var functionCalls = FunctionCallContent.GetFunctionCalls(assistantMessage).ToList();
         if (functionCalls.Count == 0) yield break;
@@ -126,19 +127,11 @@ public class LlmTurnExecutor(
         }
     }
 
-    private static void WriteUsageToConsole(ChatMessageContent message)
+    private static void LogUsage(int inputTokenCount, int outputTokenCount, int totalTokenCount)
     {
-        if (message.Metadata?.TryGetValue("Usage", out var usage) == true
-    && usage is OpenAI.Chat.ChatTokenUsage tokenUsage)
-        {
-            Console.WriteLine($"Input tokens: {tokenUsage.InputTokenCount}");
-            Console.WriteLine($"Output tokens: {tokenUsage.OutputTokenCount}");
-            Console.WriteLine($"Total tokens: {tokenUsage.TotalTokenCount}");
-        }
-        else
-        {
-            Console.WriteLine($"NO USAGE FOUND");
-        }
+        Console.WriteLine($"Input tokens: {inputTokenCount}");
+        Console.WriteLine($"Output tokens: {outputTokenCount}");
+        Console.WriteLine($"Total tokens: {totalTokenCount}");
     }
 
 }

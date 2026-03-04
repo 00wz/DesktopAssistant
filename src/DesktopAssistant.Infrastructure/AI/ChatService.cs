@@ -400,9 +400,7 @@ public class ChatService : IChatService
                 node.Id, node.ParentId, node.CreatedAt, node.Content,
                 currentIndex, total, hasPrev, hasNext, prevId, nextId),
 
-            MessageNodeType.Assistant => new AssistantMessageDto(
-                node.Id, node.ParentId, node.CreatedAt, node.Content,
-                currentIndex, total, hasPrev, hasNext, prevId, nextId),
+            MessageNodeType.Assistant => MapAssistantNodeToDto(node, currentIndex, total, hasPrev, hasNext, prevId, nextId),
 
             MessageNodeType.Tool => MapToolNodeToDto(node),
 
@@ -433,6 +431,19 @@ public class ChatService : IChatService
         Guid? prevId = idx > 0 ? sameSiblings[idx - 1].Id : null;
         Guid? nextId = idx < total - 1 ? sameSiblings[idx + 1].Id : null;
         return (idx + 1, total, idx > 0, idx < total - 1, prevId, nextId);
+    }
+
+    private static AssistantMessageDto MapAssistantNodeToDto(
+        MessageNode node, int currentIndex, int total, bool hasPrev, bool hasNext, Guid? prevId, Guid? nextId)
+    {
+        var (inputTokenCount, outputTokenCount, totalTokenCount) = (0, 0, 0);
+        if (ChatMessageSerializer.TryDeserialize(node.Metadata, out var msg) && msg != null)
+            (inputTokenCount, outputTokenCount, totalTokenCount) = TokenUsageHelper.Extract(msg);
+
+        return new AssistantMessageDto(
+            node.Id, node.ParentId, node.CreatedAt, node.Content,
+            currentIndex, total, hasPrev, hasNext, prevId, nextId,
+            inputTokenCount, outputTokenCount, totalTokenCount);
     }
 
     private static ToolResultDto MapToolNodeToDto(MessageNode node)

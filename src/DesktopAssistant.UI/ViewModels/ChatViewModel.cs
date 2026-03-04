@@ -66,6 +66,17 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private AssistantProfileDto? _selectedProfile;
 
+    // ── Статистика токенов последнего ответа ─────────────────────────────────
+
+    [ObservableProperty]
+    private int _lastInputTokenCount;
+
+    [ObservableProperty]
+    private int _lastOutputTokenCount;
+
+    [ObservableProperty]
+    private int _lastTotalTokenCount;
+
     public bool ShowInputPanel => ConversationStatus == ConversationState.LastMessageIsAssistant;
     public bool ShowResumePanel => ConversationStatus == ConversationState.LastMessageIsUser ||
                                    ConversationStatus == ConversationState.AllToolCallsCompleted;
@@ -122,10 +133,20 @@ public partial class ChatViewModel : ObservableObject
         Messages.Clear();
 
         Guid? lastDtoId = null;
+        AssistantMessageDto? lastAssistantDto = null;
         foreach (var dto in dtos)
         {
             Messages.Add(ChatMessageModelFactory.FromDto(dto));
             lastDtoId = dto.Id;
+            if (dto is AssistantMessageDto assistantDto)
+                lastAssistantDto = assistantDto;
+        }
+
+        if (lastAssistantDto != null)
+        {
+            LastInputTokenCount = lastAssistantDto.InputTokenCount;
+            LastOutputTokenCount = lastAssistantDto.OutputTokenCount;
+            LastTotalTokenCount = lastAssistantDto.TotalTokenCount;
         }
 
         _currentLeafNodeId = lastDtoId ?? CurrentConversation.ActiveLeafNodeId;
@@ -503,6 +524,9 @@ public partial class ChatViewModel : ObservableObject
                             activeAssistantModel.Id = saved.LastNodeId;
                         }
                         _currentLeafNodeId = saved.LastNodeId;
+                        LastInputTokenCount = saved.InputTokenCount;
+                        LastOutputTokenCount = saved.OutputTokenCount;
+                        LastTotalTokenCount = saved.TotalTokenCount;
                         break;
 
                     case ToolCallRequestedDto toolReq:
