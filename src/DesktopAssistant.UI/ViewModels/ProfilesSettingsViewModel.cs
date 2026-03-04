@@ -14,7 +14,7 @@ namespace DesktopAssistant.UI.ViewModels;
 /// </summary>
 public partial class ProfilesSettingsViewModel : ObservableObject
 {
-    private readonly IChatService _chatService;
+    private readonly IAssistantProfileService _profileService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ProfilesSettingsViewModel> _logger;
 
@@ -34,11 +34,11 @@ public partial class ProfilesSettingsViewModel : ObservableObject
     public bool IsEditorVisible => ActiveEditor != null;
 
     public ProfilesSettingsViewModel(
-        IChatService chatService,
+        IAssistantProfileService profileService,
         IServiceProvider serviceProvider,
         ILogger<ProfilesSettingsViewModel> logger)
     {
-        _chatService = chatService;
+        _profileService = profileService;
         _serviceProvider = serviceProvider;
         _logger = logger;
     }
@@ -50,7 +50,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         {
             IsLoading = true;
             ErrorMessage = null;
-            var profiles = await _chatService.GetAssistantProfilesAsync(cancellationToken);
+            var profiles = await _profileService.GetAssistantProfilesAsync(cancellationToken);
             Profiles = new ObservableCollection<AssistantProfileDto>(profiles);
         }
         catch (Exception ex)
@@ -98,7 +98,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         try
         {
             ErrorMessage = null;
-            await _chatService.DeleteAssistantProfileAsync(profile.Id);
+            await _profileService.DeleteAssistantProfileAsync(profile.Id);
             await LoadProfilesAsync();
             ActiveEditor = null;
         }
@@ -115,7 +115,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         try
         {
             ErrorMessage = null;
-            await _chatService.SetDefaultAssistantProfileAsync(profile.Id);
+            await _profileService.SetDefaultAssistantProfileAsync(profile.Id);
             await LoadProfilesAsync();
         }
         catch (Exception ex)

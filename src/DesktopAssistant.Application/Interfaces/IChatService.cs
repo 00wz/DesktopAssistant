@@ -3,45 +3,10 @@ using DesktopAssistant.Application.Dtos;
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Сервис для взаимодействия с LLM через чат
+/// Сервис для взаимодействия с LLM через чат: управление диалогами, история сообщений, LLM и tool-calls.
 /// </summary>
 public interface IChatService
 {
-    // ── Управление профилями ассистента ────────────────────────────────────
-
-    /// <summary>Возвращает все профили ассистента.</summary>
-    Task<IEnumerable<AssistantProfileDto>> GetAssistantProfilesAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>Создаёт новый профиль ассистента. API-ключ сохраняется в защищённом хранилище.</summary>
-    Task<AssistantProfileDto> CreateAssistantProfileAsync(
-        string name,
-        string baseUrl,
-        string modelId,
-        string apiKey,
-        double temperature = 0.7,
-        int maxTokens = 4096,
-        bool isDefault = false,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Обновляет настройки профиля (без API-ключа).</summary>
-    Task UpdateAssistantProfileAsync(
-        Guid id,
-        string name,
-        string baseUrl,
-        string modelId,
-        double temperature,
-        int maxTokens,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>Обновляет API-ключ профиля в защищённом хранилище.</summary>
-    Task SetAssistantProfileApiKeyAsync(Guid id, string apiKey, CancellationToken cancellationToken = default);
-
-    /// <summary>Удаляет профиль ассистента. Бросает исключение если профиль используется активными диалогами.</summary>
-    Task DeleteAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
-
-    /// <summary>Устанавливает указанный профиль как профиль по умолчанию, снимая флаг с предыдущего.</summary>
-    Task SetDefaultAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
-
     // ── Управление диалогами ────────────────────────────────────────────────
 
     /// <summary>

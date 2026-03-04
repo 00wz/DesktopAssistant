@@ -15,6 +15,7 @@ namespace DesktopAssistant.UI.ViewModels;
 public partial class ChatViewModel : ObservableObject
 {
     private readonly IChatService _chatService;
+    private readonly IAssistantProfileService _profileService;
     private readonly ILogger<ChatViewModel> _logger;
 
     [ObservableProperty]
@@ -80,9 +81,11 @@ public partial class ChatViewModel : ObservableObject
 
     public ChatViewModel(
         IChatService chatService,
+        IAssistantProfileService profileService,
         ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
+        _profileService = profileService;
         _logger = logger;
     }
 
@@ -160,7 +163,7 @@ public partial class ChatViewModel : ObservableObject
             SystemPrompt = settings.SystemPrompt;
             AssistantProfileName = settings.Profile.Name;
 
-            var profiles = await _chatService.GetAssistantProfilesAsync(cancellationToken);
+            var profiles = await _profileService.GetAssistantProfilesAsync(cancellationToken);
             AvailableProfiles = new ObservableCollection<AssistantProfileDto>(profiles);
             SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.Id == settings.AssistantProfileId);
         }

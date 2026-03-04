@@ -12,7 +12,7 @@ namespace DesktopAssistant.UI.ViewModels;
 /// </summary>
 public partial class ProfileEditorViewModel : ObservableObject
 {
-    private readonly IChatService _chatService;
+    private readonly IAssistantProfileService _profileService;
     private readonly ILogger<ProfileEditorViewModel> _logger;
 
     private Guid? _editingProfileId;
@@ -64,9 +64,9 @@ public partial class ProfileEditorViewModel : ObservableObject
         ? "Оставьте пустым, чтобы сохранить текущий ключ"
         : "sk-...";
 
-    public ProfileEditorViewModel(IChatService chatService, ILogger<ProfileEditorViewModel> logger)
+    public ProfileEditorViewModel(IAssistantProfileService profileService, ILogger<ProfileEditorViewModel> logger)
     {
-        _chatService = chatService;
+        _profileService = profileService;
         _logger = logger;
     }
 
@@ -121,23 +121,23 @@ public partial class ProfileEditorViewModel : ObservableObject
 
             if (IsEditMode && _editingProfileId.HasValue)
             {
-                await _chatService.UpdateAssistantProfileAsync(
+                await _profileService.UpdateAssistantProfileAsync(
                     _editingProfileId.Value,
                     Name.Trim(), BaseUrl.Trim(), ModelId.Trim(),
                     Temperature, MaxTokens);
 
                 if (!string.IsNullOrWhiteSpace(ApiKey))
-                    await _chatService.SetAssistantProfileApiKeyAsync(_editingProfileId.Value, ApiKey.Trim());
+                    await _profileService.SetAssistantProfileApiKeyAsync(_editingProfileId.Value, ApiKey.Trim());
 
                 if (IsDefault)
-                    await _chatService.SetDefaultAssistantProfileAsync(_editingProfileId.Value);
+                    await _profileService.SetDefaultAssistantProfileAsync(_editingProfileId.Value);
 
-                var all = await _chatService.GetAssistantProfilesAsync();
+                var all = await _profileService.GetAssistantProfilesAsync();
                 saved = all.First(p => p.Id == _editingProfileId.Value);
             }
             else
             {
-                saved = await _chatService.CreateAssistantProfileAsync(
+                saved = await _profileService.CreateAssistantProfileAsync(
                     Name.Trim(), BaseUrl.Trim(), ModelId.Trim(),
                     ApiKey.Trim(), Temperature, MaxTokens, IsDefault);
             }

@@ -14,7 +14,7 @@ namespace DesktopAssistant.UI.ViewModels;
 /// </summary>
 public partial class NewConversationPanelViewModel : ObservableObject
 {
-    private readonly IChatService _chatService;
+    private readonly IAssistantProfileService _profileService;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NewConversationPanelViewModel> _logger;
 
@@ -53,11 +53,11 @@ public partial class NewConversationPanelViewModel : ObservableObject
     private string? _errorMessage;
 
     public NewConversationPanelViewModel(
-        IChatService chatService,
+        IAssistantProfileService profileService,
         IServiceProvider serviceProvider,
         ILogger<NewConversationPanelViewModel> logger)
     {
-        _chatService = chatService;
+        _profileService = profileService;
         _serviceProvider = serviceProvider;
         _logger = logger;
     }
@@ -69,7 +69,7 @@ public partial class NewConversationPanelViewModel : ObservableObject
             IsLoading = true;
             ErrorMessage = null;
 
-            var profiles = await _chatService.GetAssistantProfilesAsync(cancellationToken);
+            var profiles = await _profileService.GetAssistantProfilesAsync(cancellationToken);
             AvailableProfiles = new ObservableCollection<AssistantProfileDto>(profiles);
 
             SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.IsDefault)
