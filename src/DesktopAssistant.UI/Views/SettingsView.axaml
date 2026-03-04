@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="DesktopAssistant.UI.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+    <Border Background="White">
+        <Grid RowDefinitions="Auto,*">
+
+            <!-- Шапка -->
+            <Border Grid.Row="0"
+                    Background="#F0F0F0"
+                    Padding="20,12"
+                    BorderBrush="#E0E0E0"
+                    BorderThickness="0,0,0,1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="Настройки"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1"
+                            Content="✕ Закрыть"
+                            Command="{Binding CloseCommand}"
+                            Background="Transparent"
+                            Padding="12,7"/>
+                </Grid>
+            </Border>
+
+            <!-- Двухколоночный layout -->
+            <Grid Grid.Row="1" ColumnDefinitions="200,*">
+
+                <!-- Левая навигация -->
+                <Border Grid.Column="0"
+                        Background="#F8F8F8"
+                        BorderBrush="#E0E0E0"
+                        BorderThickness="0,0,1,0"
+                        Padding="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="ОСНОВНЫЕ"
+                                   FontSize="10"
+                                   Foreground="#999"
+                                   Margin="16,0,0,8"
+                                   FontWeight="SemiBold"
+                                   LetterSpacing="1"/>
+                        <!-- Активный элемент навигации -->
+                        <Border Background="#E8F0FE"
+                                CornerRadius="4"
+                                Margin="8,0"
+                                Padding="12,8">
+                            <TextBlock Text="Профили ассистентов"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="#1A73E8"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Правая область контента -->
+                <ScrollViewer Grid.Column="1"
+                              VerticalScrollBarVisibility="Auto"
+                              Padding="24,20,24,20">
+                    <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>
+                </ScrollViewer>
+
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

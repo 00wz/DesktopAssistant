@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="520" d:DesignHeight="420"
+             x:Class="DesktopAssistant.UI.Views.ProfileEditorView"
+             x:DataType="vm:ProfileEditorViewModel">
+
+    <Border Background="#EEF2FF"
+            CornerRadius="8"
+            Padding="16">
+        <StackPanel Spacing="10">
+
+            <!-- Заголовок -->
+            <Panel>
+                <TextBlock Text="Новый профиль ассистента"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           IsVisible="{Binding !IsEditMode}"/>
+                <TextBlock Text="Редактирование профиля"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           IsVisible="{Binding IsEditMode}"/>
+            </Panel>
+
+            <!-- Поля формы -->
+            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+
+                <TextBlock Grid.Row="0" Grid.Column="0"
+                           Text="Название *" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="0" Grid.Column="1"
+                         Text="{Binding Name, Mode=TwoWay}"
+                         Watermark="Мой ассистент" Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0"
+                           Text="Base URL *" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="1" Grid.Column="1"
+                         Text="{Binding BaseUrl, Mode=TwoWay}"
+                         Watermark="https://api.openai.com/v1" Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0"
+                           Text="Model ID *" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="2" Grid.Column="1"
+                         Text="{Binding ModelId, Mode=TwoWay}"
+                         Watermark="gpt-4o-mini" Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0"
+                           Text="API Key" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="3" Grid.Column="1"
+                         Text="{Binding ApiKey, Mode=TwoWay}"
+                         PasswordChar="•"
+                         Watermark="{Binding ApiKeyWatermark}"
+                         Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="4" Grid.Column="0"
+                           Text="Temperature" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <NumericUpDown Grid.Row="4" Grid.Column="1"
+                               Value="{Binding Temperature, Mode=TwoWay}"
+                               Minimum="0" Maximum="2" Increment="0.1"
+                               FormatString="F1" Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="5" Grid.Column="0"
+                           Text="Max Tokens" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <NumericUpDown Grid.Row="5" Grid.Column="1"
+                               Value="{Binding MaxTokens, Mode=TwoWay}"
+                               Minimum="256" Maximum="128000" Increment="256"
+                               Margin="0,0,0,6"/>
+            </Grid>
+
+            <CheckBox Content="Профиль по умолчанию"
+                      IsChecked="{Binding IsDefault, Mode=TwoWay}"
+                      FontSize="12"/>
+
+            <!-- Ошибка -->
+            <Border Background="#FFE0E0"
+                    Padding="10"
+                    CornerRadius="4"
+                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#CC0000"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Загрузка -->
+            <ProgressBar IsIndeterminate="True"
+                         IsVisible="{Binding IsLoading}"
+                         Height="3"/>
+
+            <!-- Кнопки -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="10">
+                <Button Content="Отмена"
+                        Command="{Binding CancelCommand}"
+                        Padding="14,7"/>
+                <Button Content="Сохранить"
+                        Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding !IsLoading}"
+                        Padding="16,8"/>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</UserControl>

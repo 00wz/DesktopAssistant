@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:dto="using:DesktopAssistant.Application.Dtos"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="500"
+             x:Class="DesktopAssistant.UI.Views.ProfilesSettingsView"
+             x:DataType="vm:ProfilesSettingsViewModel">
+
+    <StackPanel Spacing="12">
+
+        <!-- Заголовок -->
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0"
+                       Text="Профили ассистентов"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"/>
+            <Button Grid.Column="1"
+                    Content="+ Создать"
+                    Command="{Binding StartCreateCommand}"
+                    Padding="14,7"/>
+        </Grid>
+
+        <!-- Ошибка -->
+        <Border Background="#FFE0E0"
+                Padding="10"
+                CornerRadius="4"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="#CC0000"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Загрузка -->
+        <ProgressBar IsIndeterminate="True"
+                     IsVisible="{Binding IsLoading}"
+                     Height="3"/>
+
+        <!-- Пустое состояние -->
+        <TextBlock Text="Нет профилей. Нажмите «+ Создать» для добавления."
+                   Foreground="#888"
+                   FontSize="13"
+                   IsVisible="{Binding !Profiles.Count}"/>
+
+        <!-- Список профилей -->
+        <ItemsControl ItemsSource="{Binding Profiles}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="dto:AssistantProfileDto">
+                    <Border Background="White"
+                            BorderBrush="#E0E0E0"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="14,10"
+                            Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="*,Auto">
+
+                            <!-- Информация о профиле -->
+                            <StackPanel Grid.Column="0" Spacing="3">
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,2">
+                                    <TextBlock Text="{Binding Name}"
+                                               FontWeight="SemiBold"
+                                               FontSize="14"
+                                               VerticalAlignment="Center"/>
+                                    <!-- Бейдж "По умолчанию" -->
+                                    <Border Background="#007ACC"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            IsVisible="{Binding IsDefault}">
+                                        <TextBlock Text="По умолчанию"
+                                                   Foreground="White"
+                                                   FontSize="10"/>
+                                    </Border>
+                                    <!-- Бейдж "API ключ задан" -->
+                                    <Border Background="#E8F5E9"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            IsVisible="{Binding HasApiKey}">
+                                        <TextBlock Text="API ключ задан"
+                                                   Foreground="#2E7D32"
+                                                   FontSize="10"/>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding ModelId}"
+                                           FontSize="12"
+                                           Foreground="#555"/>
+                                <TextBlock Text="{Binding BaseUrl}"
+                                           FontSize="11"
+                                           Foreground="#999"/>
+                            </StackPanel>
+
+                            <!-- Кнопки действий -->
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        Spacing="6"
+                                        VerticalAlignment="Center">
+                                <Button Content="Основным"
+                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetDefaultCommand}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="11"
+                                        Padding="10,5"
+                                        IsVisible="{Binding !IsDefault}"/>
+                                <Button Content="Изменить"
+                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).StartEditCommand}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="11"
+                                        Padding="10,5"/>
+                                <Button Content="Удалить"
+                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).DeleteProfileCommand}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="11"
+                                        Padding="10,5"
+                                        Background="#FFEBEE"
+                                        Foreground="#C62828"/>
+                            </StackPanel>
+
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Inline-редактор профиля -->
+        <Panel IsVisible="{Binding IsEditorVisible}">
+            <views:ProfileEditorView DataContext="{Binding ActiveEditor}"/>
+        </Panel>
+
+    </StackPanel>
+</UserControl>

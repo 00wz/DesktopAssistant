@@ -34,6 +34,9 @@ sealed class Program
         // Регистрация ViewModels
         services.AddTransient<ChatViewModel>();
         services.AddTransient<NewConversationPanelViewModel>();
+        services.AddTransient<ProfileEditorViewModel>();
+        services.AddTransient<ProfilesSettingsViewModel>();
+        services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         
         var serviceProvider = services.BuildServiceProvider();

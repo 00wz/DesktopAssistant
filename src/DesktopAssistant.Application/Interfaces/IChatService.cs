@@ -36,6 +36,12 @@ public interface IChatService
     /// <summary>Обновляет API-ключ профиля в защищённом хранилище.</summary>
     Task SetAssistantProfileApiKeyAsync(Guid id, string apiKey, CancellationToken cancellationToken = default);
 
+    /// <summary>Удаляет профиль ассистента. Бросает исключение если профиль используется активными диалогами.</summary>
+    Task DeleteAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Устанавливает указанный профиль как профиль по умолчанию, снимая флаг с предыдущего.</summary>
+    Task SetDefaultAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
+
     // ── Управление диалогами ────────────────────────────────────────────────
 
     /// <summary>

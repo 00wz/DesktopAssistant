@@ -36,6 +36,13 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool IsNewConversationPanelVisible => NewConversationPanel != null;
 
+    /// <summary>Панель настроек (null если скрыта).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSettingsVisible))]
+    private SettingsViewModel? _settingsView;
+
+    public bool IsSettingsVisible => SettingsView != null;
+
     public ObservableCollection<ChatViewModel> Chats { get; } = new();
     public ObservableCollection<ConversationListItem> SavedConversations { get; } = new();
 
@@ -121,6 +128,25 @@ public partial class MainWindowViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error opening conversation {ConversationId}", item.Id);
+        }
+    }
+
+    /// <summary>
+    /// Открывает панель настроек
+    /// </summary>
+    [RelayCommand]
+    public async Task OpenSettingsAsync()
+    {
+        try
+        {
+            var vm = _serviceProvider.GetRequiredService<SettingsViewModel>();
+            vm.OnClose = () => SettingsView = null;
+            await vm.ProfilesSettings.LoadProfilesAsync();
+            SettingsView = vm;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening settings");
         }
     }
 

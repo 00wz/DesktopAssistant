@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:views="using:DesktopAssistant.UI.Views"
              mc:Ignorable="d" d:DesignWidth="580" d:DesignHeight="700"
              x:Class="DesktopAssistant.UI.Views.NewConversationPanelView"
              x:DataType="vm:NewConversationPanelViewModel">
@@ -69,58 +70,10 @@
                                IsVisible="{Binding !AvailableProfiles.Count}"/>
                 </StackPanel>
 
-                <!-- Форма создания нового профиля -->
-                <Border IsVisible="{Binding IsCreateProfileMode}"
-                        Background="#EEF2FF"
-                        CornerRadius="8"
-                        Padding="16">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Новый профиль ассистента"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"/>
-
-                        <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Название *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding NewProfileName, Mode=TwoWay}" Watermark="Мой ассистент" Margin="0,0,0,6"/>
-
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Base URL *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewProfileBaseUrl, Mode=TwoWay}" Watermark="https://api.openai.com/v1" Margin="0,0,0,6"/>
-
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Model ID *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewProfileModelId, Mode=TwoWay}" Watermark="gpt-4o-mini" Margin="0,0,0,6"/>
-
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="API Key *" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding NewProfileApiKey, Mode=TwoWay}" PasswordChar="•" Watermark="sk-..." Margin="0,0,0,6"/>
-
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Temperature" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                            <NumericUpDown Grid.Row="4" Grid.Column="1"
-                                           Value="{Binding NewProfileTemperature, Mode=TwoWay}"
-                                           Minimum="0" Maximum="2" Increment="0.1"
-                                           FormatString="F1"
-                                           Margin="0,0,0,6"/>
-
-                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Max Tokens" FontSize="12" Foreground="#555" VerticalAlignment="Center" Margin="0,0,8,6"/>
-                            <NumericUpDown Grid.Row="5" Grid.Column="1"
-                                           Value="{Binding NewProfileMaxTokens, Mode=TwoWay}"
-                                           Minimum="256" Maximum="128000" Increment="256"
-                                           Margin="0,0,0,6"/>
-                        </Grid>
-
-                        <CheckBox Content="Профиль по умолчанию"
-                                  IsChecked="{Binding NewProfileIsDefault, Mode=TwoWay}"
-                                  FontSize="12"/>
-
-                        <ProgressBar IsIndeterminate="True"
-                                     IsVisible="{Binding IsLoading}"
-                                     Height="3"/>
-
-                        <Button Content="Создать профиль"
-                                Command="{Binding CreateProfileCommand}"
-                                IsEnabled="{Binding !IsLoading}"
-                                HorizontalAlignment="Right"
-                                Padding="16,8"/>
-                    </StackPanel>
-                </Border>
+                <!-- Inline-редактор профиля (вместо встроенной формы) -->
+                <Panel IsVisible="{Binding IsCreateProfileMode}">
+                    <views:ProfileEditorView DataContext="{Binding InlineProfileEditor}"/>
+                </Panel>
 
                 <!-- Системный промпт -->
                 <StackPanel Spacing="4">

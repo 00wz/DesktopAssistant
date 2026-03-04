@@ -115,6 +115,34 @@ public class ChatService : IChatService
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
+    public async Task DeleteAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        _ = await _assistantRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {id} not found");
+
+        await _assistantRepository.DeleteAsync(id, cancellationToken);
+        _logger.LogInformation("Deleted assistant profile {ProfileId}", id);
+    }
+
+    /// <inheritdoc />
+    public async Task SetDefaultAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var profile = await _assistantRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {id} not found");
+
+        var currentDefault = await _assistantRepository.GetDefaultAsync(cancellationToken);
+        if (currentDefault != null && currentDefault.Id != id)
+        {
+            currentDefault.UnsetDefault();
+            await _assistantRepository.UpdateAsync(currentDefault, cancellationToken);
+        }
+
+        profile.SetAsDefault();
+        await _assistantRepository.UpdateAsync(profile, cancellationToken);
+        _logger.LogInformation("Set default assistant profile {ProfileId}: {Name}", id, profile.Name);
+    }
+
     // ── Управление диалогами ─────────────────────────────────────────────────
 
     /// <inheritdoc />
