@@ -12,9 +12,9 @@ public record AssistantProfileDto(
     bool HasApiKey,
     bool IsSummarizationProfile);
 
-/// <summary>Настройки конкретного диалога: системный промпт и профиль.</summary>
+/// <summary>Настройки конкретного диалога: системный промпт и профиль. Profile == null если профиль не назначен.</summary>
 public record ConversationSettingsDto(
     Guid ConversationId,
     string SystemPrompt,
-    Guid AssistantProfileId,
-    AssistantProfileDto Profile);
+    Guid? AssistantProfileId,
+    AssistantProfileDto? Profile);

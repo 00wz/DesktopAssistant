@@ -209,7 +209,8 @@ public class ConversationService
     {
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
         if (conversation == null) return null;
-        return await _assistantRepository.GetByIdAsync(conversation.AssistantProfileId, cancellationToken);
+        if (!conversation.AssistantProfileId.HasValue) return null;
+        return await _assistantRepository.GetByIdAsync(conversation.AssistantProfileId.Value, cancellationToken);
     }
 
     /// <summary>

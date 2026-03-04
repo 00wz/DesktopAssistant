@@ -74,8 +74,6 @@ public static class DependencyInjection
     {
         using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var logger = scope.ServiceProvider.GetService<ILogger<AppDbContext>>();
-
         await dbContext.Database.EnsureCreatedAsync();
     }
 }

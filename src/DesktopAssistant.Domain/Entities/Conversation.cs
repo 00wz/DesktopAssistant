@@ -8,7 +8,7 @@ namespace DesktopAssistant.Domain.Entities;
 public class Conversation : BaseEntity
 {
     public string Title { get; private set; } = string.Empty;
-    public Guid AssistantProfileId { get; private set; }
+    public Guid? AssistantProfileId { get; private set; }
     public Guid? ActiveLeafNodeId { get; private set; }
     public string? Summary { get; private set; }//TODO: не использжуется
     public int TotalTokenCount { get; private set; }

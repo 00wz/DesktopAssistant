@@ -161,11 +161,13 @@ public partial class ChatViewModel : ObservableObject
             if (settings == null) return;
 
             SystemPrompt = settings.SystemPrompt;
-            AssistantProfileName = settings.Profile.Name;
+            AssistantProfileName = settings.Profile?.Name ?? string.Empty;
 
             var profiles = await _profileService.GetAssistantProfilesAsync(cancellationToken);
             AvailableProfiles = new ObservableCollection<AssistantProfileDto>(profiles);
-            SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.Id == settings.AssistantProfileId);
+            SelectedProfile = settings.AssistantProfileId.HasValue
+                ? AvailableProfiles.FirstOrDefault(p => p.Id == settings.AssistantProfileId.Value)
+                : null;
         }
         catch (Exception ex)
         {

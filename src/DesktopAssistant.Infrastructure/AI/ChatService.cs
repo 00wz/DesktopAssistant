@@ -105,14 +105,19 @@ public class ChatService : IChatService
         var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
         if (conversation == null) return null;
 
-        var profile = await _assistantRepository.GetByIdAsync(conversation.AssistantProfileId, cancellationToken);
-        if (profile == null) return null;
+        AssistantProfileDto? profileDto = null;
+        if (conversation.AssistantProfileId.HasValue)
+        {
+            var profile = await _assistantRepository.GetByIdAsync(conversation.AssistantProfileId.Value, cancellationToken);
+            if (profile != null)
+                profileDto = await MapToProfileDtoAsync(profile, cancellationToken);
+        }
 
         return new ConversationSettingsDto(
             conversationId,
             conversation.SystemPrompt,
-            profile.Id,
-            await MapToProfileDtoAsync(profile, cancellationToken));
+            conversation.AssistantProfileId,
+            profileDto);
     }
 
     /// <inheritdoc />

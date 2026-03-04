@@ -33,7 +33,8 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.AssistantProfile)
                   .WithMany(a => a.Conversations)
                   .HasForeignKey(e => e.AssistantProfileId)
-                  .OnDelete(DeleteBehavior.Restrict);
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(e => e.ActiveLeafNode)
                   .WithMany()
