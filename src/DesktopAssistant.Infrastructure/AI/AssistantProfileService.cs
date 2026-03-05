@@ -46,7 +46,6 @@ public class AssistantProfileService : IAssistantProfileService
         string apiKey,
         double temperature = 0.7,
         int maxTokens = 4096,
-        bool isDefault = false,
         CancellationToken cancellationToken = default)
     {
         var profile = new AssistantProfile(name, baseUrl, modelId,
@@ -55,7 +54,8 @@ public class AssistantProfileService : IAssistantProfileService
         await _assistantRepository.AddAsync(profile, cancellationToken);
         _credentialStore.SetApiKey(profile.Id, apiKey);
 
-        if (isDefault)
+        var existingDefaultId = await GetDefaultProfileIdAsync(cancellationToken);
+        if (existingDefaultId is null)
             await StoreDefaultProfileIdAsync(profile.Id, cancellationToken);
 
         _logger.LogInformation("Created assistant profile {ProfileId}: {Name}", profile.Id, name);

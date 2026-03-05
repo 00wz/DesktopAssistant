@@ -74,10 +74,6 @@
                                Margin="0,0,0,6"/>
             </Grid>
 
-            <CheckBox Content="Профиль по умолчанию"
-                      IsChecked="{Binding IsDefault, Mode=TwoWay}"
-                      FontSize="12"/>
-
             <!-- Ошибка -->
             <Border Background="#FFE0E0"
                     Padding="10"

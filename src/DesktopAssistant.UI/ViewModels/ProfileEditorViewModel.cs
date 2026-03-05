@@ -50,9 +50,6 @@ public partial class ProfileEditorViewModel : ObservableObject
     private int _maxTokens = 4096;
 
     [ObservableProperty]
-    private bool _isDefault;
-
-    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private bool _isLoading;
 
@@ -81,7 +78,6 @@ public partial class ProfileEditorViewModel : ObservableObject
         ApiKey = string.Empty;
         Temperature = 0.7;
         MaxTokens = 4096;
-        IsDefault = false;
         ErrorMessage = null;
         IsLoading = false;
     }
@@ -97,7 +93,6 @@ public partial class ProfileEditorViewModel : ObservableObject
         ApiKey = string.Empty;
         Temperature = profile.Temperature;
         MaxTokens = profile.MaxTokens;
-        IsDefault = profile.IsDefault;
         ErrorMessage = null;
         IsLoading = false;
     }
@@ -129,9 +124,6 @@ public partial class ProfileEditorViewModel : ObservableObject
                 if (!string.IsNullOrWhiteSpace(ApiKey))
                     await _profileService.SetAssistantProfileApiKeyAsync(_editingProfileId.Value, ApiKey.Trim());
 
-                if (IsDefault)
-                    await _profileService.SetDefaultAssistantProfileAsync(_editingProfileId.Value);
-
                 var all = await _profileService.GetAssistantProfilesAsync();
                 saved = all.First(p => p.Id == _editingProfileId.Value);
             }
@@ -139,7 +131,7 @@ public partial class ProfileEditorViewModel : ObservableObject
             {
                 saved = await _profileService.CreateAssistantProfileAsync(
                     Name.Trim(), BaseUrl.Trim(), ModelId.Trim(),
-                    ApiKey.Trim(), Temperature, MaxTokens, IsDefault);
+                    ApiKey.Trim(), Temperature, MaxTokens);
             }
 
             if (OnSaved != null)
