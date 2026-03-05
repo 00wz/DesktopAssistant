@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             mc:Ignorable="d" d:DesignWidth="680" d:DesignHeight="500"
+             x:Class="DesktopAssistant.UI.Views.ToolApprovalSettingsView"
+             x:DataType="vm:ToolApprovalSettingsViewModel">
+
+    <StackPanel Spacing="16">
+
+        <!-- Заголовок секции -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="Автоподтверждение tools"
+                       FontSize="16"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="Включите автоматическое выполнение для доверенных инструментов. Список обновляется при подключении/отключении MCP серверов."
+                       FontSize="12"
+                       Foreground="#666"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Ошибка -->
+        <Border Background="#FFE0E0"
+                Padding="12"
+                CornerRadius="4"
+                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="#CC0000"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <!-- Индикатор загрузки -->
+        <ProgressBar IsIndeterminate="True"
+                     Height="2"
+                     IsVisible="{Binding IsLoading}"/>
+
+        <!-- Пустой список -->
+        <Border Background="#F8F8F8"
+                Padding="24"
+                CornerRadius="4"
+                IsVisible="{Binding !HasTools}">
+            <TextBlock Text="Нет доступных tools. Подключите MCP сервер или обновите список."
+                       HorizontalAlignment="Center"
+                       Foreground="#888"
+                       FontSize="13"/>
+        </Border>
+
+        <!-- Список tools -->
+        <ItemsControl ItemsSource="{Binding Tools}"
+                      IsVisible="{Binding HasTools}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="models:ToolApprovalItemModel">
+                    <Border Background="White"
+                            BorderBrush="#E0E0E0"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="14,10"
+                            Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="*,Auto">
+
+                            <!-- Информация о tool -->
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           FontWeight="SemiBold"
+                                           FontSize="13"/>
+                                <TextBlock Text="{Binding Description}"
+                                           FontSize="11"
+                                           Foreground="#666"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
+
+                            <!-- Тоггл auto-approve -->
+                            <CheckBox Grid.Column="1"
+                                      IsChecked="{Binding IsAutoApproved, Mode=TwoWay}"
+                                      VerticalAlignment="Center"
+                                      Margin="16,0,0,0"
+                                      ToolTip.Tip="Автоматически выполнять без подтверждения"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+    </StackPanel>
+</UserControl>

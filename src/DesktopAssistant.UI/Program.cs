@@ -36,6 +36,7 @@ sealed class Program
         services.AddTransient<NewConversationPanelViewModel>();
         services.AddTransient<ProfileEditorViewModel>();
         services.AddTransient<ProfilesSettingsViewModel>();
+        services.AddTransient<ToolApprovalSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
         

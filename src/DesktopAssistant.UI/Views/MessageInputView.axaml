@@ -19,11 +19,6 @@
                            TextWrapping="Wrap"/>
             </Border>
 
-            <!-- Auto-approve toggle -->
-            <CheckBox Content="Авто-подтверждение tools"
-                      IsChecked="{Binding IsAutoApproveTools, Mode=TwoWay}"
-                      FontSize="12"/>
-
             <!-- Ввод сообщения -->
             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
                 <TextBox Grid.Column="0"

@@ -16,6 +16,7 @@ public partial class ChatViewModel : ObservableObject
 {
     private readonly IChatService _chatService;
     private readonly IAssistantProfileService _profileService;
+    private readonly IToolApprovalService _toolApprovalService;
     private readonly ILogger<ChatViewModel> _logger;
 
     [ObservableProperty]
@@ -32,10 +33,6 @@ public partial class ChatViewModel : ObservableObject
 
     [ObservableProperty]
     private string _conversationTitle = "Новый чат";
-
-    /// <summary>Если true — tool-вызовы выполняются без запроса подтверждения.</summary>
-    [ObservableProperty]
-    private bool _isAutoApproveTools;
 
     /// <summary>ID последнего узла активной ветки — передаётся явно во все методы сервиса.</summary>
     private Guid? _currentLeafNodeId;
@@ -82,10 +79,12 @@ public partial class ChatViewModel : ObservableObject
     public ChatViewModel(
         IChatService chatService,
         IAssistantProfileService profileService,
+        IToolApprovalService toolApprovalService,
         ILogger<ChatViewModel> logger)
     {
         _chatService = chatService;
         _profileService = profileService;
+        _toolApprovalService = toolApprovalService;
         _logger = logger;
     }
 
@@ -583,7 +582,7 @@ public partial class ChatViewModel : ObservableObject
 
                     case ToolCallRequestedDto toolReq:
                         _currentLeafNodeId = toolReq.PendingNodeId;
-                        HandleToolCallRequested(toolReq);
+                        await HandleToolCallRequested(toolReq);
                         break;
                 }
             }
@@ -598,7 +597,7 @@ public partial class ChatViewModel : ObservableObject
         if (_currentLeafNodeId.HasValue)
             ConversationStatus = await _chatService.GetConversationStateAsync(_currentLeafNodeId.Value, CancellationToken.None);
 
-        void HandleToolCallRequested(ToolCallRequestedDto toolReq)
+        async Task HandleToolCallRequested(ToolCallRequestedDto toolReq)
         {
             var toolModel = new ToolChatMessageModel
             {
@@ -612,7 +611,7 @@ public partial class ChatViewModel : ObservableObject
 
             Messages.Add(toolModel);
 
-            if (IsAutoApproveTools)
+            if (await _toolApprovalService.IsAutoApprovedAsync(toolReq.PluginName, toolReq.FunctionName))
                 _ = ApproveToolAsync(toolModel);
         }
 

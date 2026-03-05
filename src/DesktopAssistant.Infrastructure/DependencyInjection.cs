@@ -6,6 +6,7 @@ using DesktopAssistant.Infrastructure.MCP.Services;
 using DesktopAssistant.Infrastructure.Persistence;
 using DesktopAssistant.Infrastructure.Persistence.Repositories;
 using DesktopAssistant.Infrastructure.Security;
+using DesktopAssistant.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,6 +55,10 @@ public static class DependencyInjection
         // MCP Services
         services.AddSingleton<IMcpConfigurationService, McpConfigurationService>();
         services.AddSingleton<IMcpServerManager, McpServerManager>();
+
+        // Tool approval and discovery
+        services.AddSingleton<IToolApprovalService, ToolApprovalService>();
+        services.AddSingleton<IAvailableToolsProvider, AvailableToolsService>();
 
         // Logging
         services.AddLogging(loggingBuilder =>

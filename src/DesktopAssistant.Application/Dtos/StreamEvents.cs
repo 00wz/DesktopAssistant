@@ -23,7 +23,7 @@ public sealed record AssistantChunkDto(string Text) : StreamEvent;
 
 /// <summary>
 /// Tool-вызов требует подтверждения пользователя.
-/// PendingNodeId — ID узла в БД с Content == "__PENDING_TOOL__".
+/// PendingNodeId — ID узла в БД.
 /// Consumer создаёт карточку и вызывает ApproveToolCallAsync / DenyToolCallAsync по действию пользователя.
 /// </summary>
 public sealed record ToolCallRequestedDto(

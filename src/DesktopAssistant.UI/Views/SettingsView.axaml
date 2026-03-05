@@ -47,16 +47,39 @@
                                    Margin="16,0,0,8"
                                    FontWeight="SemiBold"
                                    LetterSpacing="1"/>
-                        <!-- Активный элемент навигации -->
-                        <Border Background="#E8F0FE"
-                                CornerRadius="4"
-                                Margin="8,0"
-                                Padding="12,8">
-                            <TextBlock Text="Профили ассистентов"
-                                       FontSize="13"
-                                       FontWeight="SemiBold"
-                                       Foreground="#1A73E8"/>
-                        </Border>
+
+                        <!-- Профили ассистентов — навигационный элемент -->
+                        <Panel Margin="8,0,8,2">
+                            <Border Background="#E8F0FE"
+                                    CornerRadius="4"
+                                    IsVisible="{Binding IsProfilesActive}"/>
+                            <Button Command="{Binding ShowProfilesCommand}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Padding="12,8">
+                                <TextBlock Text="Профили ассистентов"
+                                           FontSize="13"/>
+                            </Button>
+                        </Panel>
+
+                        <!-- Автоподтверждение tools — навигационный элемент -->
+                        <Panel Margin="8,0,8,2">
+                            <Border Background="#E8F0FE"
+                                    CornerRadius="4"
+                                    IsVisible="{Binding IsToolApprovalActive}"/>
+                            <Button Command="{Binding ShowToolApprovalCommand}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Padding="12,8">
+                                <TextBlock Text="Автоподтверждение tools"
+                                           FontSize="13"/>
+                            </Button>
+                        </Panel>
+
                     </StackPanel>
                 </Border>
 
@@ -64,7 +87,16 @@
                 <ScrollViewer Grid.Column="1"
                               VerticalScrollBarVisibility="Auto"
                               Padding="24,20,24,20">
-                    <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>
+                    <Panel>
+                        <!-- Секция профилей -->
+                        <Panel IsVisible="{Binding IsProfilesActive}">
+                            <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>
+                        </Panel>
+                        <!-- Секция автоподтверждения tools -->
+                        <Panel IsVisible="{Binding IsToolApprovalActive}">
+                            <views:ToolApprovalSettingsView DataContext="{Binding ToolApprovalSettings}"/>
+                        </Panel>
+                    </Panel>
                 </ScrollViewer>
 
             </Grid>
