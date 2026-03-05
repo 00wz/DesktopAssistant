@@ -244,7 +244,7 @@ public class ConversationService
     /// <summary>
     /// Инжектирует summary-узел между selectedNode и его дочерними узлами.
     /// После операции: selectedNode → summaryNode → (бывшие дочерние узлы selectedNode).
-    /// ActiveLeafNodeId диалога не изменяется — лист остаётся тем же.
+    /// Если selectedNode является листом диалога, ActiveLeafNodeId обновляется на summaryNode.
     /// </summary>
     public async Task<MessageNode> InjectSummaryNodeAsync(
         Guid conversationId,
@@ -259,6 +259,7 @@ public class ConversationService
 
         var oldActiveChildId = selectedNode.ActiveChildId;
         var children = (await _messageNodeRepository.GetChildrenAsync(selectedNodeId, cancellationToken)).ToList();
+        var isLeaf = children.Count == 0;
 
         // Создаём summary-узел как дочерний по отношению к selectedNode
         var summaryNode = new MessageNode(conversationId, MessageNodeType.Summary, summaryContent, selectedNodeId, tokenCount);
@@ -283,9 +284,18 @@ public class ConversationService
         selectedNode.SetActiveChild(summaryNode.Id);
         await _messageNodeRepository.UpdateAsync(selectedNode, cancellationToken);
 
+        // Если selectedNode был листом — summaryNode становится новым листом диалога
+        if (isLeaf)
+        {
+            var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+                ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+            conversation.SetActiveLeafNode(summaryNode.Id);
+            await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+        }
+
         _logger.LogInformation(
-            "Injected summary node {SummaryNodeId} after {SelectedNodeId} in conversation {ConversationId}",
-            summaryNode.Id, selectedNodeId, conversationId);
+            "Injected summary node {SummaryNodeId} after {SelectedNodeId} in conversation {ConversationId} (wasLeaf={IsLeaf})",
+            summaryNode.Id, selectedNodeId, conversationId, isLeaf);
 
         return summaryNode;
     }

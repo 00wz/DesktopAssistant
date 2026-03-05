@@ -437,9 +437,17 @@ public partial class ChatViewModel : ObservableObject
 
         // Проверяем состояние — суммаризация невозможна при незавершённых tool-вызовах
         var state = await _chatService.GetConversationStateAsync(message.Id);
-        if (state is ConversationState.HasPendingToolCalls or ConversationState.ToolCallIdMismatch)
+        if (state is ConversationState.HasPendingToolCalls)
         {
-            ErrorMessage = "Нельзя суммаризировать при наличии незавершённых tool-вызовов";
+            ErrorMessage = "Cannot summarize: one or more tool actions are still running or waiting for your approval. " +
+                           "Wait for them to finish or approve/deny them, then try again.";
+            IsLoading = false;
+            return;
+        }
+        if (state is ConversationState.ToolCallIdMismatch)
+        {
+            ErrorMessage = "Cannot summarize at this point: the selected message is in the middle of a tool call sequence. " +
+                           "Choose a message that comes before or after the entire tool call group.";
             IsLoading = false;
             return;
         }

@@ -42,21 +42,12 @@ public class SummarizationExecutor(
         Guid selectedNodeId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // 1. Resolve summarization profile
-        var profileIdStr = await _appSettingsRepository.GetValueAsync(
-            AppSettings.Keys.SummarizationProfileId, cancellationToken);
+        // 1. Resolve summarization profile (falls back to default profile if not configured)
+        var profile = await ResolveSummarizationProfileAsync(cancellationToken);
 
-        if (!Guid.TryParse(profileIdStr, out var profileId))
-            throw new InvalidOperationException(
-                "Summarization profile is not configured. Please set it in application settings.");
-
-        var profile = await _assistantProfileRepository.GetByIdAsync(profileId, cancellationToken)
+        var apiKey = _credentialStore.GetApiKey(profile.Id)
             ?? throw new InvalidOperationException(
-                $"Summarization profile {profileId} not found.");
-
-        var apiKey = _credentialStore.GetApiKey(profileId)
-            ?? throw new InvalidOperationException(
-                $"API key is not set for summarization profile '{profile.Name}'.");
+                $"API key is not set for profile '{profile.Name}'.");
 
         // 2. Build context up to the selected node
         var contextMessages = await _conversationService.BuildContextAsync(selectedNodeId, cancellationToken);
@@ -87,13 +78,42 @@ public class SummarizationExecutor(
 
         // 6. Extract display text from reduced messages (role + content, blank line between)
         var summaryContent = string.Join("\n\n", reducedMessages
-            .Where(m => !string.IsNullOrEmpty(m.Content))
-            .Select(m => $"[{m.Role}]\n{m.Content}"));
+            .Select(m => $"[{m.Role}]{(string.IsNullOrEmpty(m.Content) ? string.Empty : $"\n{m.Content}")}"));
 
         // 7. Inject summary node into the message tree
         var summaryNode = await _conversationService.InjectSummaryNodeAsync(
             conversationId, selectedNodeId, summaryContent, metadata, cancellationToken: cancellationToken);
 
         yield return new SummarizationCompletedDto(summaryNode.Id, summaryContent);
+    }
+
+    private async Task<AssistantProfile> ResolveSummarizationProfileAsync(
+        CancellationToken cancellationToken)
+    {
+        var summarizationIdStr = await _appSettingsRepository.GetValueAsync(
+            AppSettings.Keys.SummarizationProfileId, cancellationToken);
+
+        if (Guid.TryParse(summarizationIdStr, out var summarizationId))
+        {
+            var profile = await _assistantProfileRepository.GetByIdAsync(summarizationId, cancellationToken);
+            if (profile != null)
+            {
+                _logger.LogDebug("[SUMMARIZATION] Using summarization profile {ProfileId}", summarizationId);
+                return profile;
+            }
+            _logger.LogWarning(
+                "[SUMMARIZATION] Summarization profile {ProfileId} not found, falling back to default.", summarizationId);
+        }
+
+        var defaultIdStr = await _appSettingsRepository.GetValueAsync(
+            AppSettings.Keys.DefaultProfileId, cancellationToken);
+
+        if (!Guid.TryParse(defaultIdStr, out var defaultId))
+            throw new InvalidOperationException(
+                "No summarization profile configured and no default profile is set.");
+
+        return await _assistantProfileRepository.GetByIdAsync(defaultId, cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"Default profile {defaultId} not found.");
     }
 }
