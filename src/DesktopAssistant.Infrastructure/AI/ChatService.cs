@@ -18,6 +18,7 @@ public class ChatService : IChatService
 {
     private readonly LlmTurnExecutor _llmTurnExecutor;
     private readonly ToolCallExecutor _toolCallExecutor;
+    private readonly ISummarizationService _summarizationService;
     private readonly ConversationService _conversationService;
     private readonly IMessageNodeRepository _messageNodeRepository;
     private readonly IAssistantProfileRepository _assistantRepository;
@@ -28,6 +29,7 @@ public class ChatService : IChatService
     public ChatService(
         LlmTurnExecutor llmTurnExecutor,
         ToolCallExecutor toolCallExecutor,
+        ISummarizationService summarizationService,
         ConversationService conversationService,
         IMessageNodeRepository messageNodeRepository,
         IAssistantProfileRepository assistantRepository,
@@ -37,6 +39,7 @@ public class ChatService : IChatService
     {
         _llmTurnExecutor = llmTurnExecutor;
         _toolCallExecutor = toolCallExecutor;
+        _summarizationService = summarizationService;
         _conversationService = conversationService;
         _messageNodeRepository = messageNodeRepository;
         _assistantRepository = assistantRepository;
@@ -300,6 +303,13 @@ public class ChatService : IChatService
         return hasPending ? ConversationState.HasPendingToolCalls : ConversationState.AllToolCallsCompleted;
     }
 
+    /// <inheritdoc />
+    public IAsyncEnumerable<SummarizationEvent> SummarizeAsync(
+        Guid conversationId,
+        Guid selectedNodeId,
+        CancellationToken cancellationToken = default)
+        => _summarizationService.SummarizeAsync(conversationId, selectedNodeId, cancellationToken);
+
     private static HashSet<string> ExtractToolCallIds(MessageNode node)
     {
         if (!ChatMessageSerializer.TryDeserialize(node.Metadata, out var msg) || msg == null)
@@ -343,8 +353,7 @@ public class ChatService : IChatService
 
             MessageNodeType.Tool => MapToolNodeToDto(node),
 
-            MessageNodeType.Summary => new SummaryMessageDto(
-                node.Id, node.ParentId, node.CreatedAt, node.Content, 0, 0),
+            MessageNodeType.Summary => MapSummaryNodeToDto(node),
 
             _ => new AssistantMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content)
         };
@@ -383,6 +392,15 @@ public class ChatService : IChatService
             node.Id, node.ParentId, node.CreatedAt, node.Content,
             currentIndex, total, hasPrev, hasNext, prevId, nextId,
             inputTokenCount, outputTokenCount, totalTokenCount);
+    }
+
+    private static SummaryMessageDto MapSummaryNodeToDto(MessageNode node)
+    {
+        var meta = SummarizationMetadata.TryDeserialize(node.Metadata);
+        return new SummaryMessageDto(
+            node.Id, node.ParentId, node.CreatedAt, node.Content,
+            meta?.InputTokenCount ?? 0,
+            meta?.OutputTokenCount ?? 0);
     }
 
     private static ToolResultDto MapToolNodeToDto(MessageNode node)

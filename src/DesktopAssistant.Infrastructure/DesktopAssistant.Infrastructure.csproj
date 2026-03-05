@@ -15,9 +15,9 @@
 
   <ItemGroup>
     <!-- Semantic Kernel (единый коннектор для всех OpenAI-совместимых провайдеров) -->
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.67.1" />
     <!-- TODO: пакет ниже, возможно не нужен-->
-    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.32.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.67.1" />
     
     <!-- MCP Integration -->
     <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.1" />
@@ -51,7 +51,7 @@
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
     
     <!-- DI -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
     
     <!-- HTTP -->
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />

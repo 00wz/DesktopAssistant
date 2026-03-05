@@ -33,6 +33,13 @@
                     MaxWidth="500"
                     Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
                     HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Суммаризировать контекст"
+                                  Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                                  CommandParameter="{Binding}"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <StackPanel>
                     <StackPanel IsVisible="{Binding !IsEditing}">
                         <TextBlock Text="{Binding Content}"
@@ -105,6 +112,13 @@
                     Padding="2"
                     MaxWidth="500"
                     HorizontalAlignment="Left">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Суммаризировать контекст"
+                                  Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                                  CommandParameter="{Binding}"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Expander>
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -167,7 +181,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="📋" VerticalAlignment="Center"/>
                     <TextBlock Text="Сводка" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Status}" Foreground="Gray" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding StatusText}" Foreground="Gray" FontSize="11" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding SummaryContent}"
                                IsVisible="{Binding !IsInProgress}"
                                TextWrapping="NoWrap"

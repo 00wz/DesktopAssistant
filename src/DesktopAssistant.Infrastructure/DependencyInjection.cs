@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddSingleton<AgentKernelFactory>();
         services.AddScoped<LlmTurnExecutor>();
         services.AddScoped<ToolCallExecutor>();
+        services.AddScoped<ISummarizationService, SummarizationExecutor>();
         services.AddScoped<IAssistantProfileService, AssistantProfileService>();
         services.AddScoped<IChatService, ChatService>();
 

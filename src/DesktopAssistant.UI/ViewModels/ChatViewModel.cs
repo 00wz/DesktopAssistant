@@ -428,6 +428,57 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task SummarizeMessageAsync(ChatMessageModel message)
+    {
+        if (CurrentConversation == null) return;
+
+        IsLoading = true;
+        ErrorMessage = null;
+
+        // Проверяем состояние — суммаризация невозможна при незавершённых tool-вызовах
+        var state = await _chatService.GetConversationStateAsync(message.Id);
+        if (state is ConversationState.HasPendingToolCalls or ConversationState.ToolCallIdMismatch)
+        {
+            ErrorMessage = "Нельзя суммаризировать при наличии незавершённых tool-вызовов";
+            IsLoading = false;
+            return;
+        }
+
+        // Вставляем индикатор прогресса сразу после выбранного сообщения
+        var summaryModel = new SummarizationChatMessageModel { Status = SummarizationStatus.Running };
+        var insertIndex = Messages.IndexOf(message) + 1;
+        Messages.Insert(insertIndex, summaryModel);
+
+        try
+        {
+            await foreach (var evt in _chatService.SummarizeAsync(CurrentConversation.Id, message.Id))
+            {
+                if (evt is SummarizationCompletedDto completed)
+                {
+                    summaryModel.Id = completed.SummaryNodeId;
+                    summaryModel.SummaryContent = completed.SummaryContent;
+                    summaryModel.InputTokenCount = completed.InputTokenCount;
+                    summaryModel.OutputTokenCount = completed.OutputTokenCount;
+                    summaryModel.Status = SummarizationStatus.Completed;
+                }
+            }
+
+            // Перезагружаем историю, чтобы отобразить обновлённое дерево
+            await LoadMessagesAsync(default);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error summarizing message {MessageId}", message.Id);
+            ErrorMessage = $"Ошибка суммаризации: {ex.Message}";
+            summaryModel.Status = SummarizationStatus.Failed;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task NavigateToPreviousSiblingAsync(ChatMessageModel message)
     {
         if (CurrentConversation == null || !message.ParentId.HasValue || !message.PreviousSiblingId.HasValue)

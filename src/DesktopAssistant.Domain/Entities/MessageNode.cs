@@ -64,9 +64,16 @@ public class MessageNode : BaseEntity
     /// </summary>
     public void SetActiveChild(Guid childId)
     {
-        if (!Children.Any(c => c.Id == childId))
-            throw new InvalidOperationException($"Child {childId} not found");
         ActiveChildId = childId;
+        MarkAsUpdated();
+    }
+
+    /// <summary>
+    /// Перепривязывает узел к новому родителю (используется при инжекции summary-узла в дерево)
+    /// </summary>
+    public void ReparentTo(Guid newParentId)
+    {
+        ParentId = newParentId;
         MarkAsUpdated();
     }
 

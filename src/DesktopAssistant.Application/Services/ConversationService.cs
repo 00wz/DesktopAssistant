@@ -242,6 +242,55 @@ public class ConversationService
     }
 
     /// <summary>
+    /// Инжектирует summary-узел между selectedNode и его дочерними узлами.
+    /// После операции: selectedNode → summaryNode → (бывшие дочерние узлы selectedNode).
+    /// ActiveLeafNodeId диалога не изменяется — лист остаётся тем же.
+    /// </summary>
+    public async Task<MessageNode> InjectSummaryNodeAsync(
+        Guid conversationId,
+        Guid selectedNodeId,
+        string summaryContent,
+        string? metadata = null,
+        int tokenCount = 0,
+        CancellationToken cancellationToken = default)
+    {
+        var selectedNode = await _messageNodeRepository.GetByIdAsync(selectedNodeId, cancellationToken)
+            ?? throw new InvalidOperationException($"Node {selectedNodeId} not found");
+
+        var oldActiveChildId = selectedNode.ActiveChildId;
+        var children = (await _messageNodeRepository.GetChildrenAsync(selectedNodeId, cancellationToken)).ToList();
+
+        // Создаём summary-узел как дочерний по отношению к selectedNode
+        var summaryNode = new MessageNode(conversationId, MessageNodeType.Summary, summaryContent, selectedNodeId, tokenCount);
+        if (metadata != null) summaryNode.SetMetadata(metadata);
+        await _messageNodeRepository.AddAsync(summaryNode, cancellationToken);
+
+        // Перепривязываем всех бывших детей selectedNode к summaryNode
+        foreach (var child in children)
+        {
+            child.ReparentTo(summaryNode.Id);
+            await _messageNodeRepository.UpdateAsync(child, cancellationToken);
+        }
+
+        // summaryNode наследует активного ребёнка selectedNode
+        if (oldActiveChildId.HasValue)
+        {
+            summaryNode.SetActiveChild(oldActiveChildId.Value);
+            await _messageNodeRepository.UpdateAsync(summaryNode, cancellationToken);
+        }
+
+        // selectedNode теперь указывает на summaryNode
+        selectedNode.SetActiveChild(summaryNode.Id);
+        await _messageNodeRepository.UpdateAsync(selectedNode, cancellationToken);
+
+        _logger.LogInformation(
+            "Injected summary node {SummaryNodeId} after {SelectedNodeId} in conversation {ConversationId}",
+            summaryNode.Id, selectedNodeId, conversationId);
+
+        return summaryNode;
+    }
+
+    /// <summary>
     /// Переключается на sibling сообщение
     /// </summary>
     public async Task SwitchToSiblingAsync(

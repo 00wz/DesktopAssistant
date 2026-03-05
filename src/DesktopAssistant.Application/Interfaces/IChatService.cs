@@ -75,4 +75,14 @@ public interface IChatService
     /// Возвращает <see cref="ConversationState"/>, описывающий доступные действия пользователя.
     /// </summary>
     Task<ConversationState> GetConversationStateAsync(Guid lastNodeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Суммаризирует контекст диалога начиная с выбранного узла.
+    /// Создаёт summary-узел в дереве как дочерний по отношению к selectedNodeId.
+    /// Поток событий: SummarizationStartedDto → SummarizationCompletedDto.
+    /// </summary>
+    IAsyncEnumerable<SummarizationEvent> SummarizeAsync(
+        Guid conversationId,
+        Guid selectedNodeId,
+        CancellationToken cancellationToken = default);
 }

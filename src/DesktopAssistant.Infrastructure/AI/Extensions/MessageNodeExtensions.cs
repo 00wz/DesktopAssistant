@@ -55,7 +55,7 @@ public static class MessageNodeExtensions
     /// System-узлы из дерева (пустые якорные узлы) пропускаются.
     /// </summary>
     /// <exception cref="InvalidOperationException">Если tool-узел не имеет результата (pending)</exception>
-    public static ChatHistory ToChatHistory(this IEnumerable<MessageNode> messages, string systemPrompt)
+    public static ChatHistory ToChatHistory(this IEnumerable<MessageNode> messages, string? systemPrompt = null)
     {
         var chatHistory = new ChatHistory();
 
@@ -78,7 +78,9 @@ public static class MessageNodeExtensions
             }
             else if (message.NodeType == MessageNodeType.Summary)
             {
-                // not implemented yet
+                // Summary-узел инжектируется как системное сообщение — контекст предыдущего диалога
+                if (!string.IsNullOrEmpty(message.Content))
+                    chatHistory.AddSystemMessage(message.Content);
             }
             else
             {

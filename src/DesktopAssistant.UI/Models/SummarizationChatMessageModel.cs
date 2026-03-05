@@ -19,6 +19,7 @@ public partial class SummarizationChatMessageModel : ChatMessageModel
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInProgress))]
+    [NotifyPropertyChangedFor(nameof(StatusText))]
     private SummarizationStatus _status = SummarizationStatus.Completed;
 
     [ObservableProperty]
@@ -31,6 +32,15 @@ public partial class SummarizationChatMessageModel : ChatMessageModel
     private int _outputTokenCount;
 
     public bool IsInProgress => Status is SummarizationStatus.Pending or SummarizationStatus.Running;
+
+    public string StatusText => Status switch
+    {
+        SummarizationStatus.Pending   => "Ожидание...",
+        SummarizationStatus.Running   => "Выполняется...",
+        SummarizationStatus.Completed => "Готово",
+        SummarizationStatus.Failed    => "Ошибка",
+        _                             => Status.ToString()
+    };
 
     public SummarizationChatMessageModel()
     {
