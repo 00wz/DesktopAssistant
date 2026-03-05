@@ -25,12 +25,6 @@ public partial class SummarizationChatMessageModel : ChatMessageModel
     [ObservableProperty]
     private string _summaryContent = string.Empty;
 
-    [ObservableProperty]
-    private int _inputTokenCount;
-
-    [ObservableProperty]
-    private int _outputTokenCount;
-
     public bool IsInProgress => Status is SummarizationStatus.Pending or SummarizationStatus.Running;
 
     public string StatusText => Status switch

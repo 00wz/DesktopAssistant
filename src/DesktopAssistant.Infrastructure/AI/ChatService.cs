@@ -396,11 +396,7 @@ public class ChatService : IChatService
 
     private static SummaryMessageDto MapSummaryNodeToDto(MessageNode node)
     {
-        var meta = SummarizationMetadata.TryDeserialize(node.Metadata);
-        return new SummaryMessageDto(
-            node.Id, node.ParentId, node.CreatedAt, node.Content,
-            meta?.InputTokenCount ?? 0,
-            meta?.OutputTokenCount ?? 0);
+        return new SummaryMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content);
     }
 
     private static ToolResultDto MapToolNodeToDto(MessageNode node)

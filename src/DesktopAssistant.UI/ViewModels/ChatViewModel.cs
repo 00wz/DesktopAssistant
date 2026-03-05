@@ -457,8 +457,6 @@ public partial class ChatViewModel : ObservableObject
                 {
                     summaryModel.Id = completed.SummaryNodeId;
                     summaryModel.SummaryContent = completed.SummaryContent;
-                    summaryModel.InputTokenCount = completed.InputTokenCount;
-                    summaryModel.OutputTokenCount = completed.OutputTokenCount;
                     summaryModel.Status = SummarizationStatus.Completed;
                 }
             }

@@ -78,9 +78,13 @@ public static class MessageNodeExtensions
             }
             else if (message.NodeType == MessageNodeType.Summary)
             {
-                // Summary-узел инжектируется как системное сообщение — контекст предыдущего диалога
-                if (!string.IsNullOrEmpty(message.Content))
-                    chatHistory.AddSystemMessage(message.Content);
+                // Десериализуем сохранённые ChatMessageContent и добавляем в историю как есть
+                var meta = SummarizationMetadata.TryDeserialize(message.Metadata);
+                if (meta != null)
+                {
+                    foreach (var chatMsg in meta.ToChatMessageContents())
+                        chatHistory.Add(chatMsg);
+                }
             }
             else
             {

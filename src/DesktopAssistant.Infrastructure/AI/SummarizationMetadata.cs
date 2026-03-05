@@ -1,14 +1,15 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DesktopAssistant.Infrastructure.AI.Serialization;
+using Microsoft.SemanticKernel;
 
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Метаданные summary-узла. Хранится в MessageNode.Metadata.
+/// Метаданные summary-узла. Хранит сериализованные ChatMessageContent, полученные от ChatHistorySummarizationReducer.
+/// Хранится в MessageNode.Metadata.
 /// </summary>
-internal sealed record SummarizationMetadata(
-    int InputTokenCount = 0,
-    int OutputTokenCount = 0)
+internal sealed record SummarizationMetadata(string[] SerializedMessages)
 {
     private static readonly JsonSerializerOptions _options = new()
     {
@@ -23,5 +24,14 @@ internal sealed record SummarizationMetadata(
         if (string.IsNullOrEmpty(json)) return null;
         try { return JsonSerializer.Deserialize<SummarizationMetadata>(json, _options); }
         catch (JsonException) { return null; }
+    }
+
+    internal IEnumerable<ChatMessageContent> ToChatMessageContents()
+    {
+        foreach (var serialized in SerializedMessages)
+        {
+            if (ChatMessageSerializer.TryDeserialize(serialized, out var msg) && msg != null)
+                yield return msg;
+        }
     }
 }

@@ -57,9 +57,7 @@ public record SummaryMessageDto(
     Guid Id,
     Guid? ParentId,
     DateTime CreatedAt,
-    string SummaryContent,
-    int InputTokenCount,
-    int OutputTokenCount
+    string SummaryContent
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>DTO диалога — возвращается из IChatService вместо Domain-сущности Conversation.</summary>

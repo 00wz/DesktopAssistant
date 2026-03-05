@@ -59,14 +59,13 @@ public class SummarizationExecutor(
                 $"API key is not set for summarization profile '{profile.Name}'.");
 
         // 2. Build context up to the selected node
-        var systemPrompt = await _conversationService.GetSystemPromptAsync(conversationId, cancellationToken);
         var contextMessages = await _conversationService.BuildContextAsync(selectedNodeId, cancellationToken);
-        var chatHistory = contextMessages.ToChatHistory(systemPrompt);
+        var chatHistory = contextMessages.ToChatHistory();
 
         // 3. Create kernel (plain, no agent tools) and reducer
         var kernel = _kernelFactory.Create(profile, apiKey);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-        var reducer = new ChatHistorySummarizationReducer(chatCompletionService, targetCount: 0);
+        var reducer = new ChatHistorySummarizationReducer(chatCompletionService, targetCount: 1);
 
         yield return new SummarizationStartedDto();
 
@@ -75,22 +74,26 @@ public class SummarizationExecutor(
             "[SUMMARIZATION] Starting for node {SelectedNodeId} in conversation {ConversationId} ({MessageCount} messages)",
             selectedNodeId, conversationId, chatHistory.Count);
 
-        var reducedMessages = await reducer.ReduceAsync(chatHistory, cancellationToken);
+        var reducedMessages = (await reducer.ReduceAsync(chatHistory, cancellationToken))?.ToList()
+            ?? throw new InvalidOperationException("Summarization returned no result.");
 
-        // 5. Extract summary text from reduced messages
-        var summaryContent = reducedMessages != null
-            ? string.Join("\n", reducedMessages
-                .Select(m => m.Content ?? string.Empty)
-                .Where(c => !string.IsNullOrEmpty(c)))
-            : string.Empty;
+        _logger.LogInformation("[SUMMARIZATION] Completed. {Count} reduced messages.", reducedMessages.Count);
 
-        _logger.LogInformation("[SUMMARIZATION] Completed. Summary length: {Length} chars", summaryContent.Length);
+        // 5. Serialize reduced ChatMessageContent objects into metadata
+        var serialized = reducedMessages
+            .Select(m => Serialization.ChatMessageSerializer.Serialize(m))
+            .ToArray();
+        var metadata = new SummarizationMetadata(serialized).ToJson();
 
-        // 6. Inject summary node into the message tree
-        var metadata = new SummarizationMetadata(InputTokenCount: 0, OutputTokenCount: 0).ToJson();
+        // 6. Extract display text from reduced messages (role + content, blank line between)
+        var summaryContent = string.Join("\n\n", reducedMessages
+            .Where(m => !string.IsNullOrEmpty(m.Content))
+            .Select(m => $"[{m.Role}]\n{m.Content}"));
+
+        // 7. Inject summary node into the message tree
         var summaryNode = await _conversationService.InjectSummaryNodeAsync(
             conversationId, selectedNodeId, summaryContent, metadata, cancellationToken: cancellationToken);
 
-        yield return new SummarizationCompletedDto(summaryNode.Id, summaryContent, 0, 0);
+        yield return new SummarizationCompletedDto(summaryNode.Id, summaryContent);
     }
 }

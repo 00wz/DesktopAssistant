@@ -52,8 +52,6 @@ public static class ChatMessageModelFactory
             CreatedAt = s.CreatedAt,
             ParentId = s.ParentId,
             SummaryContent = s.SummaryContent,
-            InputTokenCount = s.InputTokenCount,
-            OutputTokenCount = s.OutputTokenCount,
             Status = SummarizationStatus.Completed
         },
 
