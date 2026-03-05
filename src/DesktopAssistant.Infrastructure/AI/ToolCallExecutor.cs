@@ -7,6 +7,7 @@ using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
+
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
@@ -52,8 +53,7 @@ public class ToolCallExecutor(
         var kernel = _agentKernelFactory.Create(profile, apiKey);
 
         string resultJson;
-        bool isError = false;
-        string? errorMsg = null;
+        var status = ToolNodeStatus.Completed;
 
         try
         {
@@ -82,13 +82,12 @@ public class ToolCallExecutor(
         {
             _logger.LogError(ex, "[TOOL ERROR] {PluginName}.{FunctionName} failed", meta.PluginName, meta.FunctionName);
             resultJson = ex.Message;
-            isError = true;
-            errorMsg = ex.Message;
+            status = ToolNodeStatus.Failed;
         }
 
-        await UpdateToolNodeWithResultAsync(pendingNode, meta, resultJson, cancellationToken);
+        await UpdateToolNodeWithResultAsync(pendingNode, meta, resultJson, status, cancellationToken);
 
-        return new ToolCallResult(isError, resultJson, errorMsg);
+        return new ToolCallResult(resultJson, status);
     }
 
     /// <summary>
@@ -109,15 +108,16 @@ public class ToolCallExecutor(
         _logger.LogInformation("[TOOL DENIED] Node {NodeId}: {PluginName}.{FunctionName}",
             pendingNodeId, meta.PluginName, meta.FunctionName);
 
-        await UpdateToolNodeWithResultAsync(pendingNode, meta, deniedResult, cancellationToken);
+        await UpdateToolNodeWithResultAsync(pendingNode, meta, deniedResult, ToolNodeStatus.Denied, cancellationToken);
 
-        return new ToolCallResult(false, deniedResult, null);
+        return new ToolCallResult(deniedResult, ToolNodeStatus.Denied);
     }
 
     private async Task UpdateToolNodeWithResultAsync(
         Domain.Entities.MessageNode node,
         ToolNodeMetadata meta,
         string resultJson,
+        ToolNodeStatus status,
         CancellationToken cancellationToken)
     {
         var functionCallForResult = new FunctionCallContent(meta.FunctionName, meta.PluginName, meta.CallId);
@@ -127,7 +127,8 @@ public class ToolCallExecutor(
         var updatedMeta = meta with
         {
             ResultJson = resultJson,
-            SerializedChatMessage = ChatMessageSerializer.Serialize(resultChatMsg)
+            SerializedChatMessage = ChatMessageSerializer.Serialize(resultChatMsg),
+            Status = status
         };
 
         node.SetMetadata(updatedMeta.ToJson());

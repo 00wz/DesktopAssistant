@@ -409,7 +409,7 @@ public class ChatService : IChatService
             node.Id, node.ParentId, node.CreatedAt,
             meta.CallId, meta.PluginName, meta.FunctionName,
             meta.ResultJson ?? string.Empty,
-            IsPending: meta.ResultJson == null,
+            Status: meta.Status,
             meta.ArgumentsJson);
     }
 }

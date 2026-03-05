@@ -43,7 +43,13 @@ public static class ChatMessageModelFactory
             FunctionName = t.FunctionName,
             ArgumentsJson = t.ArgumentsJson,
             ResultJson = t.ResultJson,
-            Status = t.IsPending ? ToolCallStatus.Pending : ToolCallStatus.Completed
+            Status = t.Status switch
+            {
+                ToolNodeStatus.Completed => ToolCallStatus.Completed,
+                ToolNodeStatus.Failed    => ToolCallStatus.Failed,
+                ToolNodeStatus.Denied    => ToolCallStatus.Denied,
+                _                       => ToolCallStatus.Pending
+            }
         },
 
         SummaryMessageDto s => new SummarizationChatMessageModel

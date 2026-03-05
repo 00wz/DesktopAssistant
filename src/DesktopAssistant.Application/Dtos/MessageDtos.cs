@@ -38,7 +38,7 @@ public record AssistantMessageDto(
 
 /// <summary>
 /// Результат выполнения tool-вызова.
-/// IsPending == true: узел сохранён в БД как __PENDING_TOOL__, ожидает подтверждения пользователя.
+/// Status == Pending: узел сохранён в БД как __PENDING_TOOL__, ожидает подтверждения пользователя.
 /// </summary>
 public record ToolResultDto(
     Guid Id,
@@ -48,7 +48,7 @@ public record ToolResultDto(
     string PluginName,
     string FunctionName,
     string ResultJson,
-    bool IsPending = false,
+    ToolNodeStatus Status,
     string ArgumentsJson = ""
 ) : MessageDto(Id, ParentId, CreatedAt);
 

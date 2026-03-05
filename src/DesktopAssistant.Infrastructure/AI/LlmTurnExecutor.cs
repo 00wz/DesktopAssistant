@@ -108,7 +108,8 @@ public class LlmTurnExecutor(
                 callId,
                 functionCall.PluginName ?? string.Empty,
                 functionCall.FunctionName,
-                argsJson);
+                argsJson,
+                ToolNodeStatus.Pending);
 
             var pendingNode = await _conversationService.AddNodeAsync(
                 conversationId,

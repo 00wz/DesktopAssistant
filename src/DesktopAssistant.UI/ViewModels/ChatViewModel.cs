@@ -363,10 +363,8 @@ public partial class ChatViewModel : ObservableObject
         {
             var result = await _chatService.ApproveToolCallAsync(model.Id);
 
-            model.Status = result.IsError ? ToolCallStatus.Failed : ToolCallStatus.Completed;
+            model.Status = result.Status == ToolNodeStatus.Failed ? ToolCallStatus.Failed : ToolCallStatus.Completed;
             model.ResultJson = result.ResultJson;
-            if (result.ErrorMessage != null)
-                model.ErrorMessage = result.ErrorMessage;
 
             var state = await _chatService.GetConversationStateAsync(_currentLeafNodeId!.Value);
             ConversationStatus = state;
@@ -383,7 +381,7 @@ public partial class ChatViewModel : ObservableObject
         {
             _logger.LogError(ex, "Error approving tool call {NodeId}", model.Id);
             model.Status = ToolCallStatus.Failed;
-            model.ErrorMessage = ex.Message;
+            model.ResultJson = ex.Message;
         }
         finally
         {
@@ -400,9 +398,10 @@ public partial class ChatViewModel : ObservableObject
 
         try
         {
-            await _chatService.DenyToolCallAsync(model.Id);
+            var result = await _chatService.DenyToolCallAsync(model.Id);
 
             model.Status = ToolCallStatus.Denied;
+            model.ResultJson = result.ResultJson;
 
             var state = await _chatService.GetConversationStateAsync(_currentLeafNodeId!.Value);
             ConversationStatus = state;
@@ -419,7 +418,7 @@ public partial class ChatViewModel : ObservableObject
         {
             _logger.LogError(ex, "Error denying tool call {NodeId}", model.Id);
             model.Status = ToolCallStatus.Failed;
-            model.ErrorMessage = ex.Message;
+            model.ResultJson = ex.Message;
         }
         finally
         {

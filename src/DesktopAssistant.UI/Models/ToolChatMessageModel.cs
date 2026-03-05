@@ -32,10 +32,8 @@ public partial class ToolChatMessageModel : ChatMessageModel
     private string _argumentsJson = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasResult))]
     private string _resultJson = string.Empty;
-
-    [ObservableProperty]
-    private string _errorMessage = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPending))]
@@ -44,6 +42,7 @@ public partial class ToolChatMessageModel : ChatMessageModel
     [NotifyPropertyChangedFor(nameof(IsExecuting))]
     private ToolCallStatus _status = ToolCallStatus.Pending;
 
+    public bool HasResult => !string.IsNullOrEmpty(ResultJson);
     public bool IsPending => Status == ToolCallStatus.Pending;
     public bool IsExecuting => Status == ToolCallStatus.Executing;
     public bool IsCompleted => Status == ToolCallStatus.Completed;

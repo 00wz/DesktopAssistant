@@ -1,19 +1,20 @@
 using System.Text.Json;
+using DesktopAssistant.Application.Dtos;
 using Microsoft.SemanticKernel;
 
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Единая структура метаданных tool-узла — хранится в MessageNode.Metadata для всех стадий жизненного цикла.
-/// Pending:   ResultJson == null, SerializedChatMessage == null.
-/// Completed: ResultJson != null, SerializedChatMessage != null (сериализованный ChatMessageContent для контекста LLM).
-/// Признак pending определяется исключительно по ResultJson == null.
+/// Единая структура метаданных tool-узла — хранится в MessageNode.Metadata.
+/// Status является источником истины о состоянии вызова.
+/// ResultJson == null только для Pending-узлов (структурный инвариант).
 /// </summary>
 internal sealed record ToolNodeMetadata(
     string CallId,
     string PluginName,
     string FunctionName,
     string ArgumentsJson,
+    ToolNodeStatus Status,
     string? ResultJson = null,
     string? SerializedChatMessage = null)
 {
