@@ -83,11 +83,15 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Правая область контента -->
+                <!-- Правая область контента.
+                     Padding вынесен в Margin контента: Avalonia не учитывает ScrollViewer.Padding
+                     при вычислении Extent, и нижние N пикселей контента становятся недостижимы.
+                     HorizontalScrollBarVisibility=Disabled: предотвращает горизонтальный scrollbar,
+                     который при появлении/исчезновении дискретно изменяет ширину контента. -->
                 <ScrollViewer Grid.Column="1"
                               VerticalScrollBarVisibility="Auto"
-                              Padding="24,20,24,20">
-                    <Panel>
+                              HorizontalScrollBarVisibility="Disabled">
+                    <Panel Margin="24,20,24,20">
                         <!-- Секция профилей -->
                         <Panel IsVisible="{Binding IsProfilesActive}">
                             <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>

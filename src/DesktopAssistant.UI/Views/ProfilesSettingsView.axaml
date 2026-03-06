@@ -100,36 +100,40 @@
                                            Foreground="#999"/>
                             </StackPanel>
 
-                            <!-- Кнопки действий -->
-                            <StackPanel Grid.Column="1"
-                                        Orientation="Horizontal"
-                                        Spacing="6"
-                                        VerticalAlignment="Center">
+                            <!-- Кнопки действий — WrapPanel: переносятся на новую строку при нехватке ширины -->
+                            <WrapPanel Grid.Column="1"
+                                       Orientation="Horizontal"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Right">
                                 <Button Content="Основным"
                                         Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetDefaultCommand}"
                                         CommandParameter="{Binding}"
                                         FontSize="11"
                                         Padding="10,5"
+                                        Margin="0,0,6,4"
                                         IsVisible="{Binding !IsDefault}"/>
                                 <Button Content="Суммаризация"
                                         Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetSummarizationCommand}"
                                         CommandParameter="{Binding}"
                                         FontSize="11"
                                         Padding="10,5"
+                                        Margin="0,0,6,4"
                                         IsVisible="{Binding !IsSummarizationProfile}"/>
                                 <Button Content="Изменить"
                                         Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).StartEditCommand}"
                                         CommandParameter="{Binding}"
                                         FontSize="11"
-                                        Padding="10,5"/>
+                                        Padding="10,5"
+                                        Margin="0,0,6,4"/>
                                 <Button Content="Удалить"
                                         Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).DeleteProfileCommand}"
                                         CommandParameter="{Binding}"
                                         FontSize="11"
                                         Padding="10,5"
+                                        Margin="0,0,0,4"
                                         Background="#FFEBEE"
                                         Foreground="#C62828"/>
-                            </StackPanel>
+                            </WrapPanel>
 
                         </Grid>
                     </Border>
