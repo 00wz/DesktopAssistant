@@ -15,7 +15,8 @@ public partial class ToolApprovalItemModel : ObservableObject
     public string PluginName { get; }
     public string FunctionName { get; }
     public string? Description { get; }
-    public string DisplayName => $"{PluginName}.{FunctionName}";
+    /// <summary>Отображается внутри группы — только имя функции (плагин — заголовок группы).</summary>
+    public string DisplayName => FunctionName;
 
     [ObservableProperty]
     private bool _isAutoApproved;

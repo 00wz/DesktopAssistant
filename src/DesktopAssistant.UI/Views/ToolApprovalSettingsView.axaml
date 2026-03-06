@@ -40,45 +40,70 @@
         <Border Background="#F8F8F8"
                 Padding="24"
                 CornerRadius="4"
-                IsVisible="{Binding !HasTools}">
+                IsVisible="{Binding !HasGroups}">
             <TextBlock Text="Нет доступных tools. Подключите MCP сервер или обновите список."
                        HorizontalAlignment="Center"
                        Foreground="#888"
                        FontSize="13"/>
         </Border>
 
-        <!-- Список tools -->
-        <ItemsControl ItemsSource="{Binding Tools}"
-                      IsVisible="{Binding HasTools}">
+        <!-- Группы плагинов/серверов -->
+        <ItemsControl ItemsSource="{Binding Groups}"
+                      IsVisible="{Binding HasGroups}">
             <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="models:ToolApprovalItemModel">
-                    <Border Background="White"
-                            BorderBrush="#E0E0E0"
+                <DataTemplate DataType="models:ToolApprovalGroupModel">
+                    <Border BorderBrush="#E0E0E0"
                             BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="14,10"
-                            Margin="0,0,0,6">
-                        <Grid ColumnDefinitions="*,Auto">
+                            CornerRadius="6"
+                            Margin="0,0,0,10"
+                            ClipToBounds="True">
 
-                            <!-- Информация о tool -->
-                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding DisplayName}"
+                        <StackPanel>
+                            <!-- Заголовок группы -->
+                            <Border Background="#F0F4FF"
+                                    Padding="14,9">
+                                <TextBlock Text="{Binding PluginName}"
                                            FontWeight="SemiBold"
-                                           FontSize="13"/>
-                                <TextBlock Text="{Binding Description}"
-                                           FontSize="11"
-                                           Foreground="#666"
-                                           TextWrapping="Wrap"
-                                           IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                            </StackPanel>
+                                           FontSize="13"
+                                           Foreground="#1A3C6E"/>
+                            </Border>
 
-                            <!-- Тоггл auto-approve -->
-                            <CheckBox Grid.Column="1"
-                                      IsChecked="{Binding IsAutoApproved, Mode=TwoWay}"
-                                      VerticalAlignment="Center"
-                                      Margin="16,0,0,0"
-                                      ToolTip.Tip="Автоматически выполнять без подтверждения"/>
-                        </Grid>
+                            <!-- Tools группы -->
+                            <ItemsControl ItemsSource="{Binding Tools}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="models:ToolApprovalItemModel">
+                                        <Border BorderBrush="#F0F0F0"
+                                                BorderThickness="0,1,0,0"
+                                                Padding="14,9"
+                                                Background="White">
+                                            <Grid ColumnDefinitions="*,Auto">
+
+                                                <!-- Информация о tool -->
+                                                <StackPanel Grid.Column="0"
+                                                            Spacing="2"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               FontSize="13"/>
+                                                    <TextBlock Text="{Binding Description}"
+                                                               FontSize="11"
+                                                               Foreground="#888"
+                                                               TextWrapping="Wrap"
+                                                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                </StackPanel>
+
+                                                <!-- Тоггл auto-approve -->
+                                                <CheckBox Grid.Column="1"
+                                                          IsChecked="{Binding IsAutoApproved, Mode=TwoWay}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="16,0,0,0"
+                                                          ToolTip.Tip="Автоматически выполнять без подтверждения"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                        </StackPanel>
                     </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

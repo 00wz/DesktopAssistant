@@ -10,7 +10,7 @@ namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
 /// ViewModel секции «Автоподтверждение tools» в панели настроек.
-/// Отображает список всех доступных tools с возможностью включения auto-approve.
+/// Отображает tools, сгруппированные по плагину/MCP-серверу.
 /// Динамически обновляется при подключении/отключении MCP серверов.
 /// </summary>
 public partial class ToolApprovalSettingsViewModel : ObservableObject, IDisposable
@@ -25,9 +25,9 @@ public partial class ToolApprovalSettingsViewModel : ObservableObject, IDisposab
     [ObservableProperty]
     private string? _errorMessage;
 
-    public ObservableCollection<ToolApprovalItemModel> Tools { get; } = new();
+    public ObservableCollection<ToolApprovalGroupModel> Groups { get; } = new();
 
-    public bool HasTools => Tools.Count > 0;
+    public bool HasGroups => Groups.Count > 0;
 
     public ToolApprovalSettingsViewModel(
         IToolApprovalService toolApprovalService,
@@ -49,24 +49,31 @@ public partial class ToolApprovalSettingsViewModel : ObservableObject, IDisposab
             IsLoading = true;
             ErrorMessage = null;
 
-            var tools = _availableToolsProvider.GetAvailableTools();
-            Tools.Clear();
+            var descriptors = _availableToolsProvider.GetAvailableTools();
+            Groups.Clear();
 
-            foreach (var descriptor in tools)
+            foreach (var grouping in descriptors.GroupBy(t => t.PluginName))
             {
-                var approved = await _toolApprovalService.IsAutoApprovedAsync(
-                    descriptor.PluginName, descriptor.FunctionName);
+                var group = new ToolApprovalGroupModel(grouping.Key);
 
-                var item = new ToolApprovalItemModel(
-                    descriptor.PluginName,
-                    descriptor.FunctionName,
-                    descriptor.Description,
-                    _toolApprovalService);
-                item.InitializeValue(approved);
-                Tools.Add(item);
+                foreach (var descriptor in grouping)
+                {
+                    var approved = await _toolApprovalService.IsAutoApprovedAsync(
+                        descriptor.PluginName, descriptor.FunctionName);
+
+                    var item = new ToolApprovalItemModel(
+                        descriptor.PluginName,
+                        descriptor.FunctionName,
+                        descriptor.Description,
+                        _toolApprovalService);
+                    item.InitializeValue(approved);
+                    group.Tools.Add(item);
+                }
+
+                Groups.Add(group);
             }
 
-            OnPropertyChanged(nameof(HasTools));
+            OnPropertyChanged(nameof(HasGroups));
         }
         catch (Exception ex)
         {
