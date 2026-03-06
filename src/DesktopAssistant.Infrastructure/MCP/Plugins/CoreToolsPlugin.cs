@@ -26,7 +26,8 @@ public class CoreToolsPlugin
     [Description("Выполняет команду в терминале и возвращает результат. Используется для git clone, npm install, npm run build и других команд установки.")]
     public async Task<string> ExecuteCommandAsync(
         [Description("Команда для выполнения (например: git clone https://github.com/repo)")] string command,
-        [Description("Рабочая директория для выполнения команды (опционально)")] string? workingDirectory = null)
+        [Description("Рабочая директория для выполнения команды (опционально)")] string? workingDirectory = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -47,6 +48,7 @@ public class CoreToolsPlugin
             {
                 FileName = shell,
                 Arguments = shellArgs,
+                RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -81,16 +83,22 @@ public class CoreToolsPlugin
             };
             
             process.Start();
+            process.StandardInput.Close(); // prevent interactive prompts from blocking
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             
             // Таймаут 5 минут для длинных операций (npm install, build)
-            var completed = await Task.Run(() => process.WaitForExit(300000));
-            
-            if (!completed)
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromMinutes(5));
+            try
             {
-                process.Kill();
-                return $"Ошибка: команда превысила таймаут (5 минут)\nВывод до таймаута:\n{output}\n\nОшибки:\n{error}";
+                await process.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                process.Kill(entireProcessTree: true);
+                var reason = cancellationToken.IsCancellationRequested ? "отменена" : "превысила таймаут (5 минут)";
+                return $"Ошибка: команда {reason}\nВывод до отмены:\n{output}\n\nОшибки:\n{error}";
             }
             
             var result = new StringBuilder();
