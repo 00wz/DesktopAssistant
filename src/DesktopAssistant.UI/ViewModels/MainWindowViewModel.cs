@@ -16,7 +16,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<MainWindowViewModel> _logger;
-
+    private readonly IConversationSessionService _conversationSessionService;
     [ObservableProperty]
     private ChatViewModel? _selectedChat;
 
@@ -49,11 +49,13 @@ public partial class MainWindowViewModel : ObservableObject
     public MainWindowViewModel(
         IServiceProvider serviceProvider,
         IServiceScopeFactory scopeFactory,
-        ILogger<MainWindowViewModel> logger)
+        ILogger<MainWindowViewModel> logger,
+        IConversationSessionService conversationSessionService)
     {
         _serviceProvider = serviceProvider;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _conversationSessionService = conversationSessionService;
     }
 
     /// <summary>
@@ -108,7 +110,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         try
         {
-            var existingChat = Chats.FirstOrDefault(c => c.CurrentConversation?.Id == item.Id);
+            var existingChat = Chats.FirstOrDefault(c => c.ConversationId == item.Id);
             if (existingChat != null)
             {
                 SelectedChat = existingChat;
@@ -117,7 +119,8 @@ public partial class MainWindowViewModel : ObservableObject
             }
 
             var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
-            await chatViewModel.InitializeAsync(item.Id);
+            var conversationSession = await _conversationSessionService.GetOrCreate(item.Id);
+            await chatViewModel.InitializeAsync(conversationSession);
 
             Chats.Add(chatViewModel);
             SelectedChat = chatViewModel;
@@ -203,7 +206,8 @@ public partial class MainWindowViewModel : ObservableObject
                 parameters.SystemPrompt);
 
             var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
-            await chatViewModel.InitializeAsync(conversation.Id);
+            var conversationSession = await _conversationSessionService.GetOrCreate(conversation.Id);
+            await chatViewModel.InitializeAsync(conversationSession);
 
             Chats.Add(chatViewModel);
             SelectedChat = chatViewModel;

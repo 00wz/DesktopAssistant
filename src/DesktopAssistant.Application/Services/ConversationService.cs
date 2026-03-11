@@ -96,6 +96,7 @@ public class ConversationService
 
     /// <summary>
     /// Добавляет узел суммаризации в диалог
+    /// TODO: нужен ли отдельный метод?
     /// </summary>
     public async Task<MessageNode> AddSummaryNodeAsync(
         Guid conversationId,

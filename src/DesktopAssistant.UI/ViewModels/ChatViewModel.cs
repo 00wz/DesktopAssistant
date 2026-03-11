@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Dtos;
@@ -14,13 +15,15 @@ namespace DesktopAssistant.UI.ViewModels;
 /// </summary>
 public partial class ChatViewModel : ObservableObject
 {
-    private readonly IChatService _chatService;
     private readonly IAssistantProfileService _profileService;
     private readonly IToolApprovalService _toolApprovalService;
     private readonly ILogger<ChatViewModel> _logger;
+    private readonly SemaphoreSlim _sessionEventHandleLock = new(1, 1);
 
-    [ObservableProperty]
-    private ConversationDto? _currentConversation;
+    private IConversationSession? _conversationSession;
+
+    // Используется только при стриминге: текущая модель ассистента, в которую пишутся чанки
+    private TextChatMessageModel? _activeAssistantModel;
 
     [ObservableProperty]
     private string _inputMessage = string.Empty;
@@ -33,9 +36,6 @@ public partial class ChatViewModel : ObservableObject
 
     [ObservableProperty]
     private string _conversationTitle = "Новый чат";
-
-    /// <summary>ID последнего узла активной ветки — передаётся явно во все методы сервиса.</summary>
-    private Guid? _currentLeafNodeId;
 
     /// <summary>Текущее состояние диалога — управляет доступностью SendMessage и Resume.</summary>
     [ObservableProperty]
@@ -74,39 +74,44 @@ public partial class ChatViewModel : ObservableObject
     public bool ShowResumePanel => ConversationStatus == ConversationState.LastMessageIsUser ||
                                    ConversationStatus == ConversationState.AllToolCallsCompleted;
 
+    public Guid? ConversationId => _conversationSession?.ConversationId;
+
     public ObservableCollection<ChatMessageModel> Messages { get; } = new();
 
     public ChatViewModel(
-        IChatService chatService,
         IAssistantProfileService profileService,
         IToolApprovalService toolApprovalService,
         ILogger<ChatViewModel> logger)
     {
-        _chatService = chatService;
         _profileService = profileService;
         _toolApprovalService = toolApprovalService;
         _logger = logger;
     }
 
+    // ── Инициализация ────────────────────────────────────────────────────────
+
     /// <summary>
-    /// Загружает существующий диалог по ID.
-    /// Создание нового диалога — ответственность вызывающей стороны.
+    /// Привязывается к сессии диалога
     /// </summary>
     public async Task InitializeAsync(
-        Guid conversationId,
+        IConversationSession conversationSession,
         CancellationToken cancellationToken = default)
     {
+        if (conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
+
         try
         {
+            UnsubscribeCurrentSession();
+            _conversationSession = conversationSession;
             IsLoading = true;
             ErrorMessage = null;
             Messages.Clear();
 
-            CurrentConversation = await _chatService.GetConversationAsync(conversationId, cancellationToken)
-                ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
-
-            ConversationTitle = CurrentConversation.Title;
             await LoadMessagesAsync(cancellationToken);
+            ConversationStatus = _conversationSession.State;
+            _conversationSession.EventOccurred += OnSessionEvent;
+
             await LoadConversationSettingsAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -116,25 +121,24 @@ public partial class ChatViewModel : ObservableObject
         }
         finally
         {
-            IsLoading = false;
+            IsLoading = _conversationSession.IsRunning;
         }
     }
 
     private async Task LoadMessagesAsync(CancellationToken cancellationToken)
     {
-        if (CurrentConversation == null)
-            throw new InvalidOperationException("Cannot load messages: CurrentConversation is null");
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
-        var dtos = await _chatService.GetConversationHistoryAsync(CurrentConversation.Id, cancellationToken);
+        var dtos = await _conversationSession.LoadHistoryAsync(cancellationToken);
 
         Messages.Clear();
+        _activeAssistantModel = null;
 
-        Guid? lastDtoId = null;
         AssistantMessageDto? lastAssistantDto = null;
         foreach (var dto in dtos)
         {
             Messages.Add(ChatMessageModelFactory.FromDto(dto));
-            lastDtoId = dto.Id;
             if (dto is AssistantMessageDto assistantDto)
                 lastAssistantDto = assistantDto;
         }
@@ -143,20 +147,16 @@ public partial class ChatViewModel : ObservableObject
         {
             LastTotalTokenCount = lastAssistantDto.TotalTokenCount;
         }
-
-        _currentLeafNodeId = lastDtoId ?? CurrentConversation.ActiveLeafNodeId;
-
-        if (_currentLeafNodeId.HasValue)
-            ConversationStatus = await _chatService.GetConversationStateAsync(_currentLeafNodeId.Value, cancellationToken);
     }
 
     private async Task LoadConversationSettingsAsync(CancellationToken cancellationToken)
     {
-        if (CurrentConversation == null) return;
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
         try
         {
-            var settings = await _chatService.GetConversationSettingsAsync(CurrentConversation.Id, cancellationToken);
+            var settings = await _conversationSession.GetSettingsAsync(cancellationToken);
             if (settings == null) return;
 
             SystemPrompt = settings.SystemPrompt;
@@ -174,6 +174,177 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
+    // ── Обработка событий сессии ─────────────────────────────────────────────
+
+    private void OnSessionEvent(object? sender, SessionEvent evt)
+    {
+        Dispatcher.UIThread.Post(async () => await HandleSessionEvent(evt));
+    }
+
+    private async Task HandleSessionEvent(SessionEvent evt)
+    {
+        /// _sessionEventHandleLock защищает от коллизии обработки SessionEvent,
+        /// например, когда во время обработки InitializeSessionEvent приходит UserMessageAddedSessionEvent 
+        await _sessionEventHandleLock.WaitAsync();
+        try
+        {
+            switch (evt)
+            {
+                case RunningStateChangedSessionEvent running:
+                    IsLoading = running.IsRunning;
+                    break;
+
+                case ConversationStateChangedSessionEvent state:
+                    ConversationStatus = state.State;
+                    break;
+
+                case UserMessageAddedSessionEvent userEvt:
+                    Messages.Add(ChatMessageModelFactory.FromDto(userEvt.Dto));
+                    break;
+
+                case StreamSessionEvent streamEvt:
+                    HandleStreamEvent(streamEvt.Inner);
+                    break;
+
+                case ToolRequestedSessionEvent toolReq:
+                    HandleToolRequest(toolReq);
+                    break;
+
+                case ToolResultSessionEvent toolRes:
+                    HandleToolResult(toolRes);
+                    break;
+
+                case SessionErrorEvent error:
+                    ErrorMessage = $"Ошибка: {error.Message}";
+                    CleanupStreamingModel();
+                    break;
+
+                case SummarizationSessionEvent summarization:
+                    HundleSummarizationEvent(summarization.evt);
+                    break;
+
+                case InitializeSessionEvent initializeSession:
+                    await LoadMessagesAsync(default);
+                    break;
+            }
+        }
+        finally
+        {
+            _sessionEventHandleLock.Release();
+        }
+    }
+    private void HandleStreamEvent(StreamEvent evt)
+    {
+        switch (evt)
+        {
+            case AssistantTurnDto turn:
+                var model = new TextChatMessageModel
+                {
+                    Id = turn.TempId,
+                    NodeType = MessageNodeType.Assistant,
+                    CreatedAt = turn.StartedAt,
+                    IsStreaming = true
+                };
+                _activeAssistantModel = model;
+                Messages.Add(model);
+                break;
+
+            case AssistantChunkDto chunk:
+                _activeAssistantModel?.AppendContent(chunk.Text);
+                break;
+
+            case AssistantResponseSavedDto saved:
+                if (_activeAssistantModel != null)
+                {
+                    _activeAssistantModel.IsStreaming = false;
+                    _activeAssistantModel.Id = saved.LastNodeId;
+                    _activeAssistantModel = null;
+                }
+                LastTotalTokenCount = saved.TotalTokenCount;
+                break;
+
+            case ToolCallRequestedDto toolReq:
+                /// ToolCalls обрабатываются вместе с событиями ToolRequestedSessionEvent и ToolResultSessionEvent
+                break;
+        }
+    }
+
+    private void HandleToolRequest(ToolRequestedSessionEvent toolReq)
+    {
+        Messages.Add(new ToolChatMessageModel
+        {
+            Id = toolReq.PendingNodeId,
+            CallId = toolReq.CallId,
+            PluginName = toolReq.PluginName,
+            FunctionName = toolReq.FunctionName,
+            ArgumentsJson = toolReq.ArgumentsJson,
+            Status = toolReq.IsAutoApproved ? ToolCallStatus.Executing : ToolCallStatus.Pending
+        });
+    }
+
+    private void HandleToolResult(ToolResultSessionEvent toolEvt)
+    {
+        var toolModel = Messages.OfType<ToolChatMessageModel>()
+            .FirstOrDefault(m => m.Id == toolEvt.PendingNodeId);
+        if (toolModel == null) return;
+
+        toolModel.Status = toolEvt.Status == ToolNodeStatus.Failed
+            ? ToolCallStatus.Failed
+            : toolEvt.Status == ToolNodeStatus.Denied
+                ? ToolCallStatus.Denied
+                : ToolCallStatus.Completed;
+        toolModel.ResultJson = toolEvt.ResultJson;
+    }
+
+    private void HundleSummarizationEvent(SummarizationEvent summarizationEvent)
+    {
+        switch (summarizationEvent)
+        {
+            case SummarizationStartedDto summarizationStartedDto:
+                {
+                    var summaryModel = new SummarizationChatMessageModel { Status = SummarizationStatus.Running };
+                    var parentNodeIndex = Messages.IndexOf(Messages.FirstOrDefault(m => m.Id == summarizationStartedDto.ParentNodeId));
+                    if (parentNodeIndex < 0) return;
+                    var insertIndex = parentNodeIndex + 1;
+                    Messages.Insert(insertIndex, summaryModel);
+                    break;
+                }
+            case SummarizationCompletedDto summarizationCompletedDto:
+                {
+                    var parentNodeIndex = Messages.IndexOf(Messages.FirstOrDefault(m => m.Id == summarizationCompletedDto.ParentNodeId));
+                    if (parentNodeIndex < 0) return;
+                    var insertIndex = parentNodeIndex + 1;
+                    var targetChatMessageModel = Messages.ElementAtOrDefault(insertIndex);
+                    if (targetChatMessageModel is SummarizationChatMessageModel summarizationChatMessage)
+                    {
+                        summarizationChatMessage.Id = summarizationCompletedDto.SummaryNodeId;
+                        summarizationChatMessage.SummaryContent = summarizationCompletedDto.SummaryContent;
+                        summarizationChatMessage.Status = SummarizationStatus.Completed;
+                    }
+                    else
+                    {
+                        var summaryModel = new SummarizationChatMessageModel 
+                        { 
+                            Id = summarizationCompletedDto.SummaryNodeId,
+                            SummaryContent = summarizationCompletedDto.SummaryContent,
+                            Status = SummarizationStatus.Completed, 
+                        };
+                        Messages.Insert(insertIndex, summaryModel);
+                    }
+                    break;
+                }
+        }
+    }
+
+    private void CleanupStreamingModel()
+    {
+        if (_activeAssistantModel?.IsStreaming == true)
+        {
+            Messages.Remove(_activeAssistantModel);
+            _activeAssistantModel = null;
+        }
+    }
+
     // ── Настройки диалога ────────────────────────────────────────────────────
 
     [RelayCommand]
@@ -185,12 +356,12 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveSystemPromptAsync()
     {
-        if (CurrentConversation == null) return;
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
         try
         {
-            await _chatService.UpdateConversationSystemPromptAsync(CurrentConversation.Id, SystemPrompt);
-            _logger.LogInformation("System prompt updated for conversation {ConversationId}", CurrentConversation.Id);
+            await _conversationSession.UpdateSystemPromptAsync(SystemPrompt);
         }
         catch (Exception ex)
         {
@@ -200,13 +371,14 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ChangeProfileAsync(AssistantProfileDto? profile)
+    private async Task ChangeProfileAsync(AssistantProfileDto profile)
     {
-        if (CurrentConversation == null || profile == null) return;
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
         try
         {
-            await _chatService.ChangeConversationProfileAsync(CurrentConversation.Id, profile.Id);
+            await _conversationSession.ChangeProfileAsync(profile.Id);
             SelectedProfile = profile;
             AssistantProfileName = profile.Name;
         }
@@ -222,8 +394,8 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanSendMessage))]
     private async Task SendMessageAsync()
     {
-        if (CurrentConversation == null)
-            throw new InvalidOperationException("Cannot send message: CurrentConversation is null");
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
         if (string.IsNullOrWhiteSpace(InputMessage))
             throw new InvalidOperationException("Cannot send message: InputMessage is empty");
@@ -232,38 +404,26 @@ public partial class ChatViewModel : ObservableObject
         InputMessage = string.Empty;
         ErrorMessage = null;
 
-        var userDto = await _chatService.AddUserMessageAsync(
-            CurrentConversation.Id,
-            _currentLeafNodeId!.Value,
-            userMessage,
-            cancellationToken: default);
-
-        _currentLeafNodeId = userDto.Id;
-        Messages.Add(ChatMessageModelFactory.FromDto(userDto));
-
-        IsLoading = true;
         try
         {
-            await ProcessAssistantStreamAsync(
-                _chatService.GetAssistantResponseAsync(CurrentConversation.Id, userDto.Id, default),
-                default);
+            await _conversationSession.SendMessageAsync(userMessage);
         }
-        finally
+        catch(Exception ex)
         {
-            IsLoading = false;
+            _logger.LogError(ex, "Error sending message");
+            ErrorMessage = $"Ошибка отправки сообщения: {ex.Message}";
         }
     }
 
     private bool CanSendMessage() =>
         !IsLoading &&
-        CurrentConversation != null &&
+        _conversationSession != null &&
         !string.IsNullOrWhiteSpace(InputMessage) &&
         ConversationStatus == ConversationState.LastMessageIsAssistant;
 
     private bool CanResume() =>
         !IsLoading &&
-        CurrentConversation != null &&
-        _currentLeafNodeId.HasValue &&
+        _conversationSession != null &&
         (ConversationStatus == ConversationState.LastMessageIsUser ||
          ConversationStatus == ConversationState.AllToolCallsCompleted);
 
@@ -278,20 +438,23 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanResume))]
     private async Task ResumeAsync()
     {
-        if (CurrentConversation == null || !_currentLeafNodeId.HasValue) return;
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
-        IsLoading = true;
+        ErrorMessage = null;
+
         try
         {
-            await ProcessAssistantStreamAsync(
-                _chatService.GetAssistantResponseAsync(CurrentConversation.Id, _currentLeafNodeId.Value, default),
-                default);
+            await _conversationSession.ResumeAsync();
         }
-        finally
+        catch(Exception ex)
         {
-            IsLoading = false;
+            _logger.LogError(ex, "Error resuming dialogue");
+            ErrorMessage = $"Ошибка возобнавления диалога: {ex.Message}";
         }
     }
+
+    // ── Редактирование сообщений ─────────────────────────────────────────────
 
     [RelayCommand]
     private void StartEditMessage(TextChatMessageModel message)
@@ -303,44 +466,29 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveEditedMessageAsync(TextChatMessageModel message)
     {
-        if (CurrentConversation == null)
-            throw new InvalidOperationException("Cannot save edited message: CurrentConversation is null");
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
         if (!message.ParentId.HasValue)
             throw new ArgumentException("Cannot save edited message: message.ParentId is null", nameof(message));
 
         try
         {
-            IsLoading = true;
             ErrorMessage = null;
 
             var editedText = message.EditedContent.Trim();
 
-            var userDto = await _chatService.AddUserMessageAsync(
-                CurrentConversation.Id,
-                message.ParentId.Value,
-                editedText,
-                cancellationToken: default);
-
-            await LoadMessagesAsync(default);
-
-            await ProcessAssistantStreamAsync(
-                _chatService.GetAssistantResponseAsync(CurrentConversation.Id, userDto.Id, default),
-                default);
+            await _conversationSession.SendMessageAsync(editedText, message.ParentId.Value);
 
             message.IsEditing = false;
 
-            _logger.LogInformation("Created sibling message {MessageId} from edited message", userDto.Id);
+            _logger.LogInformation("Created sibling message from edited message {MessageId}", message.ParentId.Value);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving edited message");
             ErrorMessage = $"Ошибка сохранения сообщения: {ex.Message}";
             message.IsEditing = false;
-        }
-        finally
-        {
-            IsLoading = false;
         }
     }
 
@@ -354,274 +502,125 @@ public partial class ChatViewModel : ObservableObject
     [RelayCommand]
     private async Task ApproveToolAsync(ToolChatMessageModel model)
     {
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
+
         if (model.Status != ToolCallStatus.Pending) return;
 
         model.Status = ToolCallStatus.Executing;
 
         try
         {
-            var result = await _chatService.ApproveToolCallAsync(model.Id);
-
-            model.Status = result.Status == ToolNodeStatus.Failed ? ToolCallStatus.Failed : ToolCallStatus.Completed;
-            model.ResultJson = result.ResultJson;
-
-            var state = await _chatService.GetConversationStateAsync(_currentLeafNodeId!.Value);
-            ConversationStatus = state;
-
-            if (state == ConversationState.AllToolCallsCompleted && CurrentConversation != null)
-            {
-                IsLoading = true;
-                await ProcessAssistantStreamAsync(
-                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, _currentLeafNodeId!.Value, default),
-                    default);
-            }
+            await _conversationSession.ApproveToolAsync(model.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error approving tool call {NodeId}", model.Id);
-            model.Status = ToolCallStatus.Failed;
-            model.ResultJson = ex.Message;
-        }
-        finally
-        {
-            IsLoading = false;
+            model.Status = ToolCallStatus.Pending;
+            ErrorMessage = ex.Message;
         }
     }
 
     [RelayCommand]
     private async Task DenyToolAsync(ToolChatMessageModel model)
     {
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
+
         if (model.Status != ToolCallStatus.Pending) return;
 
         model.Status = ToolCallStatus.Executing;
 
         try
         {
-            var result = await _chatService.DenyToolCallAsync(model.Id);
-
-            model.Status = ToolCallStatus.Denied;
-            model.ResultJson = result.ResultJson;
-
-            var state = await _chatService.GetConversationStateAsync(_currentLeafNodeId!.Value);
-            ConversationStatus = state;
-
-            if (state == ConversationState.AllToolCallsCompleted && CurrentConversation != null)
-            {
-                IsLoading = true;
-                await ProcessAssistantStreamAsync(
-                    _chatService.GetAssistantResponseAsync(CurrentConversation.Id, _currentLeafNodeId!.Value, default),
-                    default);
-            }
+            await _conversationSession.DenyToolAsync(model.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error denying tool call {NodeId}", model.Id);
-            model.Status = ToolCallStatus.Failed;
-            model.ResultJson = ex.Message;
-        }
-        finally
-        {
-            IsLoading = false;
+            model.Status = ToolCallStatus.Pending;
+            ErrorMessage = ex.Message;
         }
     }
+
+    // ── Суммаризация ─────────────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task SummarizeMessageAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null) return;
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
 
-        IsLoading = true;
         ErrorMessage = null;
-
-        // Проверяем состояние — суммаризация невозможна при незавершённых tool-вызовах
-        var state = await _chatService.GetConversationStateAsync(message.Id);
-        if (state is ConversationState.HasPendingToolCalls)
-        {
-            ErrorMessage = "Cannot summarize: one or more tool actions are still running or waiting for your approval. " +
-                           "Wait for them to finish or approve/deny them, then try again.";
-            IsLoading = false;
-            return;
-        }
-        if (state is ConversationState.ToolCallIdMismatch)
-        {
-            ErrorMessage = "Cannot summarize at this point: the selected message is in the middle of a tool call sequence. " +
-                           "Choose a message that comes before or after the entire tool call group.";
-            IsLoading = false;
-            return;
-        }
-
+        /*
         // Вставляем индикатор прогресса сразу после выбранного сообщения
         var summaryModel = new SummarizationChatMessageModel { Status = SummarizationStatus.Running };
         var insertIndex = Messages.IndexOf(message) + 1;
         Messages.Insert(insertIndex, summaryModel);
-
+        */
         try
         {
-            await foreach (var evt in _chatService.SummarizeAsync(CurrentConversation.Id, message.Id))
-            {
-                if (evt is SummarizationCompletedDto completed)
-                {
-                    summaryModel.Id = completed.SummaryNodeId;
-                    summaryModel.SummaryContent = completed.SummaryContent;
-                    summaryModel.Status = SummarizationStatus.Completed;
-                }
-            }
-
-            // Перезагружаем историю, чтобы отобразить обновлённое дерево
-            await LoadMessagesAsync(default);
+            await _conversationSession.SummarizeAsync(message.Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error summarizing message {MessageId}", message.Id);
             ErrorMessage = $"Ошибка суммаризации: {ex.Message}";
-            summaryModel.Status = SummarizationStatus.Failed;
-        }
-        finally
-        {
-            IsLoading = false;
+            //summaryModel.Status = SummarizationStatus.Failed;
         }
     }
+
+    // ── Навигация по siblings ─────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task NavigateToPreviousSiblingAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null || !message.ParentId.HasValue || !message.PreviousSiblingId.HasValue)
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
+
+        if (!message.ParentId.HasValue || !message.PreviousSiblingId.HasValue)
             return;
 
         try
         {
-            IsLoading = true;
             ErrorMessage = null;
 
-            await _chatService.SwitchToSiblingAsync(
-                CurrentConversation.Id,
-                message.ParentId.Value,
-                message.PreviousSiblingId.Value,
-                cancellationToken: default);
-
-            await InitializeAsync(CurrentConversation.Id, cancellationToken: default);
+            await _conversationSession.SwitchToSiblingAsync(message.ParentId.Value, message.PreviousSiblingId.Value);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error navigating to previous sibling");
             ErrorMessage = $"Ошибка навигации: {ex.Message}";
         }
-        finally
-        {
-            IsLoading = false;
-        }
     }
 
     [RelayCommand]
     private async Task NavigateToNextSiblingAsync(ChatMessageModel message)
     {
-        if (CurrentConversation == null || !message.ParentId.HasValue || !message.NextSiblingId.HasValue)
+        if (_conversationSession == null)
+            throw new InvalidOperationException("ConversationSession is null");
+
+        if (!message.ParentId.HasValue || !message.NextSiblingId.HasValue)
             return;
 
         try
         {
-            IsLoading = true;
             ErrorMessage = null;
 
-            await _chatService.SwitchToSiblingAsync(
-                CurrentConversation.Id,
-                message.ParentId.Value,
-                message.NextSiblingId.Value,
-                cancellationToken: default);
-
-            await InitializeAsync(CurrentConversation.Id, cancellationToken: default);
+            await _conversationSession.SwitchToSiblingAsync(message.ParentId.Value, message.NextSiblingId.Value);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error navigating to next sibling");
             ErrorMessage = $"Ошибка навигации: {ex.Message}";
         }
-        finally
-        {
-            IsLoading = false;
-        }
     }
 
-    private async Task ProcessAssistantStreamAsync(
-        IAsyncEnumerable<StreamEvent> stream,
-        CancellationToken cancellationToken)
+    private void UnsubscribeCurrentSession()
     {
-        TextChatMessageModel? activeAssistantModel = null;
-
-        try
-        {
-            await foreach (var evt in stream.WithCancellation(cancellationToken))
-            {
-                switch (evt)
-                {
-                    case AssistantTurnDto turn:
-                        var model = new TextChatMessageModel
-                        {
-                            Id = turn.TempId,
-                            NodeType = MessageNodeType.Assistant,
-                            CreatedAt = turn.StartedAt,
-                            IsStreaming = true
-                        };
-                        activeAssistantModel = model;
-                        Messages.Add(model);
-                        break;
-
-                    case AssistantChunkDto chunk:
-                        activeAssistantModel?.AppendContent(chunk.Text);
-                        break;
-
-                    case AssistantResponseSavedDto saved:
-                        if (activeAssistantModel != null)
-                        {
-                            activeAssistantModel.IsStreaming = false;
-                            activeAssistantModel.Id = saved.LastNodeId;
-                        }
-                        _currentLeafNodeId = saved.LastNodeId;
-                        LastTotalTokenCount = saved.TotalTokenCount;
-                        break;
-
-                    case ToolCallRequestedDto toolReq:
-                        _currentLeafNodeId = toolReq.PendingNodeId;
-                        await HandleToolCallRequested(toolReq);
-                        break;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing assistant stream");
-            ErrorMessage = $"Ошибка получения ответа ассистента: {ex.Message}";
-            Cleanup();
-        }
-
-        if (_currentLeafNodeId.HasValue)
-            ConversationStatus = await _chatService.GetConversationStateAsync(_currentLeafNodeId.Value, CancellationToken.None);
-
-        async Task HandleToolCallRequested(ToolCallRequestedDto toolReq)
-        {
-            var toolModel = new ToolChatMessageModel
-            {
-                Id = toolReq.PendingNodeId,
-                CallId = toolReq.CallId,
-                PluginName = toolReq.PluginName,
-                FunctionName = toolReq.FunctionName,
-                ArgumentsJson = toolReq.ArgumentsJson,
-                Status = ToolCallStatus.Pending
-            };
-
-            Messages.Add(toolModel);
-
-            if (await _toolApprovalService.IsAutoApprovedAsync(toolReq.PluginName, toolReq.FunctionName))
-                _ = ApproveToolAsync(toolModel);
-        }
-
-        void Cleanup()
-        {
-            if (activeAssistantModel?.IsStreaming == true)
-            {
-                Messages.Remove(activeAssistantModel);
-                activeAssistantModel = null;
-            }
-        }
+        if (_conversationSession != null)
+            _conversationSession.EventOccurred -= OnSessionEvent;
+        _conversationSession = null;
+        _activeAssistantModel = null;
     }
 }

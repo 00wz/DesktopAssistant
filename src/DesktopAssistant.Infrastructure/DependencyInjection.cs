@@ -50,7 +50,9 @@ public static class DependencyInjection
         services.AddScoped<ToolCallExecutor>();
         services.AddScoped<ISummarizationService, SummarizationExecutor>();
         services.AddScoped<IAssistantProfileService, AssistantProfileService>();
-        services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<IChatService, ChatService>(); 
+        services.AddSingleton<IConversationSessionService, ConversationSessionService>();
+
 
         // MCP Services
         services.AddSingleton<IMcpConfigurationService, McpConfigurationService>();

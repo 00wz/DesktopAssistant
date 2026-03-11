@@ -50,7 +50,7 @@ public class ToolCallExecutor(
             ?? throw new InvalidOperationException(
                 $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
 
-        var kernel = _agentKernelFactory.Create(profile, apiKey);
+        var kernel = _agentKernelFactory.Create(profile, apiKey);//TODO: зачем этому kernel profile и apikey?
 
         string resultJson;
         var status = ToolNodeStatus.Completed;

@@ -39,7 +39,7 @@ public interface IChatService
     /// Включает информацию о siblings для каждого узла.
     /// Системные сообщения не включаются.
     /// </summary>
-    Task<IEnumerable<MessageDto>> GetConversationHistoryAsync(Guid conversationId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<MessageDto>> GetConversationHistoryAsync(Guid conversationId, Guid lastNodeId, CancellationToken cancellationToken = default);
 
     /// <summary>Переключается на альтернативную ветку (sibling) сообщения.</summary>
     Task SwitchToSiblingAsync(Guid conversationId, Guid parentNodeId, Guid newChildId, CancellationToken cancellationToken = default);

@@ -6,9 +6,12 @@ namespace DesktopAssistant.Application.Dtos;
 public abstract record SummarizationEvent;
 
 /// <summary>Суммаризация начата.</summary>
-public sealed record SummarizationStartedDto : SummarizationEvent;
+public sealed record SummarizationStartedDto(
+    Guid ParentNodeId) : SummarizationEvent;
 
 /// <summary>Суммаризация успешно завершена.</summary>
 public sealed record SummarizationCompletedDto(
     Guid SummaryNodeId,
+    Guid ParentNodeId,
+    DateTime CreatedAt,
     string SummaryContent) : SummarizationEvent;

@@ -58,7 +58,7 @@ public class SummarizationExecutor(
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var reducer = new ChatHistorySummarizationReducer(chatCompletionService, targetCount: 1);
 
-        yield return new SummarizationStartedDto();
+        yield return new SummarizationStartedDto(selectedNodeId);
 
         // 4. Run summarization
         _logger.LogInformation(
@@ -84,7 +84,7 @@ public class SummarizationExecutor(
         var summaryNode = await _conversationService.InjectSummaryNodeAsync(
             conversationId, selectedNodeId, summaryContent, metadata, cancellationToken: cancellationToken);
 
-        yield return new SummarizationCompletedDto(summaryNode.Id, summaryContent);
+        yield return new SummarizationCompletedDto(summaryNode.Id, selectedNodeId, summaryNode.CreatedAt, summaryContent);
     }
 
     private async Task<AssistantProfile> ResolveSummarizationProfileAsync(

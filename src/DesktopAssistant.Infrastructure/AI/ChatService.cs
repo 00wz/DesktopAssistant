@@ -148,23 +148,25 @@ public class ChatService : IChatService
     /// <inheritdoc />
     public async Task<IEnumerable<MessageDto>> GetConversationHistoryAsync(
         Guid conversationId,
+        Guid lastNodeId,
         CancellationToken cancellationToken = default)
     {
         var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
         if (conversation == null)
         {
             _logger.LogWarning("Conversation {ConversationId} not found", conversationId);
-            return Enumerable.Empty<MessageDto>();
+            return Enumerable.Empty<MessageDto>();//TODO: выбасывать исключение
         }
 
-        if (!conversation.ActiveLeafNodeId.HasValue)
+        var lastNode = await _messageNodeRepository.GetByIdAsync(lastNodeId);
+        if (lastNode == null)
         {
-            _logger.LogWarning("Conversation {ConversationId} has no active leaf node", conversationId);
-            return Enumerable.Empty<MessageDto>();
+            _logger.LogWarning("MessageNode {NodeId} not found", lastNodeId);
+            return Enumerable.Empty<MessageDto>();//TODO: выбасывать исключение
         }
 
         var nodes = (await _conversationService.GetBranchPathAsync(
-            conversation.ActiveLeafNodeId.Value, cancellationToken)).ToList();
+            lastNodeId, cancellationToken)).ToList();
 
         var visibleNodes = nodes.Where(n => n.NodeType != MessageNodeType.System).ToList();
 
@@ -216,7 +218,7 @@ public class ChatService : IChatService
 
         var siblings = (await _messageNodeRepository.GetChildrenAsync(parentNodeId, cancellationToken)).ToList();
         var userSiblings = siblings
-            .Where(s => s.NodeType == MessageNodeType.User)
+            .Where(s => s.NodeType == MessageNodeType.User)//TODO: зачем эта строка?
             .OrderBy(s => s.CreatedAt)
             .ToList();
 
