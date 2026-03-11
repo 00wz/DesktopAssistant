@@ -16,7 +16,6 @@ namespace DesktopAssistant.UI.ViewModels;
 public partial class ChatViewModel : ObservableObject
 {
     private readonly IAssistantProfileService _profileService;
-    private readonly IToolApprovalService _toolApprovalService;
     private readonly ILogger<ChatViewModel> _logger;
     private readonly SemaphoreSlim _sessionEventHandleLock = new(1, 1);
 
@@ -80,11 +79,9 @@ public partial class ChatViewModel : ObservableObject
 
     public ChatViewModel(
         IAssistantProfileService profileService,
-        IToolApprovalService toolApprovalService,
         ILogger<ChatViewModel> logger)
     {
         _profileService = profileService;
-        _toolApprovalService = toolApprovalService;
         _logger = logger;
     }
 
@@ -121,7 +118,7 @@ public partial class ChatViewModel : ObservableObject
         }
         finally
         {
-            IsLoading = _conversationSession.IsRunning;
+            IsLoading = _conversationSession?.IsRunning ?? false;
         }
     }
 
@@ -220,7 +217,7 @@ public partial class ChatViewModel : ObservableObject
                     break;
 
                 case SummarizationSessionEvent summarization:
-                    HundleSummarizationEvent(summarization.evt);
+                    HandleSummarizationEvent(summarization.evt);
                     break;
 
                 case InitializeSessionEvent initializeSession:
@@ -263,8 +260,8 @@ public partial class ChatViewModel : ObservableObject
                 LastTotalTokenCount = saved.TotalTokenCount;
                 break;
 
-            case ToolCallRequestedDto toolReq:
-                /// ToolCalls обрабатываются вместе с событиями ToolRequestedSessionEvent и ToolResultSessionEvent
+            case ToolCallRequestedDto:
+                // ToolCall отображается через ToolRequestedSessionEvent и ToolResultSessionEvent
                 break;
         }
     }
@@ -296,7 +293,7 @@ public partial class ChatViewModel : ObservableObject
         toolModel.ResultJson = toolEvt.ResultJson;
     }
 
-    private void HundleSummarizationEvent(SummarizationEvent summarizationEvent)
+    private void HandleSummarizationEvent(SummarizationEvent summarizationEvent)
     {
         switch (summarizationEvent)
         {
@@ -450,7 +447,7 @@ public partial class ChatViewModel : ObservableObject
         catch(Exception ex)
         {
             _logger.LogError(ex, "Error resuming dialogue");
-            ErrorMessage = $"Ошибка возобнавления диалога: {ex.Message}";
+            ErrorMessage = $"Ошибка возобновления диалога: {ex.Message}";
         }
     }
 

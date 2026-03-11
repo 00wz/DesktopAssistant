@@ -1,43 +1,50 @@
-﻿using DesktopAssistant.Application.Dtos;
+using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace DesktopAssistant.Infrastructure.AI;
 
 internal class ConversationSession : IConversationSession
 {
-    private readonly IChatService _chatService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ConversationSession> _logger;
     private readonly IToolApprovalService _toolApprovalService;
 
     /// <summary>Предотвращает одновременный запуск нескольких LLM-тёрнов.</summary>
     private readonly SemaphoreSlim _runLock = new(1, 1);
-    private CancellationTokenSource? _commonToolsCancellationTockenSource;
+
+    /// <summary>
+    /// Отменяет все активные операции Approve/Deny при переинициализации сессии
+    /// (например, при переключении на другую ветку диалога).
+    /// </summary>
+    private CancellationTokenSource _toolsCancellationTokenSource = new();
 
     public Guid ConversationId { get; }
     public Guid CurrentLeafNodeId { get; private set; }
     public ConversationState State { get; private set; }
-    //public int LastTotalTokenCount { get; private set; }
     public bool IsRunning { get; private set; }
 
     public event EventHandler<SessionEvent>? EventOccurred;
 
     public ConversationSession(
         Guid conversationId,
-        IChatService chatService,
+        IServiceScopeFactory scopeFactory,
         ILogger<ConversationSession> logger,
         IToolApprovalService toolApprovalService)
     {
-        _chatService = chatService;
+        ConversationId = conversationId;
+        _scopeFactory = scopeFactory;
         _logger = logger;
         _toolApprovalService = toolApprovalService;
-        ConversationId = conversationId;
     }
 
-    public async Task InitializeAsync(
-    CancellationToken ct = default)
+    // ── Инициализация ────────────────────────────────────────────────────────
+
+    public async Task InitializeAsync(CancellationToken ct = default)
     {
-        if (!await _runLock.WaitAsync(0, ct)) throw new InvalidOperationException("ConversationSession is already running");
+        if (!await _runLock.WaitAsync(0, ct))
+            throw new InvalidOperationException("Cannot initialize: another LLM turn is already in progress.");
         try
         {
             await InitializeInternalAsync(ct);
@@ -48,58 +55,80 @@ internal class ConversationSession : IConversationSession
         }
     }
 
-    private async Task InitializeInternalAsync(
-    CancellationToken ct = default)
+    private async Task InitializeInternalAsync(CancellationToken ct = default)
     {
-        _commonToolsCancellationTockenSource?.Cancel();
-        _commonToolsCancellationTockenSource?.Dispose();
-        _commonToolsCancellationTockenSource = new CancellationTokenSource();
+        // Отменяем все незавершённые Approve/Deny операции из предыдущего состояния
+        _toolsCancellationTokenSource.Cancel();
+        _toolsCancellationTokenSource.Dispose();
+        _toolsCancellationTokenSource = new CancellationTokenSource();
 
-        var conversation = await _chatService.GetConversationAsync(ConversationId, ct)
-            ?? throw new InvalidOperationException($"Conversation {ConversationId} not found");
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+
+        var conversation = await chatService.GetConversationAsync(ConversationId, ct)
+            ?? throw new InvalidOperationException($"Conversation {ConversationId} not found.");
+
         CurrentLeafNodeId = conversation.ActiveLeafNodeId
-            ?? throw new InvalidOperationException($"Conversation {ConversationId} miss ActiveLeafNodeId");
-        var state = await _chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
+            ?? throw new InvalidOperationException($"Conversation {ConversationId} has no active leaf node.");
+
+        var state = await chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
         UpdateState(state);
 
         Emit(new InitializeSessionEvent());
     }
 
+    // ── LLM-операции ─────────────────────────────────────────────────────────
+
     public async Task SendMessageAsync(string message, Guid? parentNodeId = null, CancellationToken ct = default)
     {
-        parentNodeId ??= CurrentLeafNodeId;
+        var targetParentId = parentNodeId ?? CurrentLeafNodeId;
 
-        var state = parentNodeId == CurrentLeafNodeId ? State : await _chatService.GetConversationStateAsync((Guid)parentNodeId, ct);
-        if (state != ConversationState.LastMessageIsAssistant)
+        // Если parentNodeId отличается от текущего листа — проверяем состояние той ветки отдельно
+        ConversationState parentState;
+        if (targetParentId == CurrentLeafNodeId)
         {
-            throw new InvalidOperationException("Last message mast be by assistant or summary");
+            parentState = State;
+        }
+        else
+        {
+            using var stateScope = _scopeFactory.CreateScope();
+            var stateChatService = stateScope.ServiceProvider.GetRequiredService<IChatService>();
+            parentState = await stateChatService.GetConversationStateAsync(targetParentId, ct);
         }
 
-        if (!await _runLock.WaitAsync(0, ct)) throw new InvalidOperationException("ConversationSession is already running");
+        if (parentState != ConversationState.LastMessageIsAssistant)
+            throw new InvalidOperationException(
+                $"Cannot send message: the target node must be in state {ConversationState.LastMessageIsAssistant}, " +
+                $"but got {parentState}.");
+
+        if (!await _runLock.WaitAsync(0, ct))
+            throw new InvalidOperationException("Cannot send message: another LLM turn is already in progress.");
         try
         {
             SetRunning(true);
 
-            var userDto = await _chatService.AddUserMessageAsync(
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+
+            var userDto = await chatService.AddUserMessageAsync(
                 ConversationId,
-                (Guid)parentNodeId,
+                targetParentId,
                 message,
                 cancellationToken: ct);
 
-            if (parentNodeId != CurrentLeafNodeId) // Id сообщения, к которому добавляется новое в качестве дочернего,
-                                                   // не совпадает с id последнего сообщения в диалоге -> произошло ветвление диалога
+            if (targetParentId != CurrentLeafNodeId)
             {
+                // Добавление к не-текущей ветке (редактирование сообщения) → переинициализируем сессию
                 await InitializeInternalAsync(ct);
             }
-            else                                    // иначе - сообщение добавилось в конец текущей ветки
+            else
             {
                 CurrentLeafNodeId = userDto.Id;
                 Emit(new UserMessageAddedSessionEvent(userDto));
 
-                var newState = await _chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
+                var newState = await chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
                 UpdateState(newState);
             }
-                
 
             await RunLlmTurnAsync(ct);
         }
@@ -109,7 +138,7 @@ internal class ConversationSession : IConversationSession
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in SendMessageAsync for conversation {ConversationId}", ConversationId);
+            _logger.LogError(ex, "Error sending message in conversation {ConversationId}", ConversationId);
             Emit(new SessionErrorEvent(ex.Message, ex));
         }
         finally
@@ -122,11 +151,12 @@ internal class ConversationSession : IConversationSession
     public async Task ResumeAsync(CancellationToken ct = default)
     {
         if (State != ConversationState.LastMessageIsUser && State != ConversationState.AllToolCallsCompleted)
-        {
-            throw new InvalidOperationException("Last message can be resumed, after user message or completed tools block only");
-        }
-        
-        if (!await _runLock.WaitAsync(0, ct)) throw new InvalidOperationException("ConversationSession is already running");
+            throw new InvalidOperationException(
+                $"Cannot resume: expected state {ConversationState.LastMessageIsUser} or " +
+                $"{ConversationState.AllToolCallsCompleted}, but got {State}.");
+
+        if (!await _runLock.WaitAsync(0, ct))
+            throw new InvalidOperationException("Cannot resume: another LLM turn is already in progress.");
         try
         {
             SetRunning(true);
@@ -138,7 +168,7 @@ internal class ConversationSession : IConversationSession
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in ResumeAsync for conversation {ConversationId}", ConversationId);
+            _logger.LogError(ex, "Error resuming conversation {ConversationId}", ConversationId);
             Emit(new SessionErrorEvent(ex.Message, ex));
         }
         finally
@@ -150,17 +180,20 @@ internal class ConversationSession : IConversationSession
 
     private async Task RunLlmTurnAsync(CancellationToken ct)
     {
-        await foreach (var evt in _chatService.GetAssistantResponseAsync(ConversationId, CurrentLeafNodeId, ct))
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+
+        await foreach (var evt in chatService.GetAssistantResponseAsync(ConversationId, CurrentLeafNodeId, ct))
         {
             switch (evt)
             {
                 case AssistantResponseSavedDto saved:
                     CurrentLeafNodeId = saved.LastNodeId;
-                    //LastTotalTokenCount = saved.TotalTokenCount;
                     Emit(new StreamSessionEvent(evt));
                     break;
                 case ToolCallRequestedDto toolReq:
                     CurrentLeafNodeId = toolReq.PendingNodeId;
+                    // fire-and-forget: каждый tool-вызов обрабатывается независимо (возможно параллельно)
                     _ = HandleToolCallRequestedAsync(toolReq, ct);
                     break;
                 default:
@@ -169,15 +202,25 @@ internal class ConversationSession : IConversationSession
             }
         }
 
-        var state = await _chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
+        // Обновляем состояние после завершения стриминга.
+        // Если были tool-вызовы, состояние может ещё меняться асинхронно через HandleToolCallResultAsync.
+        using var stateScope = _scopeFactory.CreateScope();
+        var stateChatService = stateScope.ServiceProvider.GetRequiredService<IChatService>();
+        var state = await stateChatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
         UpdateState(state);
     }
 
-    private async Task HandleToolCallRequestedAsync(ToolCallRequestedDto toolReq, CancellationToken ct = default)
+    /// <summary>
+    /// Обрабатывает входящий tool-вызов: определяет нужно ли автоподтверждение,
+    /// публикует <see cref="ToolRequestedSessionEvent"/> и при необходимости автоматически одобряет.
+    /// Вызывается через fire-and-forget — все исключения обрабатываются внутри.
+    /// </summary>
+    private async Task HandleToolCallRequestedAsync(ToolCallRequestedDto toolReq, CancellationToken ct)
     {
         try
         {
-            var isAutoapproved = await _toolApprovalService.IsAutoApprovedAsync(toolReq.PluginName, toolReq.FunctionName);
+            var isAutoApproved = await _toolApprovalService.IsAutoApprovedAsync(
+                toolReq.PluginName, toolReq.FunctionName);
 
             Emit(new ToolRequestedSessionEvent(
                 PendingNodeId: toolReq.PendingNodeId,
@@ -185,54 +228,64 @@ internal class ConversationSession : IConversationSession
                 PluginName: toolReq.PluginName,
                 FunctionName: toolReq.FunctionName,
                 ArgumentsJson: toolReq.ArgumentsJson,
-                IsAutoApproved: isAutoapproved));
+                IsAutoApproved: isAutoApproved));
 
-            if (isAutoapproved)
-            {
+            if (isAutoApproved)
                 await ApproveToolAsync(toolReq.PendingNodeId, ct);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in HandleToolCallRequestedAsync for conversation {ConversationId}", ConversationId);
+            // Перехватываем все исключения (включая OperationCanceledException),
+            // так как метод вызывается через fire-and-forget — необработанное исключение
+            // привело бы к UnobservedTaskException.
+            _logger.LogError(ex,
+                "Error handling tool call {PluginName}.{FunctionName} in conversation {ConversationId}",
+                toolReq.PluginName, toolReq.FunctionName, ConversationId);
             Emit(new SessionErrorEvent(ex.Message, ex));
         }
     }
 
     public async Task ApproveToolAsync(Guid pendingNodeId, CancellationToken ct = default)
     {
-        using var linkedCts =
-            CancellationTokenSource.CreateLinkedTokenSource(ct, _commonToolsCancellationTockenSource!.Token);
-        var token = linkedCts.Token;
-        var result = await _chatService.ApproveToolCallAsync(pendingNodeId, token);
-        await HandleToolCallResultAsync(pendingNodeId, result, token);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            ct, _toolsCancellationTokenSource.Token);
+
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        var result = await chatService.ApproveToolCallAsync(pendingNodeId, linkedCts.Token);
+        await HandleToolCallResultAsync(pendingNodeId, result, linkedCts.Token);
     }
 
     public async Task DenyToolAsync(Guid pendingNodeId, CancellationToken ct = default)
     {
-        using var linkedCts =
-            CancellationTokenSource.CreateLinkedTokenSource(ct, _commonToolsCancellationTockenSource!.Token);
-        var token = linkedCts.Token;
-        var result = await _chatService.DenyToolCallAsync(pendingNodeId, token);
-        await HandleToolCallResultAsync(pendingNodeId, result, token);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            ct, _toolsCancellationTokenSource.Token);
+
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        var result = await chatService.DenyToolCallAsync(pendingNodeId, linkedCts.Token);
+        await HandleToolCallResultAsync(pendingNodeId, result, linkedCts.Token);
     }
 
-    private async Task HandleToolCallResultAsync(Guid pendingNodeId, ToolCallResult toolCallResult, CancellationToken ct = default)
+    private async Task HandleToolCallResultAsync(
+        Guid pendingNodeId,
+        ToolCallResult toolCallResult,
+        CancellationToken ct)
     {
         try
         {
             Emit(new ToolResultSessionEvent(pendingNodeId, toolCallResult.ResultJson, toolCallResult.Status));
 
-            var state = await _chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            var state = await chatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
             UpdateState(state);
 
             if (state != ConversationState.AllToolCallsCompleted) return;
 
-            if (!await _runLock.WaitAsync(0, ct)) throw new InvalidOperationException("ConversationSession is already running");
+            // При параллельном завершении нескольких tools только первый запускает следующий тёрн;
+            // остальные просто выходят.
+            if (!await _runLock.WaitAsync(0, ct)) return;
 
             try
             {
@@ -251,38 +304,40 @@ internal class ConversationSession : IConversationSession
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in HandleToolCallResultAsync for conversation {ConversationId}", ConversationId);
+            _logger.LogError(ex, "Error handling tool result {PendingNodeId} in conversation {ConversationId}",
+                pendingNodeId, ConversationId);
             Emit(new SessionErrorEvent(ex.Message, ex));
         }
     }
 
-    public Task<IEnumerable<MessageDto>> LoadHistoryAsync(CancellationToken ct = default)
+    // ── Data facade ──────────────────────────────────────────────────────────
+
+    public async Task<IEnumerable<MessageDto>> LoadHistoryAsync(CancellationToken ct = default)
     {
-        return _chatService.GetConversationHistoryAsync(ConversationId, CurrentLeafNodeId, ct);
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        return await chatService.GetConversationHistoryAsync(ConversationId, CurrentLeafNodeId, ct);
     }
 
     public async Task SummarizeAsync(Guid selectedNodeId, CancellationToken ct = default)
     {
-        var state = await _chatService.GetConversationStateAsync(selectedNodeId, ct);
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+
+        var state = await chatService.GetConversationStateAsync(selectedNodeId, ct);
         if (state is ConversationState.HasPendingToolCalls)
-        {
-            var errorMessage = "Cannot summarize: one or more tool actions are still running or waiting for your approval. " +
-                           "Wait for them to finish or approve/deny them, then try again.";
-            throw new InvalidOperationException(errorMessage);
-        }
+            throw new InvalidOperationException(
+                "Cannot summarize: one or more tool calls are still pending approval. " +
+                "Approve or deny them first, then try again.");
         if (state is ConversationState.ToolCallIdMismatch)
-        {
-            var errorMessage = "Cannot summarize at this point: the selected message is in the middle of a tool call sequence. " +
-                           "Choose a message that comes before or after the entire tool call group.";
-            throw new InvalidOperationException(errorMessage);
-        }
+            throw new InvalidOperationException(
+                "Cannot summarize at this point: the selected message is in the middle of a tool call sequence. " +
+                "Select a message before or after the entire tool call group.");
 
         try
         {
-            await foreach (var evt in _chatService.SummarizeAsync(ConversationId, selectedNodeId, ct))
-            {
+            await foreach (var evt in chatService.SummarizeAsync(ConversationId, selectedNodeId, ct))
                 Emit(new SummarizationSessionEvent(evt));
-            }
         }
         catch (OperationCanceledException)
         {
@@ -290,36 +345,42 @@ internal class ConversationSession : IConversationSession
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error summarizing message {MessageId}", selectedNodeId);
+            _logger.LogError(ex, "Error summarizing node {NodeId} in conversation {ConversationId}",
+                selectedNodeId, ConversationId);
             Emit(new SessionErrorEvent(ex.Message, ex));
         }
     }
 
     public async Task SwitchToSiblingAsync(Guid parentNodeId, Guid newChildId, CancellationToken ct = default)
     {
-        await _chatService.SwitchToSiblingAsync(
-            ConversationId,
-            parentNodeId,
-            newChildId,
-            cancellationToken: ct);
-
-        await InitializeAsync();
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        await chatService.SwitchToSiblingAsync(ConversationId, parentNodeId, newChildId, cancellationToken: ct);
+        await InitializeAsync(ct);
     }
 
-    public Task UpdateSystemPromptAsync(string systemPrompt, CancellationToken ct = default)
+    public async Task UpdateSystemPromptAsync(string systemPrompt, CancellationToken ct = default)
     {
-        return _chatService.UpdateConversationSystemPromptAsync(ConversationId, systemPrompt);
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        await chatService.UpdateConversationSystemPromptAsync(ConversationId, systemPrompt, ct);
     }
 
-    public Task<ConversationSettingsDto?> GetSettingsAsync(CancellationToken ct = default)
+    public async Task<ConversationSettingsDto?> GetSettingsAsync(CancellationToken ct = default)
     {
-        return _chatService.GetConversationSettingsAsync(ConversationId, ct);
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        return await chatService.GetConversationSettingsAsync(ConversationId, ct);
     }
 
-    public Task ChangeProfileAsync(Guid profileId, CancellationToken ct = default)
+    public async Task ChangeProfileAsync(Guid profileId, CancellationToken ct = default)
     {
-        return _chatService.ChangeConversationProfileAsync(ConversationId, profileId);
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        await chatService.ChangeConversationProfileAsync(ConversationId, profileId, ct);
     }
+
+    // ── Вспомогательные методы ───────────────────────────────────────────────
 
     private void UpdateState(ConversationState state)
     {
@@ -337,10 +398,8 @@ internal class ConversationSession : IConversationSession
 
     public void Dispose()
     {
-        _commonToolsCancellationTockenSource?.Cancel();
-        _commonToolsCancellationTockenSource?.Dispose();
-        _commonToolsCancellationTockenSource = null;
-
+        _toolsCancellationTokenSource.Cancel();
+        _toolsCancellationTokenSource.Dispose();
         _runLock.Dispose();
     }
 }

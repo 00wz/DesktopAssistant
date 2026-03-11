@@ -1,23 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace DesktopAssistant.Application.Interfaces;
 
+/// <summary>
+/// Singleton-пул сессий диалогов.
+/// Гарантирует, что для каждого диалога существует ровно одна активная сессия.
+/// </summary>
 public interface IConversationSessionService : IDisposable
 {
     /// <summary>
-    /// Возвращает существующую сессию или создаёт новую.
+    /// Возвращает существующую сессию или создаёт и инициализирует новую.
     /// </summary>
-    /// <param name="conversationId">id диалога</param>
-    /// <returns></returns>
     Task<IConversationSession> GetOrCreate(Guid conversationId);
 
     /// <summary>
-    /// Освобождает сессию (при удалении диалога).
+    /// Освобождает сессию диалога и удаляет её из пула.
+    /// Вызывается при удалении диалога.
     /// </summary>
     void Release(Guid conversationId);
 }
-
