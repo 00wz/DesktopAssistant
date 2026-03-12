@@ -3,10 +3,60 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
-             xmlns:models="using:DesktopAssistant.UI.Models"
              mc:Ignorable="d" d:DesignWidth="260" d:DesignHeight="600"
              x:Class="DesktopAssistant.UI.Views.ConversationSidebarView"
              x:DataType="vm:MainWindowViewModel">
+
+    <UserControl.Styles>
+        <!--
+            Переопределяем шаблон кнопок пунктов списка: убираем FluentTheme-хром
+            (border, background, pressed/hover overrides). Button сохраняет логику
+            кликов и IsPointerOver; всё визуальное — внутри ContentPresenter.
+        -->
+        <Style Selector="Button.convItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- Пульсация для иконки загрузки -->
+        <Style Selector="TextBlock.loadingSpin">
+            <Style.Animations>
+                <Animation Duration="0:0:0.5" IterationCount="INFINITE" PlaybackDirection="Alternate">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.1"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <!-- Пульсация для иконки ожидающего tool-вызова -->
+        <Style Selector="TextBlock.questionPulse">
+            <Style.Animations>
+                <Animation Duration="0:0:0.8" IterationCount="INFINITE" PlaybackDirection="Alternate">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.2"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
         <Border Grid.Row="0"
@@ -38,29 +88,79 @@
 
                 <ItemsControl ItemsSource="{Binding SavedConversations}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="models:ConversationListItem">
-                            <Button Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenConversationCommand}"
-                                    CommandParameter="{Binding}"
-                                    Background="Transparent"
-                                    Padding="15,10"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Stretch"
-                                    CornerRadius="0">
-                                <Button.Styles>
-                                    <Style Selector="Button:pointerover">
-                                        <Setter Property="Background" Value="#3E3E42"/>
-                                    </Style>
-                                </Button.Styles>
-                                <StackPanel Spacing="3">
-                                    <TextBlock Text="{Binding Title}"
-                                               FontSize="13"
-                                               Foreground="White"
-                                               TextTrimming="CharacterEllipsis"
-                                               MaxLines="1"/>
-                                    <TextBlock Text="{Binding FormattedDate}"
-                                               FontSize="11"
-                                               Foreground="#888888"/>
-                                </StackPanel>
+                        <DataTemplate DataType="vm:ConversationListItemViewModel">
+                            <Button Classes="convItem"
+                                    Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenConversationCommand}"
+                                    CommandParameter="{Binding}">
+                                <Panel Background="Transparent">
+                                    <!--
+                                        Слои фона (снизу вверх):
+                                        1. Активная сессия — тёмно-серый акцент
+                                        2. Выбранный диалог — синий (перекрывает активный)
+                                        3. Наведение — полупрозрачный белый оверлей поверх всего
+                                    -->
+                                    <Border Background="#353540"
+                                            IsVisible="{Binding IsActive}"/>
+                                    <Border Background="#1F3D5A"
+                                            IsVisible="{Binding IsSelected}"/>
+                                    <Border Background="#22FFFFFF"
+                                            IsVisible="{Binding $parent[Button].IsPointerOver}"/>
+
+                                    <!-- Контент пункта -->
+                                    <Grid ColumnDefinitions="22,*" Margin="12,10">
+
+                                        <!-- Иконка статуса сессии -->
+                                        <Panel Grid.Column="0" VerticalAlignment="Center" Width="18">
+
+                                            <!-- Загрузка: пульсирующая иконка -->
+                                            <TextBlock Text="⟳"
+                                                       IsVisible="{Binding IsLoadingIcon}"
+                                                       Classes.loadingSpin="{Binding IsLoadingIcon}"
+                                                       Foreground="#4CAF50"
+                                                       FontSize="14"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Пауза -->
+                                            <TextBlock Text="⏸"
+                                                       IsVisible="{Binding IsPausedIcon}"
+                                                       Foreground="#FFC107"
+                                                       FontSize="11"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Вопрос: ожидает одобрения tool-вызова -->
+                                            <TextBlock Text="?"
+                                                       IsVisible="{Binding IsQuestionIcon}"
+                                                       Classes.questionPulse="{Binding IsQuestionIcon}"
+                                                       Foreground="#2196F3"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Ошибка -->
+                                            <TextBlock Text="⚠"
+                                                       IsVisible="{Binding IsErrorIcon}"
+                                                       Foreground="#F44336"
+                                                       FontSize="11"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Panel>
+
+                                        <!-- Заголовок и дата -->
+                                        <StackPanel Grid.Column="1" Spacing="3">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontSize="13"
+                                                       Foreground="White"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="1"/>
+                                            <TextBlock Text="{Binding FormattedDate}"
+                                                       FontSize="11"
+                                                       Foreground="#888888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Panel>
                             </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

@@ -7,6 +7,23 @@ namespace DesktopAssistant.Application.Interfaces;
 public interface IConversationSessionService : IDisposable
 {
     /// <summary>
+    /// Снимок идентификаторов всех активных сессий на момент вызова.
+    /// </summary>
+    IReadOnlyCollection<Guid> ActiveSessionIds { get; }
+
+    /// <summary>
+    /// Вызывается после добавления новой сессии в пул.
+    /// Аргумент — идентификатор диалога.
+    /// </summary>
+    event EventHandler<Guid> SessionCreated;
+
+    /// <summary>
+    /// Вызывается после удаления сессии из пула.
+    /// Аргумент — идентификатор диалога.
+    /// </summary>
+    event EventHandler<Guid> SessionReleased;
+
+    /// <summary>
     /// Возвращает существующую сессию или создаёт и инициализирует новую.
     /// </summary>
     Task<IConversationSession> GetOrCreate(Guid conversationId);

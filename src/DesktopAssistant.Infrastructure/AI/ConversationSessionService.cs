@@ -12,6 +12,11 @@ internal class ConversationSessionService : IConversationSessionService
     private readonly IToolApprovalService _toolApprovalService;
     private readonly ILoggerFactory _loggerFactory;
 
+    public IReadOnlyCollection<Guid> ActiveSessionIds => [.. _sessions.Keys];
+
+    public event EventHandler<Guid>? SessionCreated;
+    public event EventHandler<Guid>? SessionReleased;
+
     public ConversationSessionService(
         IServiceScopeFactory scopeFactory,
         ILoggerFactory loggerFactory,
@@ -39,15 +44,22 @@ internal class ConversationSessionService : IConversationSessionService
         // а только что созданную освобождаем
         var session = _sessions.GetOrAdd(conversationId, newSession);
         if (!ReferenceEquals(session, newSession))
+        {
             newSession.Dispose();
+            return session;
+        }
 
+        SessionCreated?.Invoke(this, conversationId);
         return session;
     }
 
     public void Release(Guid conversationId)
     {
         if (_sessions.TryRemove(conversationId, out var session))
+        {
             session.Dispose();
+            SessionReleased?.Invoke(this, conversationId);
+        }
     }
 
     public void Dispose()

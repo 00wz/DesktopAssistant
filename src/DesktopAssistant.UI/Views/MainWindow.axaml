@@ -58,35 +58,14 @@
             <!-- Контентная область -->
             <Grid Grid.Row="1">
 
-                <!-- TabControl с чатами -->
-                <TabControl ItemsSource="{Binding Chats}"
-                            SelectedIndex="{Binding SelectedTabIndex}"
-                            SelectedItem="{Binding SelectedChat}"
-                            TabStripPlacement="Top"
-                            IsVisible="{Binding Chats.Count}">
-                    <TabControl.ItemTemplate>
-                        <DataTemplate DataType="vm:ChatViewModel">
-                            <StackPanel Orientation="Horizontal" Spacing="5">
-                                <TextBlock Text="{Binding ConversationTitle}" VerticalAlignment="Center"/>
-                                <Button Content="×"
-                                        FontSize="14"
-                                        Padding="5,0"
-                                        Background="Transparent"
-                                        Command="{Binding $parent[TabControl].((vm:MainWindowViewModel)DataContext).CloseChatCommand}"
-                                        CommandParameter="{Binding}"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </TabControl.ItemTemplate>
-                    <TabControl.ContentTemplate>
-                        <DataTemplate DataType="vm:ChatViewModel">
-                            <views:ChatView DataContext="{Binding}"/>
-                        </DataTemplate>
-                    </TabControl.ContentTemplate>
-                </TabControl>
+                <!-- Активный диалог -->
+                <Panel IsVisible="{Binding HasActiveChat}">
+                    <views:ChatView DataContext="{Binding SelectedChat}"/>
+                </Panel>
 
-                <!-- Пустое состояние -->
+                <!-- Пустое состояние (нет выбранного диалога) -->
                 <Border Background="#FAFAFA"
-                        IsVisible="{Binding !Chats.Count}">
+                        IsVisible="{Binding !HasActiveChat}">
                     <StackPanel VerticalAlignment="Center"
                                 HorizontalAlignment="Center"
                                 Spacing="20"
