@@ -81,31 +81,32 @@ internal class ConversationSession : IConversationSession
 
     public async Task SendMessageAsync(string message, Guid? parentNodeId = null, CancellationToken ct = default)
     {
-        var targetParentId = parentNodeId ?? CurrentLeafNodeId;
-
-        // Если parentNodeId отличается от текущего листа — проверяем состояние той ветки отдельно
-        ConversationState parentState;
-        if (targetParentId == CurrentLeafNodeId)
-        {
-            parentState = State;
-        }
-        else
-        {
-            using var stateScope = _scopeFactory.CreateScope();
-            var stateChatService = stateScope.ServiceProvider.GetRequiredService<IChatService>();
-            parentState = await stateChatService.GetConversationStateAsync(targetParentId, ct);
-        }
-
-        if (parentState != ConversationState.LastMessageIsAssistant)
-            throw new InvalidOperationException(
-                $"Cannot send message: the target node must be in state {ConversationState.LastMessageIsAssistant}, " +
-                $"but got {parentState}.");
-
         if (!await _runLock.WaitAsync(0, ct))
             throw new InvalidOperationException("Cannot send message: another LLM turn is already in progress.");
         try
         {
             SetRunning(true);
+
+            // targetParentId вычисляется под локом, чтобы CurrentLeafNodeId не изменился до использования
+            var targetParentId = parentNodeId ?? CurrentLeafNodeId;
+
+            // Если parentNodeId отличается от текущего листа — проверяем состояние той ветки отдельно
+            ConversationState parentState;
+            if (targetParentId == CurrentLeafNodeId)
+            {
+                parentState = State;
+            }
+            else
+            {
+                using var stateScope = _scopeFactory.CreateScope();
+                var stateChatService = stateScope.ServiceProvider.GetRequiredService<IChatService>();
+                parentState = await stateChatService.GetConversationStateAsync(targetParentId, ct);
+            }
+
+            if (parentState != ConversationState.LastMessageIsAssistant)
+                throw new InvalidOperationException(
+                    $"Cannot send message: the target node must be in state {ConversationState.LastMessageIsAssistant}, " +
+                    $"but got {parentState}.");
 
             using var scope = _scopeFactory.CreateScope();
             var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
@@ -136,6 +137,10 @@ internal class ConversationSession : IConversationSession
         {
             throw;
         }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending message in conversation {ConversationId}", ConversationId);
@@ -150,19 +155,24 @@ internal class ConversationSession : IConversationSession
 
     public async Task ResumeAsync(CancellationToken ct = default)
     {
-        if (State != ConversationState.LastMessageIsUser && State != ConversationState.AllToolCallsCompleted)
-            throw new InvalidOperationException(
-                $"Cannot resume: expected state {ConversationState.LastMessageIsUser} or " +
-                $"{ConversationState.AllToolCallsCompleted}, but got {State}.");
-
         if (!await _runLock.WaitAsync(0, ct))
             throw new InvalidOperationException("Cannot resume: another LLM turn is already in progress.");
         try
         {
             SetRunning(true);
+
+            if (State != ConversationState.LastMessageIsUser && State != ConversationState.AllToolCallsCompleted)
+                throw new InvalidOperationException(
+                    $"Cannot resume: expected state {ConversationState.LastMessageIsUser} or " +
+                    $"{ConversationState.AllToolCallsCompleted}, but got {State}.");
+
             await RunLlmTurnAsync(ct);
         }
         catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException)
         {
             throw;
         }
@@ -187,17 +197,20 @@ internal class ConversationSession : IConversationSession
         {
             switch (evt)
             {
+                case AssistantTurnDto turn:
+                    Emit(new AssistantTurnStartedSessionEvent(turn.TempId, turn.StartedAt));
+                    break;
+                case AssistantChunkDto chunk:
+                    Emit(new AssistantChunkSessionEvent(chunk.Text));
+                    break;
                 case AssistantResponseSavedDto saved:
                     CurrentLeafNodeId = saved.LastNodeId;
-                    Emit(new StreamSessionEvent(evt));
+                    Emit(new AssistantResponseSavedSessionEvent(saved.LastNodeId, saved.TotalTokenCount));
                     break;
                 case ToolCallRequestedDto toolReq:
                     CurrentLeafNodeId = toolReq.PendingNodeId;
                     // fire-and-forget: каждый tool-вызов обрабатывается независимо (возможно параллельно)
                     _ = HandleToolCallRequestedAsync(toolReq, ct);
-                    break;
-                default:
-                    Emit(new StreamSessionEvent(evt));
                     break;
             }
         }
@@ -321,25 +334,44 @@ internal class ConversationSession : IConversationSession
 
     public async Task SummarizeAsync(Guid selectedNodeId, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-
-        var state = await chatService.GetConversationStateAsync(selectedNodeId, ct);
-        if (state is ConversationState.HasPendingToolCalls)
-            throw new InvalidOperationException(
-                "Cannot summarize: one or more tool calls are still pending approval. " +
-                "Approve or deny them first, then try again.");
-        if (state is ConversationState.ToolCallIdMismatch)
-            throw new InvalidOperationException(
-                "Cannot summarize at this point: the selected message is in the middle of a tool call sequence. " +
-                "Select a message before or after the entire tool call group.");
-
+        if (!await _runLock.WaitAsync(0, ct))
+            throw new InvalidOperationException("Cannot summarize: another LLM turn is already in progress.");
         try
         {
+            SetRunning(true);
+
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            var state = selectedNodeId == CurrentLeafNodeId ? State : await chatService.GetConversationStateAsync(selectedNodeId, ct);
+
+            if (state is ConversationState.HasPendingToolCalls)
+                throw new InvalidOperationException(
+                    "Cannot summarize: one or more tool calls are still pending approval. " +
+                    "Approve or deny them first, then try again.");
+            if (state is ConversationState.ToolCallIdMismatch)
+                throw new InvalidOperationException(
+                    "Cannot summarize at this point: the selected message is in the middle of a tool call sequence. " +
+                    "Select a message before or after the entire tool call group.");
+
             await foreach (var evt in chatService.SummarizeAsync(ConversationId, selectedNodeId, ct))
-                Emit(new SummarizationSessionEvent(evt));
+            {
+                SessionEvent sessionEvent = evt switch
+                {
+                    SummarizationStartedDto started => new SummarizationStartedSessionEvent(started.ParentNodeId),
+                    SummarizationCompletedDto completed => new SummarizationCompletedSessionEvent(
+                        completed.ParentNodeId, completed.SummaryNodeId, completed.SummaryContent),
+                    _ => new SessionErrorEvent($"Unknown summarization event: {evt.GetType().Name}")
+                };
+                Emit(sessionEvent);
+            }
+
+            await InitializeInternalAsync(ct);
         }
         catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (InvalidOperationException)
         {
             throw;
         }
@@ -348,6 +380,11 @@ internal class ConversationSession : IConversationSession
             _logger.LogError(ex, "Error summarizing node {NodeId} in conversation {ConversationId}",
                 selectedNodeId, ConversationId);
             Emit(new SessionErrorEvent(ex.Message, ex));
+        }
+        finally
+        {
+            SetRunning(false);
+            _runLock.Release();
         }
     }
 

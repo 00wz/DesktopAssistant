@@ -21,8 +21,8 @@ public class AgentKernelFactory(
     {
         var kernel = kernelFactory.Create(profile, apiKey);
 
-        kernel.FunctionInvocationFilters.Add(
-            new FunctionLoggingFilter(loggerFactory.CreateLogger<FunctionLoggingFilter>()));
+        //kernel.FunctionInvocationFilters.Add(
+        //    new FunctionLoggingFilter(loggerFactory.CreateLogger<FunctionLoggingFilter>()));
 
         kernel.ImportPluginFromObject(
             new CoreToolsPlugin(loggerFactory.CreateLogger<CoreToolsPlugin>()), "CoreTools");

@@ -218,7 +218,7 @@ public class ChatService : IChatService
 
         var siblings = (await _messageNodeRepository.GetChildrenAsync(parentNodeId, cancellationToken)).ToList();
         var userSiblings = siblings
-            .Where(s => s.NodeType == MessageNodeType.User)//TODO: зачем эта строка?
+            //.Where(s => s.NodeType == MessageNodeType.User)
             .OrderBy(s => s.CreatedAt)
             .ToList();
 
@@ -368,7 +368,7 @@ public class ChatService : IChatService
             return (1, 1, false, false, null, null);
 
         var sameSiblings = siblings
-            .Where(s => s.NodeType == node.NodeType)
+            //.Where(s => s.NodeType == node.NodeType)
             .OrderBy(s => s.CreatedAt)
             .ToList();
 

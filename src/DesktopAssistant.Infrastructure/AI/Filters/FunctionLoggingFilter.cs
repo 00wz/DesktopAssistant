@@ -8,6 +8,7 @@ namespace DesktopAssistant.Infrastructure.AI.Filters;
 /// Фильтр для логирования вызовов функций (tools) Semantic Kernel
 /// Логирует все вызовы включая аргументы и результаты
 /// </summary>
+[Obsolete("Логирование tools перенесено в ToolCallExecutor. Этот фильтр больше не используется.")]
 public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
 {
     private readonly ILogger<FunctionLoggingFilter> _logger;

@@ -14,9 +14,14 @@ public sealed record ConversationStateChangedSessionEvent(ConversationState Stat
 /// <summary>Пользователь отправил сообщение — узел сохранён в БД.</summary>
 public sealed record UserMessageAddedSessionEvent(UserMessageDto Dto) : SessionEvent;
 
-//TODO: возможно, стоит добавить SessionEvent для каждого StreamEvent, что бы сделать клиентский код независимым от StreamEvent
-/// <summary>Событие из LLM-стрима — оборачивает <see cref="StreamEvent"/>.</summary>
-public sealed record StreamSessionEvent(StreamEvent Inner) : SessionEvent;
+/// <summary>LLM начал новый тёрн ответа.</summary>
+public sealed record AssistantTurnStartedSessionEvent(Guid TempId, DateTime StartedAt) : SessionEvent;
+
+/// <summary>Текстовый чанк текущего тёрна ассистента.</summary>
+public sealed record AssistantChunkSessionEvent(string Text) : SessionEvent;
+
+/// <summary>Тёрн ассистента завершён и сохранён в БД.</summary>
+public sealed record AssistantResponseSavedSessionEvent(Guid LastNodeId, int TotalTokenCount) : SessionEvent;
 
 /// <summary>LLM вызывает tool.</summary>
 public sealed record ToolRequestedSessionEvent(
@@ -35,9 +40,14 @@ public sealed record ToolResultSessionEvent(Guid PendingNodeId, string ResultJso
 /// <summary>Произошла ошибка во время выполнения LLM-тёрна или tool-вызова.</summary>
 public sealed record SessionErrorEvent(string Message, Exception? Exception = null) : SessionEvent;
 
-//TODO: возможно разделить SummarizationSessionEvent, что бы сделать клиентский код независимым от SummarizationEvent
-/// <summary>Событие суммаризации контекста.</summary>
-public sealed record SummarizationSessionEvent(SummarizationEvent evt) : SessionEvent;
+/// <summary>Суммаризация контекста начата.</summary>
+public sealed record SummarizationStartedSessionEvent(Guid ParentNodeId) : SessionEvent;
+
+/// <summary>Суммаризация контекста завершена.</summary>
+public sealed record SummarizationCompletedSessionEvent(
+    Guid ParentNodeId,
+    Guid SummaryNodeId,
+    string SummaryContent) : SessionEvent;
 
 /// <summary>Событие инициализации сессии.</summary>
 public sealed record InitializeSessionEvent() : SessionEvent;

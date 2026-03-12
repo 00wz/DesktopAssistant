@@ -199,16 +199,55 @@ public partial class ChatViewModel : ObservableObject
                     Messages.Add(ChatMessageModelFactory.FromDto(userEvt.Dto));
                     break;
 
-                case StreamSessionEvent streamEvt:
-                    HandleStreamEvent(streamEvt.Inner);
+                case AssistantTurnStartedSessionEvent turn:
+                    _activeAssistantModel = new TextChatMessageModel
+                    {
+                        Id = turn.TempId,
+                        NodeType = MessageNodeType.Assistant,
+                        CreatedAt = turn.StartedAt,
+                        IsStreaming = true
+                    };
+                    Messages.Add(_activeAssistantModel);
+                    break;
+
+                case AssistantChunkSessionEvent chunk:
+                    _activeAssistantModel?.AppendContent(chunk.Text);
+                    break;
+
+                case AssistantResponseSavedSessionEvent saved:
+                    if (_activeAssistantModel != null)
+                    {
+                        _activeAssistantModel.IsStreaming = false;
+                        _activeAssistantModel.Id = saved.LastNodeId;
+                        _activeAssistantModel = null;
+                    }
+                    LastTotalTokenCount = saved.TotalTokenCount;
                     break;
 
                 case ToolRequestedSessionEvent toolReq:
-                    HandleToolRequest(toolReq);
+                    Messages.Add(new ToolChatMessageModel
+                    {
+                        Id = toolReq.PendingNodeId,
+                        CallId = toolReq.CallId,
+                        PluginName = toolReq.PluginName,
+                        FunctionName = toolReq.FunctionName,
+                        ArgumentsJson = toolReq.ArgumentsJson,
+                        Status = toolReq.IsAutoApproved ? ToolCallStatus.Executing : ToolCallStatus.Pending
+                    });
                     break;
 
                 case ToolResultSessionEvent toolRes:
-                    HandleToolResult(toolRes);
+                    var toolModel = Messages.OfType<ToolChatMessageModel>()
+                        .FirstOrDefault(m => m.Id == toolRes.PendingNodeId);
+                    if (toolModel != null)
+                    {
+                        toolModel.Status = toolRes.Status == ToolNodeStatus.Failed
+                            ? ToolCallStatus.Failed
+                            : toolRes.Status == ToolNodeStatus.Denied
+                                ? ToolCallStatus.Denied
+                                : ToolCallStatus.Completed;
+                        toolModel.ResultJson = toolRes.ResultJson;
+                    }
                     break;
 
                 case SessionErrorEvent error:
@@ -216,11 +255,41 @@ public partial class ChatViewModel : ObservableObject
                     CleanupStreamingModel();
                     break;
 
-                case SummarizationSessionEvent summarization:
-                    HandleSummarizationEvent(summarization.evt);
+                case SummarizationStartedSessionEvent started:
+                {
+                    var summaryModel = new SummarizationChatMessageModel { Status = SummarizationStatus.Running };
+                    var parent = Messages.FirstOrDefault(m => m.Id == started.ParentNodeId);
+                    var parentIndex = parent != null ? Messages.IndexOf(parent) : -1;
+                    if (parentIndex >= 0)
+                        Messages.Insert(parentIndex + 1, summaryModel);
                     break;
+                }
 
-                case InitializeSessionEvent initializeSession:
+                case SummarizationCompletedSessionEvent completed:
+                {
+                    var parent = Messages.FirstOrDefault(m => m.Id == completed.ParentNodeId);
+                    var parentIndex = parent != null ? Messages.IndexOf(parent) : -1;
+                    if (parentIndex < 0) break;
+                    var next = Messages.ElementAtOrDefault(parentIndex + 1);
+                    if (next is SummarizationChatMessageModel existing)
+                    {
+                        existing.Id = completed.SummaryNodeId;
+                        existing.SummaryContent = completed.SummaryContent;
+                        existing.Status = SummarizationStatus.Completed;
+                    }
+                    else
+                    {
+                        Messages.Insert(parentIndex + 1, new SummarizationChatMessageModel
+                        {
+                            Id = completed.SummaryNodeId,
+                            SummaryContent = completed.SummaryContent,
+                            Status = SummarizationStatus.Completed
+                        });
+                    }
+                    break;
+                }
+
+                case InitializeSessionEvent:
                     await LoadMessagesAsync(default);
                     break;
             }
@@ -230,109 +299,6 @@ public partial class ChatViewModel : ObservableObject
             _sessionEventHandleLock.Release();
         }
     }
-    private void HandleStreamEvent(StreamEvent evt)
-    {
-        switch (evt)
-        {
-            case AssistantTurnDto turn:
-                var model = new TextChatMessageModel
-                {
-                    Id = turn.TempId,
-                    NodeType = MessageNodeType.Assistant,
-                    CreatedAt = turn.StartedAt,
-                    IsStreaming = true
-                };
-                _activeAssistantModel = model;
-                Messages.Add(model);
-                break;
-
-            case AssistantChunkDto chunk:
-                _activeAssistantModel?.AppendContent(chunk.Text);
-                break;
-
-            case AssistantResponseSavedDto saved:
-                if (_activeAssistantModel != null)
-                {
-                    _activeAssistantModel.IsStreaming = false;
-                    _activeAssistantModel.Id = saved.LastNodeId;
-                    _activeAssistantModel = null;
-                }
-                LastTotalTokenCount = saved.TotalTokenCount;
-                break;
-
-            case ToolCallRequestedDto:
-                // ToolCall отображается через ToolRequestedSessionEvent и ToolResultSessionEvent
-                break;
-        }
-    }
-
-    private void HandleToolRequest(ToolRequestedSessionEvent toolReq)
-    {
-        Messages.Add(new ToolChatMessageModel
-        {
-            Id = toolReq.PendingNodeId,
-            CallId = toolReq.CallId,
-            PluginName = toolReq.PluginName,
-            FunctionName = toolReq.FunctionName,
-            ArgumentsJson = toolReq.ArgumentsJson,
-            Status = toolReq.IsAutoApproved ? ToolCallStatus.Executing : ToolCallStatus.Pending
-        });
-    }
-
-    private void HandleToolResult(ToolResultSessionEvent toolEvt)
-    {
-        var toolModel = Messages.OfType<ToolChatMessageModel>()
-            .FirstOrDefault(m => m.Id == toolEvt.PendingNodeId);
-        if (toolModel == null) return;
-
-        toolModel.Status = toolEvt.Status == ToolNodeStatus.Failed
-            ? ToolCallStatus.Failed
-            : toolEvt.Status == ToolNodeStatus.Denied
-                ? ToolCallStatus.Denied
-                : ToolCallStatus.Completed;
-        toolModel.ResultJson = toolEvt.ResultJson;
-    }
-
-    private void HandleSummarizationEvent(SummarizationEvent summarizationEvent)
-    {
-        switch (summarizationEvent)
-        {
-            case SummarizationStartedDto summarizationStartedDto:
-                {
-                    var summaryModel = new SummarizationChatMessageModel { Status = SummarizationStatus.Running };
-                    var parentNodeIndex = Messages.IndexOf(Messages.FirstOrDefault(m => m.Id == summarizationStartedDto.ParentNodeId));
-                    if (parentNodeIndex < 0) return;
-                    var insertIndex = parentNodeIndex + 1;
-                    Messages.Insert(insertIndex, summaryModel);
-                    break;
-                }
-            case SummarizationCompletedDto summarizationCompletedDto:
-                {
-                    var parentNodeIndex = Messages.IndexOf(Messages.FirstOrDefault(m => m.Id == summarizationCompletedDto.ParentNodeId));
-                    if (parentNodeIndex < 0) return;
-                    var insertIndex = parentNodeIndex + 1;
-                    var targetChatMessageModel = Messages.ElementAtOrDefault(insertIndex);
-                    if (targetChatMessageModel is SummarizationChatMessageModel summarizationChatMessage)
-                    {
-                        summarizationChatMessage.Id = summarizationCompletedDto.SummaryNodeId;
-                        summarizationChatMessage.SummaryContent = summarizationCompletedDto.SummaryContent;
-                        summarizationChatMessage.Status = SummarizationStatus.Completed;
-                    }
-                    else
-                    {
-                        var summaryModel = new SummarizationChatMessageModel 
-                        { 
-                            Id = summarizationCompletedDto.SummaryNodeId,
-                            SummaryContent = summarizationCompletedDto.SummaryContent,
-                            Status = SummarizationStatus.Completed, 
-                        };
-                        Messages.Insert(insertIndex, summaryModel);
-                    }
-                    break;
-                }
-        }
-    }
-
     private void CleanupStreamingModel()
     {
         if (_activeAssistantModel?.IsStreaming == true)
@@ -549,12 +515,7 @@ public partial class ChatViewModel : ObservableObject
             throw new InvalidOperationException("ConversationSession is null");
 
         ErrorMessage = null;
-        /*
-        // Вставляем индикатор прогресса сразу после выбранного сообщения
-        var summaryModel = new SummarizationChatMessageModel { Status = SummarizationStatus.Running };
-        var insertIndex = Messages.IndexOf(message) + 1;
-        Messages.Insert(insertIndex, summaryModel);
-        */
+
         try
         {
             await _conversationSession.SummarizeAsync(message.Id);
@@ -563,7 +524,6 @@ public partial class ChatViewModel : ObservableObject
         {
             _logger.LogError(ex, "Error summarizing message {MessageId}", message.Id);
             ErrorMessage = $"Ошибка суммаризации: {ex.Message}";
-            //summaryModel.Status = SummarizationStatus.Failed;
         }
     }
 
