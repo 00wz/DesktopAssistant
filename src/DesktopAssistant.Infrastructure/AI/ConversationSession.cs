@@ -193,6 +193,14 @@ internal class ConversationSession : IConversationSession
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
 
+        // Собираем tool-вызовы во время стриминга, но не запускаем их до завершения потока.
+        // Это предотвращает гонку: LlmTurnExecutor создаёт tool-узлы цепочкой (каждый следующий —
+        // дочерний предыдущего) и при каждом AddNodeAsync перезаписывает все поля родителя.
+        // Если запустить ApproveToolAsync параллельно со стримингом, ApproveToolAsync может
+        // прочитать узел до того, как его ActiveChildId будет обновлён, и затем перезаписать его
+        // null-значением (BaseRepository.UpdateAsync использует dbSet.Update — все поля).
+        var pendingToolRequests = new List<ToolCallRequestedDto>();
+
         await foreach (var evt in chatService.GetAssistantResponseAsync(ConversationId, CurrentLeafNodeId, ct))
         {
             switch (evt)
@@ -209,11 +217,14 @@ internal class ConversationSession : IConversationSession
                     break;
                 case ToolCallRequestedDto toolReq:
                     CurrentLeafNodeId = toolReq.PendingNodeId;
-                    // fire-and-forget: каждый tool-вызов обрабатывается независимо (возможно параллельно)
-                    _ = HandleToolCallRequestedAsync(toolReq, ct);
+                    pendingToolRequests.Add(toolReq);
                     break;
             }
         }
+
+        // Все tool-узлы теперь созданы в БД — запускаем обработчики параллельно (fire-and-forget).
+        foreach (var toolReq in pendingToolRequests)
+            _ = HandleToolCallRequestedAsync(toolReq, ct);
 
         // Обновляем состояние после завершения стриминга.
         // Если были tool-вызовы, состояние может ещё меняться асинхронно через HandleToolCallResultAsync.
