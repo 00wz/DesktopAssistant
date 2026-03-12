@@ -20,7 +20,7 @@
                 Background="#2D2D30"
                 Width="260"
                 IsVisible="{Binding IsSidebarVisible}">
-            <views:ConversationSidebarView/>
+            <views:ConversationSidebarView DataContext="{Binding Sidebar}"/>
         </Border>
 
         <!-- Основная область -->

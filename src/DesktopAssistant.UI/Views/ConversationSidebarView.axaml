@@ -5,7 +5,7 @@
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
              mc:Ignorable="d" d:DesignWidth="260" d:DesignHeight="600"
              x:Class="DesktopAssistant.UI.Views.ConversationSidebarView"
-             x:DataType="vm:MainWindowViewModel">
+             x:DataType="vm:SidebarViewModel">
 
     <UserControl.Styles>
         <!--
@@ -84,13 +84,13 @@
                 <TextBlock Text="Нет сохранённых диалогов"
                            Foreground="#888888"
                            Margin="15,20"
-                           IsVisible="{Binding !SavedConversations.Count}"/>
+                           IsVisible="{Binding !Conversations.Count}"/>
 
-                <ItemsControl ItemsSource="{Binding SavedConversations}">
+                <ItemsControl ItemsSource="{Binding Conversations}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="vm:ConversationListItemViewModel">
                             <Button Classes="convItem"
-                                    Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenConversationCommand}"
+                                    Command="{Binding $parent[ItemsControl].((vm:SidebarViewModel)DataContext).OpenConversationCommand}"
                                     CommandParameter="{Binding}">
                                 <Panel Background="Transparent">
                                     <!--

@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Interfaces;
@@ -9,7 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel главного окна: управляет боковой панелью диалогов и единственным активным ChatView.
+/// ViewModel главного окна.
+/// Оркестрирует жизненный цикл диалогов (кэш ChatViewModel, сессии) и
+/// управляет видимостью оверлейных панелей (настройки, создание чата).
+/// Логика списка диалогов вынесена в <see cref="SidebarViewModel"/>.
 /// </summary>
 public partial class MainWindowViewModel : ObservableObject
 {
@@ -42,10 +44,11 @@ public partial class MainWindowViewModel : ObservableObject
 
     public bool IsSettingsVisible => SettingsView != null;
 
-    /// <summary>True если выбран активный диалог для отображения.</summary>
+    /// <summary>True если в основной области отображается диалог.</summary>
     public bool HasActiveChat => SelectedChat != null;
 
-    public ObservableCollection<ConversationListItemViewModel> SavedConversations { get; } = new();
+    /// <summary>ViewModel боковой панели диалогов.</summary>
+    public SidebarViewModel Sidebar { get; }
 
     public MainWindowViewModel(
         IServiceProvider serviceProvider,
@@ -58,86 +61,36 @@ public partial class MainWindowViewModel : ObservableObject
         _logger = logger;
         _conversationSessionService = conversationSessionService;
 
+        Sidebar = _serviceProvider.GetRequiredService<SidebarViewModel>();
+        Sidebar.OnConversationSelected = OpenSelectedConversationAsync;
+        Sidebar.OnNewChatRequested = CreateNewChatAsync;
+
         _conversationSessionService.SessionReleased += OnSessionReleased;
     }
 
     public async Task InitializeAsync()
     {
-        await LoadSavedConversationsAsync();
+        await Sidebar.LoadConversationsAsync();
         _logger.LogInformation("Main window initialized");
     }
 
-    /// <summary>
-    /// Загружает список сохранённых диалогов. Для диалогов с уже существующими сессиями
-    /// вызывает <see cref="ConversationListItemViewModel.AttachSession"/>.
-    /// </summary>
-    public async Task LoadSavedConversationsAsync()
-    {
-        try
-        {
-            using var scope = _scopeFactory.CreateScope();
-            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-            var conversations = await chatService.GetConversationsAsync();
-
-            // Сохраняем id выбранного диалога для восстановления после перезагрузки
-            var selectedId = SelectedChat?.ConversationId;
-
-            // Очищаем старые VM (detach sessions, но не закрываем сессии в сервисе)
-            foreach (var old in SavedConversations)
-                old.Dispose();
-            SavedConversations.Clear();
-
-            var activeIds = _conversationSessionService.ActiveSessionIds;
-
-            foreach (var conv in conversations.OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt))
-            {
-                var model = new ConversationListItem
-                {
-                    Id = conv.Id,
-                    Title = conv.Title,
-                    UpdatedAt = conv.UpdatedAt ?? conv.CreatedAt
-                };
-
-                var vm = new ConversationListItemViewModel(model);
-                vm.IsSelected = conv.Id == selectedId;
-
-                if (activeIds.Contains(conv.Id))
-                {
-                    var session = await _conversationSessionService.GetOrCreate(conv.Id);
-                    vm.AttachSession(session);
-                }
-
-                SavedConversations.Add(vm);
-            }
-
-            _logger.LogDebug("Loaded {Count} saved conversations", SavedConversations.Count);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading saved conversations");
-        }
-    }
+    // ── Навигация диалогов ────────────────────────────────────────────────────
 
     /// <summary>
-    /// Открывает диалог: создаёт или восстанавливает сессию и ChatViewModel, делает его активным.
+    /// Открывает диалог: создаёт/восстанавливает сессию и ChatViewModel, делает его активным.
+    /// Вызывается через <see cref="SidebarViewModel.OnConversationSelected"/>.
     /// </summary>
-    [RelayCommand]
-    public async Task OpenConversationAsync(ConversationListItemViewModel? item)
+    private async Task OpenSelectedConversationAsync(ConversationListItemViewModel item)
     {
-        if (item == null) return;
-
         NewConversationPanel = null;
 
         try
         {
-            // Создаём или получаем сессию
             var session = await _conversationSessionService.GetOrCreate(item.Id);
 
-            // Подключаем сессию к элементу списка (если ещё не подключена)
             if (!item.IsActive)
                 item.AttachSession(session);
 
-            // Создаём ChatViewModel при первом открытии, затем используем кэш
             if (!_chatViewModels.TryGetValue(item.Id, out var chatViewModel))
             {
                 chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
@@ -146,13 +99,27 @@ public partial class MainWindowViewModel : ObservableObject
             }
 
             SelectedChat = chatViewModel;
-            _logger.LogInformation("Opened conversation {ConversationId}: {Title}", item.Id, item.Title);
+            _logger.LogInformation("Opened conversation {Id}", item.Id);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error opening conversation {ConversationId}", item.Id);
+            _logger.LogError(ex, "Error opening conversation {Id}", item.Id);
         }
     }
+
+    partial void OnSelectedChatChanged(ChatViewModel? value)
+        => Sidebar.MarkSelected(value?.ConversationId);
+
+    private void OnSessionReleased(object? sender, Guid conversationId)
+    {
+        Sidebar.DetachSession(conversationId);
+        _chatViewModels.Remove(conversationId);
+
+        if (SelectedChat?.ConversationId == conversationId)
+            SelectedChat = null;
+    }
+
+    // ── Оверлейные панели ─────────────────────────────────────────────────────
 
     [RelayCommand]
     public async Task OpenSettingsAsync()
@@ -221,8 +188,10 @@ public partial class MainWindowViewModel : ObservableObject
             await chatViewModel.InitializeAsync(session);
             _chatViewModels[conversation.Id] = chatViewModel;
 
-            // Обновляем список — новый диалог появится с уже присоединённой сессией
-            await LoadSavedConversationsAsync();
+            // Перезагружаем список — новый диалог появится с уже присоединённой сессией.
+            // MarkSelected вызывается автоматически через OnSelectedChatChanged после
+            // установки SelectedChat.
+            await Sidebar.LoadConversationsAsync();
 
             SelectedChat = chatViewModel;
             _logger.LogInformation("Created new chat: {Title}", parameters.Title);
@@ -231,25 +200,5 @@ public partial class MainWindowViewModel : ObservableObject
         {
             _logger.LogError(ex, "Error creating new chat");
         }
-    }
-
-    // ── Обработчики событий сессионного сервиса ──────────────────────────────
-
-    partial void OnSelectedChatChanged(ChatViewModel? value)
-    {
-        var activeId = value?.ConversationId;
-        foreach (var item in SavedConversations)
-            item.IsSelected = item.Id == activeId;
-    }
-
-    private void OnSessionReleased(object? sender, Guid conversationId)
-    {
-        var item = SavedConversations.FirstOrDefault(c => c.Id == conversationId);
-        item?.DetachSession();
-
-        _chatViewModels.Remove(conversationId);
-
-        if (SelectedChat?.ConversationId == conversationId)
-            SelectedChat = null;
     }
 }
