@@ -28,6 +28,8 @@ public partial class ChatViewModel : ObservableObject
     private string _inputMessage = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowInputPanel))]
+    [NotifyPropertyChangedFor(nameof(ShowResumePanel))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -69,9 +71,10 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private int _lastTotalTokenCount;
 
-    public bool ShowInputPanel => ConversationStatus == ConversationState.LastMessageIsAssistant;
-    public bool ShowResumePanel => ConversationStatus == ConversationState.LastMessageIsUser ||
-                                   ConversationStatus == ConversationState.AllToolCallsCompleted;
+    public bool ShowResumePanel => !IsLoading &&
+                                   (ConversationStatus == ConversationState.LastMessageIsUser ||
+                                    ConversationStatus == ConversationState.AllToolCallsCompleted);
+    public bool ShowInputPanel => !ShowResumePanel;
 
     public Guid? ConversationId => _conversationSession?.ConversationId;
 

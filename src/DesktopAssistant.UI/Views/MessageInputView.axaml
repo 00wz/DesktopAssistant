@@ -35,30 +35,24 @@
                     </TextBox.KeyBindings>
                 </TextBox>
                 <Button Grid.Column="1"
+                        Content="Отправить"
                         Command="{Binding SendMessageCommand}"
                         IsEnabled="{Binding !IsLoading}"
-                        Width="80"
                         Height="40"
+                        Padding="15,0"
                         HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center">
-                    <Panel>
-                        <TextBlock Text="Отправить" IsVisible="{Binding !IsLoading}"/>
-                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
-                    </Panel>
-                </Button>
+                        VerticalContentAlignment="Center"/>
             </Grid>
 
             <!-- Кнопка Resume -->
-            <Button IsVisible="{Binding ShowResumePanel}"
+            <Button Content="Возобновить"
+                    IsVisible="{Binding ShowResumePanel}"
                     Command="{Binding ResumeCommand}"
                     HorizontalAlignment="Stretch"
                     Height="40"
-                    HorizontalContentAlignment="Center">
-                <Panel>
-                    <TextBlock Text="Возобновить" IsVisible="{Binding !IsLoading}"/>
-                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" Width="40" Height="4"/>
-                </Panel>
-            </Button>
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"/>
+
         </StackPanel>
     </Border>
 </UserControl>
