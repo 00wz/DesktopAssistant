@@ -12,7 +12,7 @@ public interface IAssistantProfileService
 
     /// <summary>Создаёт новый профиль ассистента. API-ключ сохраняется в защищённом хранилище. Если дефолтный профиль ещё не задан, созданный профиль становится дефолтным.</summary>
     Task<AssistantProfileDto> CreateAssistantProfileAsync(
-        string name,
+        string description,
         string baseUrl,
         string modelId,
         string apiKey,
@@ -23,7 +23,7 @@ public interface IAssistantProfileService
     /// <summary>Обновляет настройки профиля (без API-ключа).</summary>
     Task UpdateAssistantProfileAsync(
         Guid id,
-        string name,
+        string description,
         string baseUrl,
         string modelId,
         double temperature,

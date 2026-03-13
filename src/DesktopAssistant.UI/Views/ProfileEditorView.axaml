@@ -28,11 +28,11 @@
             <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <TextBlock Grid.Row="0" Grid.Column="0"
-                           Text="Название *" FontSize="12" Foreground="#555"
+                           Text="Model ID *" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="0" Grid.Column="1"
-                         Text="{Binding Name, Mode=TwoWay}"
-                         Watermark="Мой ассистент" Margin="0,0,0,6"/>
+                         Text="{Binding ModelId, Mode=TwoWay}"
+                         Watermark="gpt-4o-mini" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0"
                            Text="Base URL *" FontSize="12" Foreground="#555"
@@ -42,36 +42,41 @@
                          Watermark="https://api.openai.com/v1" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0"
-                           Text="Model ID *" FontSize="12" Foreground="#555"
-                           VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <TextBox Grid.Row="2" Grid.Column="1"
-                         Text="{Binding ModelId, Mode=TwoWay}"
-                         Watermark="gpt-4o-mini" Margin="0,0,0,6"/>
-
-                <TextBlock Grid.Row="3" Grid.Column="0"
                            Text="API Key" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <TextBox Grid.Row="3" Grid.Column="1"
+                <TextBox Grid.Row="2" Grid.Column="1"
                          Text="{Binding ApiKey, Mode=TwoWay}"
                          PasswordChar="•"
                          Watermark="{Binding ApiKeyWatermark}"
                          Margin="0,0,0,6"/>
 
-                <TextBlock Grid.Row="4" Grid.Column="0"
+                <TextBlock Grid.Row="3" Grid.Column="0"
                            Text="Temperature" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <NumericUpDown Grid.Row="4" Grid.Column="1"
+                <NumericUpDown Grid.Row="3" Grid.Column="1"
                                Value="{Binding Temperature, Mode=TwoWay}"
                                Minimum="0" Maximum="2" Increment="0.1"
                                FormatString="F1" Margin="0,0,0,6"/>
 
-                <TextBlock Grid.Row="5" Grid.Column="0"
+                <TextBlock Grid.Row="4" Grid.Column="0"
                            Text="Max Tokens" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
-                <NumericUpDown Grid.Row="5" Grid.Column="1"
+                <NumericUpDown Grid.Row="4" Grid.Column="1"
                                Value="{Binding MaxTokens, Mode=TwoWay}"
                                Minimum="256" Maximum="2000000" Increment="1024"
                                Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="5" Grid.Column="0"
+                           Text="Описание" FontSize="12" Foreground="#555"
+                           VerticalAlignment="Center" Margin="0,0,8,6"/>
+                <TextBox Grid.Row="5" Grid.Column="1"
+                         Text="{Binding Description, Mode=TwoWay}"
+                         Watermark="Мой ассистент"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MinHeight="60"
+                         MaxHeight="120"
+                         Margin="0,0,0,6"/>
             </Grid>
 
             <!-- Ошибка -->

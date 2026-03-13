@@ -74,14 +74,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AssistantProfile>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.WakeWord).HasMaxLength(100);
-            entity.Property(e => e.VoiceName).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.ModelId).HasMaxLength(200);
             entity.Property(e => e.BaseUrl).HasMaxLength(500);
             entity.HasQueryFilter(e => !e.IsDeleted);
-
-            entity.HasIndex(e => e.Name);
         });
 
         // AppSettings

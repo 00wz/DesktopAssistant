@@ -54,11 +54,13 @@
                         <ComboBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding ModelId}"
+                                    <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Description}"
                                                Foreground="#888"
                                                FontSize="11"
-                                               VerticalAlignment="Center"/>
+                                               VerticalAlignment="Center"
+                                               MaxWidth="200"
+                                               TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
                             </DataTemplate>
                         </ComboBox.ItemTemplate>

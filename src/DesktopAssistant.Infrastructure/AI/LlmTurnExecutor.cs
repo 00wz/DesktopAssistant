@@ -52,7 +52,7 @@ public class LlmTurnExecutor(
 
         var apiKey = _credentialStore.GetApiKey(profile.Id)
             ?? throw new InvalidOperationException(
-                $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
+                $"API key not found for profile '{profile.ModelId}' ({profile.Id}). Please set the API key in profile settings.");
 
         var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
         var chatHistory = contextMessages.ToChatHistory(systemPrompt);

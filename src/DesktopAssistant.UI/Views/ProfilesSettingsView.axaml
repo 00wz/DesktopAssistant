@@ -55,12 +55,12 @@
                             CornerRadius="6"
                             Padding="14,10"
                             Margin="0,0,0,8">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid>
 
                             <!-- Информация о профиле -->
-                            <StackPanel Grid.Column="0" Spacing="3">
+                            <StackPanel Spacing="3">
                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,2">
-                                    <TextBlock Text="{Binding Name}"
+                                    <TextBlock Text="{Binding ModelId}"
                                                FontWeight="SemiBold"
                                                FontSize="14"
                                                VerticalAlignment="Center"/>
@@ -92,48 +92,52 @@
                                                    FontSize="10"/>
                                     </Border>
                                 </StackPanel>
-                                <TextBlock Text="{Binding ModelId}"
+                                <TextBlock Text="{Binding Description}"
                                            FontSize="12"
-                                           Foreground="#555"/>
-                                <TextBlock Text="{Binding BaseUrl}"
-                                           FontSize="11"
-                                           Foreground="#999"/>
+                                           Foreground="#555"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+								<Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Grid.Column="0" 
+											   Text="{Binding BaseUrl}"
+                                               FontSize="11"
+                                               Foreground="#999"/>
+									
+									<!-- Кнопки действий — WrapPanel: переносятся на новую строку при нехватке ширины -->
+									<WrapPanel Orientation="Horizontal"
+											   VerticalAlignment="Bottom"
+											   HorizontalAlignment="Right">
+										<Button Content="Основным"
+												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetDefaultCommand}"
+												CommandParameter="{Binding}"
+												FontSize="11"
+												Padding="10,5"
+												Margin="0,0,6,4"
+												IsVisible="{Binding !IsDefault}"/>
+										<Button Content="Суммаризация"
+												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetSummarizationCommand}"
+												CommandParameter="{Binding}"
+												FontSize="11"
+												Padding="10,5"
+												Margin="0,0,6,4"
+												IsVisible="{Binding !IsSummarizationProfile}"/>
+										<Button Content="Изменить"
+												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).StartEditCommand}"
+												CommandParameter="{Binding}"
+												FontSize="11"
+												Padding="10,5"
+												Margin="0,0,6,4"/>
+										<Button Content="Удалить"
+												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).DeleteProfileCommand}"
+												CommandParameter="{Binding}"
+												FontSize="11"
+												Padding="10,5"
+												Margin="0,0,0,4"
+												Background="#FFEBEE"
+												Foreground="#C62828"/>
+									</WrapPanel>
+								</Grid>
                             </StackPanel>
-
-                            <!-- Кнопки действий — WrapPanel: переносятся на новую строку при нехватке ширины -->
-                            <WrapPanel Grid.Column="1"
-                                       Orientation="Horizontal"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Right">
-                                <Button Content="Основным"
-                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetDefaultCommand}"
-                                        CommandParameter="{Binding}"
-                                        FontSize="11"
-                                        Padding="10,5"
-                                        Margin="0,0,6,4"
-                                        IsVisible="{Binding !IsDefault}"/>
-                                <Button Content="Суммаризация"
-                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetSummarizationCommand}"
-                                        CommandParameter="{Binding}"
-                                        FontSize="11"
-                                        Padding="10,5"
-                                        Margin="0,0,6,4"
-                                        IsVisible="{Binding !IsSummarizationProfile}"/>
-                                <Button Content="Изменить"
-                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).StartEditCommand}"
-                                        CommandParameter="{Binding}"
-                                        FontSize="11"
-                                        Padding="10,5"
-                                        Margin="0,0,6,4"/>
-                                <Button Content="Удалить"
-                                        Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).DeleteProfileCommand}"
-                                        CommandParameter="{Binding}"
-                                        FontSize="11"
-                                        Padding="10,5"
-                                        Margin="0,0,0,4"
-                                        Background="#FFEBEE"
-                                        Foreground="#C62828"/>
-                            </WrapPanel>
 
                         </Grid>
                     </Border>

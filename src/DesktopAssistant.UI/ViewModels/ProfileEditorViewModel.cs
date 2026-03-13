@@ -29,7 +29,7 @@ public partial class ProfileEditorViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
-    private string _name = string.Empty;
+    private string _description = string.Empty;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -72,7 +72,7 @@ public partial class ProfileEditorViewModel : ObservableObject
     {
         _editingProfileId = null;
         IsEditMode = false;
-        Name = string.Empty;
+        Description = string.Empty;
         BaseUrl = string.Empty;
         ModelId = string.Empty;
         ApiKey = string.Empty;
@@ -87,7 +87,7 @@ public partial class ProfileEditorViewModel : ObservableObject
     {
         _editingProfileId = profile.Id;
         IsEditMode = true;
-        Name = profile.Name;
+        Description = profile.Description;
         BaseUrl = profile.BaseUrl;
         ModelId = profile.ModelId;
         ApiKey = string.Empty;
@@ -99,7 +99,6 @@ public partial class ProfileEditorViewModel : ObservableObject
 
     private bool CanSave() =>
         !IsLoading &&
-        !string.IsNullOrWhiteSpace(Name) &&
         !string.IsNullOrWhiteSpace(BaseUrl) &&
         !string.IsNullOrWhiteSpace(ModelId) &&
         (IsEditMode || !string.IsNullOrWhiteSpace(ApiKey));
@@ -118,7 +117,7 @@ public partial class ProfileEditorViewModel : ObservableObject
             {
                 await _profileService.UpdateAssistantProfileAsync(
                     _editingProfileId.Value,
-                    Name.Trim(), BaseUrl.Trim(), ModelId.Trim(),
+                    Description.Trim(), BaseUrl.Trim(), ModelId.Trim(),
                     Temperature, MaxTokens);
 
                 if (!string.IsNullOrWhiteSpace(ApiKey))
@@ -130,7 +129,7 @@ public partial class ProfileEditorViewModel : ObservableObject
             else
             {
                 saved = await _profileService.CreateAssistantProfileAsync(
-                    Name.Trim(), BaseUrl.Trim(), ModelId.Trim(),
+                    Description.Trim(), BaseUrl.Trim(), ModelId.Trim(),
                     ApiKey.Trim(), Temperature, MaxTokens);
             }
 

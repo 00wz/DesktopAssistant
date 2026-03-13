@@ -214,10 +214,6 @@
                 BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding ConversationTitle}"
-                               FontSize="14"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding AssistantProfileName}"
                                FontSize="12"
                                Foreground="#666"

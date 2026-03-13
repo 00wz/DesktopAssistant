@@ -337,7 +337,7 @@ public class ChatService : IChatService
         var summarizationIdStr = await _appSettingsRepository.GetValueAsync(
             AppSettings.Keys.SummarizationProfileId, cancellationToken);
         Guid.TryParse(summarizationIdStr, out var summarizationId);
-        return new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
+        return new(p.Id, p.Description, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
             _credentialStore.HasApiKey(p.Id), p.Id == summarizationId);
     }
 

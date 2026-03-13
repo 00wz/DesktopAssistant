@@ -40,7 +40,7 @@ public class AssistantProfileService : IAssistantProfileService
 
     /// <inheritdoc />
     public async Task<AssistantProfileDto> CreateAssistantProfileAsync(
-        string name,
+        string description,
         string baseUrl,
         string modelId,
         string apiKey,
@@ -48,7 +48,7 @@ public class AssistantProfileService : IAssistantProfileService
         int maxTokens = 4096,
         CancellationToken cancellationToken = default)
     {
-        var profile = new AssistantProfile(name, baseUrl, modelId,
+        var profile = new AssistantProfile(description, baseUrl, modelId,
             temperature: temperature, maxTokens: maxTokens);
 
         await _assistantRepository.AddAsync(profile, cancellationToken);
@@ -58,7 +58,7 @@ public class AssistantProfileService : IAssistantProfileService
         if (existingDefaultId is null)
             await StoreDefaultProfileIdAsync(profile.Id, cancellationToken);
 
-        _logger.LogInformation("Created assistant profile {ProfileId}: {Name}", profile.Id, name);
+        _logger.LogInformation("Created assistant profile {ProfileId}: {Description}", profile.Id, description);
 
         var defaultId = await GetDefaultProfileIdAsync(cancellationToken);
         var summarizationId = await GetSummarizationProfileIdAsync(cancellationToken);
@@ -68,7 +68,7 @@ public class AssistantProfileService : IAssistantProfileService
     /// <inheritdoc />
     public async Task UpdateAssistantProfileAsync(
         Guid id,
-        string name,
+        string description,
         string baseUrl,
         string modelId,
         double temperature,
@@ -78,11 +78,11 @@ public class AssistantProfileService : IAssistantProfileService
         var profile = await _assistantRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException($"Assistant profile {id} not found");
 
-        profile.UpdateName(name);
+        profile.UpdateDescription(description);
         profile.UpdateModelSettings(baseUrl, modelId, temperature, maxTokens);
         await _assistantRepository.UpdateAsync(profile, cancellationToken);
 
-        _logger.LogInformation("Updated assistant profile {ProfileId}: {Name}", id, name);
+        _logger.LogInformation("Updated assistant profile {ProfileId}: {Description}", id, description);
     }
 
     /// <inheritdoc />
@@ -116,7 +116,7 @@ public class AssistantProfileService : IAssistantProfileService
             ?? throw new InvalidOperationException($"Assistant profile {id} not found");
 
         await StoreDefaultProfileIdAsync(id, cancellationToken);
-        _logger.LogInformation("Set default assistant profile {ProfileId}: {Name}", id, profile.Name);
+        _logger.LogInformation("Set default assistant profile {ProfileId}: {Description}", id, profile.Description);
     }
 
     /// <inheritdoc />
@@ -130,7 +130,7 @@ public class AssistantProfileService : IAssistantProfileService
             id.ToString(),
             "Summarization assistant profile ID",
             cancellationToken);
-        _logger.LogInformation("Set summarization assistant profile {ProfileId}: {Name}", id, profile.Name);
+        _logger.LogInformation("Set summarization assistant profile {ProfileId}: {Description}", id, profile.Description);
     }
 
     private async Task<Guid?> GetDefaultProfileIdAsync(CancellationToken cancellationToken)
@@ -153,6 +153,6 @@ public class AssistantProfileService : IAssistantProfileService
             cancellationToken);
 
     private AssistantProfileDto MapToDto(AssistantProfile p, Guid? defaultId, Guid? summarizationId) =>
-        new(p.Id, p.Name, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
+        new(p.Id, p.Description, p.BaseUrl, p.ModelId, p.Temperature, p.MaxTokens, p.Id == defaultId,
             _credentialStore.HasApiKey(p.Id), p.Id == summarizationId);
 }

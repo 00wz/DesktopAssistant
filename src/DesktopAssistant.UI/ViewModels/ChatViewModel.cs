@@ -35,9 +35,6 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    [ObservableProperty]
-    private string _conversationTitle = "Новый чат";
-
     /// <summary>Текущее состояние диалога — управляет доступностью SendMessage и Resume.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendMessageCommand))]
@@ -160,7 +157,7 @@ public partial class ChatViewModel : ObservableObject
             if (settings == null) return;
 
             SystemPrompt = settings.SystemPrompt;
-            AssistantProfileName = settings.Profile?.Name ?? string.Empty;
+            AssistantProfileName = settings.Profile?.ModelId ?? string.Empty;
 
             var profiles = await _profileService.GetAssistantProfilesAsync(cancellationToken);
             AvailableProfiles = new ObservableCollection<AssistantProfileDto>(profiles);
@@ -346,7 +343,7 @@ public partial class ChatViewModel : ObservableObject
         {
             await _conversationSession.ChangeProfileAsync(profile.Id);
             SelectedProfile = profile;
-            AssistantProfileName = profile.Name;
+            AssistantProfileName = profile.ModelId;
         }
         catch (Exception ex)
         {

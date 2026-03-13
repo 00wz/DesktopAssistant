@@ -7,9 +7,7 @@ namespace DesktopAssistant.Domain.Entities;
 /// </summary>
 public class AssistantProfile : BaseEntity
 {
-    public string Name { get; private set; } = string.Empty;
-    public string? WakeWord { get; private set; }
-    public string? VoiceName { get; private set; }
+    public string Description { get; private set; } = string.Empty;
 
     // LLM настройки (OpenAI-совместимый API)
     public string BaseUrl { get; private set; } = string.Empty;
@@ -23,38 +21,22 @@ public class AssistantProfile : BaseEntity
     private AssistantProfile() { } // Для EF Core
 
     public AssistantProfile(
-        string name,
+        string description,
         string baseUrl,
         string modelId,
-        string? wakeWord = null,
-        string? voiceName = null,
         double temperature = 0.7,
         int maxTokens = 4096)
     {
-        Name = name;
+        Description = description;
         BaseUrl = baseUrl;
         ModelId = modelId;
-        WakeWord = wakeWord ?? name.ToLowerInvariant();
-        VoiceName = voiceName;
         Temperature = temperature;
         MaxTokens = maxTokens;
     }
 
-    public void UpdateName(string name)
+    public void UpdateDescription(string description)
     {
-        Name = name;
-        MarkAsUpdated();
-    }
-
-    public void UpdateWakeWord(string wakeWord)
-    {
-        WakeWord = wakeWord;
-        MarkAsUpdated();
-    }
-
-    public void UpdateVoice(string voiceName)
-    {
-        VoiceName = voiceName;
+        Description = description;
         MarkAsUpdated();
     }
 
@@ -66,5 +48,4 @@ public class AssistantProfile : BaseEntity
         MaxTokens = maxTokens;
         MarkAsUpdated();
     }
-
 }

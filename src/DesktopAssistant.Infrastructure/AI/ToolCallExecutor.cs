@@ -48,7 +48,7 @@ public class ToolCallExecutor(
 
         var apiKey = _credentialStore.GetApiKey(profile.Id)
             ?? throw new InvalidOperationException(
-                $"API key not found for profile '{profile.Name}' ({profile.Id}). Please set the API key in profile settings.");
+                $"API key not found for profile '{profile.ModelId}' ({profile.Id}). Please set the API key in profile settings.");
 
         var kernel = _agentKernelFactory.Create(profile, apiKey);//TODO: зачем этому kernel profile и apikey?
 

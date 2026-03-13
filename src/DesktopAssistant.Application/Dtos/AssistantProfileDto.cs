@@ -3,7 +3,7 @@ namespace DesktopAssistant.Application.Dtos;
 /// <summary>DTO профиля ассистента. HasApiKey — признак наличия ключа в защищённом хранилище.</summary>
 public record AssistantProfileDto(
     Guid Id,
-    string Name,
+    string Description,
     string BaseUrl,
     string ModelId,
     double Temperature,

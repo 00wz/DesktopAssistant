@@ -47,7 +47,7 @@ public class SummarizationExecutor(
 
         var apiKey = _credentialStore.GetApiKey(profile.Id)
             ?? throw new InvalidOperationException(
-                $"API key is not set for profile '{profile.Name}'.");
+                $"API key is not set for profile '{profile.ModelId}'.");
 
         // 2. Build context up to the selected node
         var contextMessages = await _conversationService.BuildContextAsync(selectedNodeId, cancellationToken);
