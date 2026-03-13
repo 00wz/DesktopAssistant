@@ -12,51 +12,93 @@
         Height="700"
         MinWidth="700"
         MinHeight="500"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="-1">
 
-    <Grid ColumnDefinitions="Auto,*">
-        <!-- Боковая панель со списком диалогов -->
-        <Border Grid.Column="0"
-                Background="#2D2D30"
-                Width="260"
-                IsVisible="{Binding IsSidebarVisible}">
-            <views:ConversationSidebarView DataContext="{Binding Sidebar}"/>
+    <Window.Styles>
+        <!-- Кнопки управления окном (светлый фон) -->
+        <Style Selector="Button.winBtn">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            Width="{TemplateBinding Width}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Content="{TemplateBinding Content}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.winBtn:pointerover">
+            <Setter Property="Background" Value="#E0E0E0"/>
+        </Style>
+        <Style Selector="Button.winBtn:pressed">
+            <Setter Property="Background" Value="#D0D0D0"/>
+        </Style>
+        <Style Selector="Button.winBtn.close:pointerover">
+            <Setter Property="Background" Value="#C42B1C"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.winBtn.close:pressed">
+            <Setter Property="Background" Value="#A82318"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
+
+        <!-- ── Полноширокая шапка окна ── -->
+        <!-- PointerPressed на всём заголовке; кнопки помечают событие как Handled -->
+        <Border Grid.Row="0" Background="#F0F0F0" MinHeight="38"
+                PointerPressed="TitleBar_PointerPressed">
+            <Grid ColumnDefinitions="*,Auto">
+
+                <!-- Название приложения у левого края; IsHitTestVisible=False — события проходят к Border -->
+                <TextBlock Grid.Column="0"
+                           Text="Desktop Assistant"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Left"
+                           Margin="15,0,0,0"
+                           IsHitTestVisible="False"/>
+
+                <!-- Кнопки управления окном -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Classes="winBtn" Click="MinimizeButton_Click"
+                            ToolTip.Tip="Свернуть">
+                        <TextBlock Text="&#x2014;" FontSize="12"/>
+                    </Button>
+                    <Button Classes="winBtn" x:Name="MaxRestoreButton"
+                            Click="MaximizeButton_Click"
+                            ToolTip.Tip="Развернуть / восстановить">
+                        <TextBlock x:Name="MaxRestoreIcon" Text="&#x25A1;" FontSize="12"/>
+                    </Button>
+                    <Button Classes="winBtn close" Click="CloseButton_Click"
+                            ToolTip.Tip="Закрыть">
+                        <TextBlock Text="&#x2715;" FontSize="11"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
         </Border>
 
-        <!-- Основная область -->
-        <Grid Grid.Column="1" RowDefinitions="Auto,*">
-            <!-- Панель инструментов -->
-            <Border Grid.Row="0"
-                    Background="#F0F0F0"
-                    Padding="10,5">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                    <Button Grid.Column="0"
-                            Command="{Binding ToggleSidebarCommand}"
-                            ToolTip.Tip="Показать/скрыть панель диалогов"
-                            Background="Transparent"
-                            Padding="8,5"
-                            Margin="0,0,10,0">
-                        <TextBlock Text="☰" FontSize="16"/>
-                    </Button>
-                    <TextBlock Grid.Column="1"
-                               Text="Desktop Assistant"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               VerticalAlignment="Center"/>
-                    <Button Grid.Column="2"
-                            Command="{Binding OpenSettingsCommand}"
-                            Content="⚙ Настройки"
-                            Padding="12,8"
-                            Margin="0,0,8,0"/>
-                    <Button Grid.Column="3"
-                            Command="{Binding CreateNewChatCommand}"
-                            Content="+ Новый чат"
-                            Padding="15,8"/>
-                </Grid>
+        <!-- ── Основной контент: сайдбар + рабочая область ── -->
+        <Grid Grid.Row="1" ColumnDefinitions="260,*">
+
+            <!-- Боковая панель (всегда открыта) -->
+            <Border Grid.Column="0" Background="#2D2D30">
+                <views:ConversationSidebarView DataContext="{Binding Sidebar}"/>
             </Border>
 
-            <!-- Контентная область -->
-            <Grid Grid.Row="1">
+            <!-- Рабочая область -->
+            <Grid Grid.Column="1">
 
                 <!-- Активный диалог -->
                 <Panel IsVisible="{Binding HasActiveChat}">

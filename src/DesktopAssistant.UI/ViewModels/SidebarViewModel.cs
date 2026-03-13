@@ -33,6 +33,9 @@ public partial class SidebarViewModel : ObservableObject
     /// <summary>Вызывается при нажатии кнопки «Новый чат» в заголовке панели.</summary>
     public Func<Task>? OnNewChatRequested { get; set; }
 
+    /// <summary>Вызывается при нажатии кнопки «Настройки» в нижней части панели.</summary>
+    public Func<Task>? OnSettingsRequested { get; set; }
+
     /// <summary>
     /// Плоский список диалогов. В будущем будет заменён иерархической коллекцией
     /// узлов без изменений в <see cref="MainWindowViewModel"/>.
@@ -125,6 +128,10 @@ public partial class SidebarViewModel : ObservableObject
     [RelayCommand]
     private Task CreateNewChatAsync()
         => OnNewChatRequested?.Invoke() ?? Task.CompletedTask;
+
+    [RelayCommand]
+    private Task OpenSettingsAsync()
+        => OnSettingsRequested?.Invoke() ?? Task.CompletedTask;
 
     // ── Вспомогательные ──────────────────────────────────────────────────────
 

@@ -64,6 +64,7 @@ public partial class MainWindowViewModel : ObservableObject
         Sidebar = _serviceProvider.GetRequiredService<SidebarViewModel>();
         Sidebar.OnConversationSelected = OpenSelectedConversationAsync;
         Sidebar.OnNewChatRequested = CreateNewChatAsync;
+        Sidebar.OnSettingsRequested = OpenSettingsAsync;
 
         _conversationSessionService.SessionReleased += OnSessionReleased;
     }

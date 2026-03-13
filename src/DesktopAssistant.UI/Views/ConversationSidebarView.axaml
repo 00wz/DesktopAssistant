@@ -29,6 +29,32 @@
             </Setter>
         </Style>
 
+        <!-- Кнопки верха/низа панели (Новый чат, Настройки) -->
+        <Style Selector="Button.sideBtn">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="15,11"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.sideBtn:pointerover">
+            <Setter Property="Background" Value="#3A3A3F"/>
+        </Style>
+        <Style Selector="Button.sideBtn:pressed">
+            <Setter Property="Background" Value="#444449"/>
+        </Style>
+
         <!-- Пульсация для иконки загрузки -->
         <Style Selector="TextBlock.loadingSpin">
             <Style.Animations>
@@ -58,27 +84,20 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*">
-        <Border Grid.Row="0"
-                Background="#3E3E42"
-                Padding="15,10">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0"
-                           Text="Диалоги"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="White"
-                           VerticalAlignment="Center"/>
-                <Button Grid.Column="1"
-                        Command="{Binding CreateNewChatCommand}"
-                        ToolTip.Tip="Новый чат"
-                        Background="Transparent"
-                        Padding="8,4">
-                    <TextBlock Text="+" FontSize="18" Foreground="White"/>
-                </Button>
-            </Grid>
-        </Border>
+    <Grid RowDefinitions="Auto,*,Auto">
 
+        <!-- Кнопка «Новый чат» (верх) -->
+        <Button Grid.Row="0"
+                Classes="sideBtn"
+                Command="{Binding CreateNewChatCommand}"
+                ToolTip.Tip="Начать новый диалог">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="+" FontSize="18" VerticalAlignment="Center" Foreground="#CCCCCC"/>
+                <TextBlock Text="Новый чат" FontSize="13" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Button>
+
+        <!-- Список диалогов -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <TextBlock Text="Нет сохранённых диалогов"
@@ -167,5 +186,18 @@
                 </ItemsControl>
             </StackPanel>
         </ScrollViewer>
+
+        <!-- Кнопка «Настройки» (низ) -->
+        <Border Grid.Row="2" BorderBrush="#3A3A3F" BorderThickness="0,1,0,0">
+            <Button Classes="sideBtn"
+                    Command="{Binding OpenSettingsCommand}"
+                    ToolTip.Tip="Настройки">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="⚙" FontSize="14" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                    <TextBlock Text="Настройки" FontSize="13" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                </StackPanel>
+            </Button>
+        </Border>
+
     </Grid>
 </UserControl>
