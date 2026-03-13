@@ -11,5 +11,10 @@
   
     <Application.Styles>
         <FluentTheme />
+        <!-- Все иконки принудительно рендерятся шрифтом Segoe UI Symbol (монохромный),
+             чтобы исключить случайное использование Segoe UI Emoji (цветной). -->
+        <Style Selector="TextBlock.icon">
+            <Setter Property="FontFamily" Value="Segoe UI Symbol"/>
+        </Style>
     </Application.Styles>
 </Application>

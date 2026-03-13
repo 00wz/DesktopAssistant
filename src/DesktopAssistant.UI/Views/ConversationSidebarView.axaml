@@ -92,7 +92,7 @@
                 Command="{Binding CreateNewChatCommand}"
                 ToolTip.Tip="Начать новый диалог">
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock Text="+" FontSize="18" VerticalAlignment="Center" Foreground="#CCCCCC"/>
+                <TextBlock Classes="icon" Text="+" FontSize="18" VerticalAlignment="Center" Foreground="#CCCCCC"/>
                 <TextBlock Text="Новый чат" FontSize="13" VerticalAlignment="Center"/>
             </StackPanel>
         </Button>
@@ -131,8 +131,9 @@
                                         <!-- Иконка статуса сессии -->
                                         <Panel Grid.Column="0" VerticalAlignment="Center" Width="18">
 
-                                            <!-- Загрузка: пульсирующая иконка -->
-                                            <TextBlock Text="⟳"
+                                            <!-- Загрузка: пульсирующая иконка; ↻ (U+21BB) в Symbol гарантированно монохромен -->
+                                            <TextBlock Classes="icon loadingSpin"
+                                                       Text="↻"
                                                        IsVisible="{Binding IsLoadingIcon}"
                                                        Classes.loadingSpin="{Binding IsLoadingIcon}"
                                                        Foreground="#4CAF50"
@@ -140,8 +141,9 @@
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
 
-                                            <!-- Пауза -->
-                                            <TextBlock Text="⏸"
+                                            <!-- Пауза; ∥ (U+2225) — двойная вертикальная черта -->
+                                            <TextBlock Classes="icon"
+                                                       Text="∥"
                                                        IsVisible="{Binding IsPausedIcon}"
                                                        Foreground="#FFC107"
                                                        FontSize="11"
@@ -158,8 +160,9 @@
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
 
-                                            <!-- Ошибка -->
-                                            <TextBlock Text="⚠"
+                                            <!-- Ошибка; ⚠ в Segoe UI Symbol — монохромный -->
+                                            <TextBlock Classes="icon"
+                                                       Text="⚠"
                                                        IsVisible="{Binding IsErrorIcon}"
                                                        Foreground="#F44336"
                                                        FontSize="11"
@@ -193,7 +196,7 @@
                     Command="{Binding OpenSettingsCommand}"
                     ToolTip.Tip="Настройки">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="⚙" FontSize="14" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                    <TextBlock Classes="icon" Text="⚙" FontSize="14" VerticalAlignment="Center" Foreground="#AAAAAA"/>
                     <TextBlock Text="Настройки" FontSize="13" VerticalAlignment="Center" Foreground="#AAAAAA"/>
                 </StackPanel>
             </Button>

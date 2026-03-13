@@ -74,16 +74,16 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Classes="winBtn" Click="MinimizeButton_Click"
                             ToolTip.Tip="Свернуть">
-                        <TextBlock Text="&#x2014;" FontSize="12"/>
+                        <TextBlock Classes="icon" Text="&#x2014;" FontSize="12"/>
                     </Button>
                     <Button Classes="winBtn" x:Name="MaxRestoreButton"
                             Click="MaximizeButton_Click"
                             ToolTip.Tip="Развернуть / восстановить">
-                        <TextBlock x:Name="MaxRestoreIcon" Text="&#x25A1;" FontSize="12"/>
+                        <TextBlock Classes="icon" x:Name="MaxRestoreIcon" Text="&#x25A1;" FontSize="12"/>
                     </Button>
                     <Button Classes="winBtn close" Click="CloseButton_Click"
                             ToolTip.Tip="Закрыть">
-                        <TextBlock Text="&#x2715;" FontSize="11"/>
+                        <TextBlock Classes="icon" Text="&#x2715;" FontSize="11"/>
                     </Button>
                 </StackPanel>
             </Grid>

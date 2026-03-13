@@ -45,15 +45,16 @@
                         <TextBlock Text="{Binding Content}"
                                    TextWrapping="Wrap"
                                    Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
-                        <Button Content="✏️"
-                                IsVisible="{Binding IsUser}"
+                        <Button IsVisible="{Binding IsUser}"
                                 Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
                                 CommandParameter="{Binding}"
                                 HorizontalAlignment="Right"
                                 Margin="0,5,0,0"
                                 Padding="5,2"
                                 Background="Transparent"
-                                ToolTip.Tip="Редактировать"/>
+                                ToolTip.Tip="Редактировать">
+                            <TextBlock Classes="icon" Text="✎" FontSize="14"/>
+                        </Button>
                     </StackPanel>
 
                     <StackPanel IsVisible="{Binding IsEditing}">
@@ -122,7 +123,7 @@
                 <Expander>
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="🔧" VerticalAlignment="Center"/>
+                            <TextBlock Classes="icon" Text="⚒" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding PluginName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text="." VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding FunctionName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -176,7 +177,7 @@
                 <Expander>
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Text="📋" VerticalAlignment="Center"/>
+                            <TextBlock Classes="icon" Text="☰" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text="Сводка" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding StatusText}"
                                        Foreground="Gray"
@@ -237,7 +238,7 @@
                         ToolTip.Tip="Настройки диалога"
                         Background="Transparent"
                         Padding="8,4">
-                    <TextBlock Text="⚙" FontSize="16"/>
+                    <TextBlock Classes="icon" Text="⚙" FontSize="16"/>
                 </Button>
             </Grid>
         </Border>
