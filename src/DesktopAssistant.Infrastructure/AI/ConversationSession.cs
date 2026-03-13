@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,12 @@ internal class ConversationSession : IConversationSession
 
     /// <summary>Предотвращает одновременный запуск нескольких LLM-тёрнов.</summary>
     private readonly SemaphoreSlim _runLock = new(1, 1);
+
+    /// <summary>
+    /// ID узлов-ассистентов, для которых уже запущен следующий тёрн.
+    /// Доступ только под <see cref="_runLock"/>.
+    /// </summary>
+    private readonly HashSet<Guid> _startedTurns = [];
 
     /// <summary>
     /// Отменяет все активные операции Approve/Deny при переинициализации сессии
@@ -61,6 +68,7 @@ internal class ConversationSession : IConversationSession
         _toolsCancellationTokenSource.Cancel();
         _toolsCancellationTokenSource.Dispose();
         _toolsCancellationTokenSource = new CancellationTokenSource();
+        _startedTurns.Clear();
 
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
@@ -193,12 +201,7 @@ internal class ConversationSession : IConversationSession
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
 
-        // Собираем tool-вызовы во время стриминга, но не запускаем их до завершения потока.
-        // Это предотвращает гонку: LlmTurnExecutor создаёт tool-узлы цепочкой (каждый следующий —
-        // дочерний предыдущего) и при каждом AddNodeAsync перезаписывает все поля родителя.
-        // Если запустить ApproveToolAsync параллельно со стримингом, ApproveToolAsync может
-        // прочитать узел до того, как его ActiveChildId будет обновлён, и затем перезаписать его
-        // null-значением (BaseRepository.UpdateAsync использует dbSet.Update — все поля).
+        // Запускаем обработчики только после завершения стриминга — все tool-узлы уже в БД.
         var pendingToolRequests = new List<ToolCallRequestedDto>();
 
         await foreach (var evt in chatService.GetAssistantResponseAsync(ConversationId, CurrentLeafNodeId, ct))
@@ -222,12 +225,9 @@ internal class ConversationSession : IConversationSession
             }
         }
 
-        // Все tool-узлы теперь созданы в БД — запускаем обработчики параллельно (fire-and-forget).
         foreach (var toolReq in pendingToolRequests)
             _ = HandleToolCallRequestedAsync(toolReq, ct);
 
-        // Обновляем состояние после завершения стриминга.
-        // Если были tool-вызовы, состояние может ещё меняться асинхронно через HandleToolCallResultAsync.
         using var stateScope = _scopeFactory.CreateScope();
         var stateChatService = stateScope.ServiceProvider.GetRequiredService<IChatService>();
         var state = await stateChatService.GetConversationStateAsync(CurrentLeafNodeId, ct);
@@ -307,12 +307,15 @@ internal class ConversationSession : IConversationSession
 
             if (state != ConversationState.AllToolCallsCompleted) return;
 
-            // При параллельном завершении нескольких tools только первый запускает следующий тёрн;
-            // остальные просто выходят.
-            if (!await _runLock.WaitAsync(0, ct)) return;
-
+            await _runLock.WaitAsync(ct);
             try
             {
+                // Дедупликация: один тёрн на каждый LLM-ответ. AssistantNodeId == default
+                // означает устаревший узел без поля — требуем ручного Resume.
+                if (toolCallResult.AssistantNodeId == default
+                    || !_startedTurns.Add(toolCallResult.AssistantNodeId))
+                    return;
+
                 SetRunning(true);
                 await RunLlmTurnAsync(ct);
             }

@@ -87,7 +87,7 @@ public class ToolCallExecutor(
 
         await UpdateToolNodeWithResultAsync(pendingNode, meta, resultJson, status, cancellationToken);
 
-        return new ToolCallResult(resultJson, status);
+        return new ToolCallResult(resultJson, status, meta.AssistantNodeId);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public class ToolCallExecutor(
 
         await UpdateToolNodeWithResultAsync(pendingNode, meta, deniedResult, ToolNodeStatus.Denied, cancellationToken);
 
-        return new ToolCallResult(deniedResult, ToolNodeStatus.Denied);
+        return new ToolCallResult(deniedResult, ToolNodeStatus.Denied, meta.AssistantNodeId);
     }
 
     private async Task UpdateToolNodeWithResultAsync(
