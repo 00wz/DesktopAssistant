@@ -19,6 +19,9 @@ public interface IConversationSession : IDisposable
     /// <summary>True пока сессия автоматически обрабатывает тёрн (стриминг / auto-approve).</summary>
     bool IsRunning { get; }
 
+    /// <summary>True пока хотя бы один tool-вызов находится в процессе выполнения.</summary>
+    bool IsExecutingTools { get; }
+
     /// <summary>
     /// Событие публикуется для всех изменений состояния и данных.
     /// Обработчик вызывается из произвольного потока — маршалинг в UI-поток на стороне подписчика.

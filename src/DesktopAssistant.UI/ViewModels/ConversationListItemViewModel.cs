@@ -31,20 +31,23 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
     private bool _isRunning;
 
     [ObservableProperty]
+    private bool _isExecutingTools;
+
+    [ObservableProperty]
     private ConversationState _sessionState = ConversationState.LastMessageIsAssistant;
 
     // ── Вычисляемые иконки — прямой биндинг в XAML ───────────────────────────
 
-    public bool IsLoadingIcon  => IsActive && IsRunning;
+    public bool IsLoadingIcon  => IsActive && (IsRunning || IsExecutingTools);
 
-    public bool IsPausedIcon   => IsActive && !IsRunning &&
+    public bool IsPausedIcon   => IsActive && !IsRunning && !IsExecutingTools &&
         SessionState is ConversationState.LastMessageIsUser
                       or ConversationState.AllToolCallsCompleted;
 
-    public bool IsQuestionIcon => IsActive && !IsRunning &&
+    public bool IsQuestionIcon => IsActive && !IsRunning && !IsExecutingTools &&
         SessionState == ConversationState.HasPendingToolCalls;
 
-    public bool IsErrorIcon    => IsActive && !IsRunning &&
+    public bool IsErrorIcon    => IsActive && !IsRunning && !IsExecutingTools &&
         SessionState == ConversationState.ToolCallIdMismatch;
 
     public ConversationListItemViewModel(ConversationListItem model)
@@ -60,6 +63,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
 
         _session = session;
         IsRunning = session.IsRunning;
+        IsExecutingTools = session.IsExecutingTools;
         SessionState = session.State;
         IsActive = true;
 
@@ -75,6 +79,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
         _session = null;
         IsActive = false;
         IsRunning = false;
+        IsExecutingTools = false;
     }
 
     private void OnSessionEvent(object? sender, SessionEvent e)
@@ -92,12 +97,16 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
             case ConversationStateChangedSessionEvent ev:
                 SessionState = ev.State;
                 break;
+            case ToolExecutionStateChangedSessionEvent ev:
+                IsExecutingTools = ev.IsExecutingTools;
+                break;
         }
     }
 
     // Пересчёт вычисляемых иконок при изменении любого зависимого поля
-    partial void OnIsActiveChanged(bool value)    => NotifyIconProperties();
-    partial void OnIsRunningChanged(bool value)   => NotifyIconProperties();
+    partial void OnIsActiveChanged(bool value)             => NotifyIconProperties();
+    partial void OnIsRunningChanged(bool value)            => NotifyIconProperties();
+    partial void OnIsExecutingToolsChanged(bool value)     => NotifyIconProperties();
     partial void OnSessionStateChanged(ConversationState value) => NotifyIconProperties();
 
     private void NotifyIconProperties()

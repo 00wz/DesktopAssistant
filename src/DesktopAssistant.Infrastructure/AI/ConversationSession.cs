@@ -16,6 +16,12 @@ internal class ConversationSession : IConversationSession
     private readonly SemaphoreSlim _runLock = new(1, 1);
 
     /// <summary>
+    /// Счётчик tool-вызовов, находящихся в процессе выполнения (одобрение/отклонение запущено, результат ещё не обработан).
+    /// Доступ только через <see cref="Interlocked"/> — tool-вызовы выполняются конкурентно.
+    /// </summary>
+    private int _activeToolCount;
+
+    /// <summary>
     /// ID узлов-ассистентов, для которых уже запущен следующий тёрн.
     /// Доступ только под <see cref="_runLock"/>.
     /// </summary>
@@ -31,6 +37,7 @@ internal class ConversationSession : IConversationSession
     public Guid CurrentLeafNodeId { get; private set; }
     public ConversationState State { get; private set; }
     public bool IsRunning { get; private set; }
+    public bool IsExecutingTools => _activeToolCount > 0;
 
     public event EventHandler<SessionEvent>? EventOccurred;
 
@@ -69,6 +76,12 @@ internal class ConversationSession : IConversationSession
         _toolsCancellationTokenSource.Dispose();
         _toolsCancellationTokenSource = new CancellationTokenSource();
         _startedTurns.Clear();
+
+        // Сбрасываем счётчик выполняющихся tool-вызовов.
+        // Отменённые задачи всё ещё могут дойти до своих finally-блоков и вызвать DecrementActiveTools —
+        // защита от underflow обеспечена там.
+        if (Interlocked.Exchange(ref _activeToolCount, 0) > 0)
+            Emit(new ToolExecutionStateChangedSessionEvent(false));
 
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
@@ -274,9 +287,19 @@ internal class ConversationSession : IConversationSession
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             ct, _toolsCancellationTokenSource.Token);
 
-        using var scope = _scopeFactory.CreateScope();
-        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-        var result = await chatService.ApproveToolCallAsync(pendingNodeId, linkedCts.Token);
+        ToolCallResult result;
+        IncrementActiveTools();
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            result = await chatService.ApproveToolCallAsync(pendingNodeId, linkedCts.Token);
+        }
+        finally
+        {
+            DecrementActiveTools();
+        }
+
         await HandleToolCallResultAsync(pendingNodeId, result, linkedCts.Token);
     }
 
@@ -285,9 +308,19 @@ internal class ConversationSession : IConversationSession
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             ct, _toolsCancellationTokenSource.Token);
 
-        using var scope = _scopeFactory.CreateScope();
-        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-        var result = await chatService.DenyToolCallAsync(pendingNodeId, linkedCts.Token);
+        ToolCallResult result;
+        IncrementActiveTools();
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            result = await chatService.DenyToolCallAsync(pendingNodeId, linkedCts.Token);
+        }
+        finally
+        {
+            DecrementActiveTools();
+        }
+
         await HandleToolCallResultAsync(pendingNodeId, result, linkedCts.Token);
     }
 
@@ -443,6 +476,22 @@ internal class ConversationSession : IConversationSession
     {
         IsRunning = value;
         Emit(new RunningStateChangedSessionEvent(value));
+    }
+
+    private void IncrementActiveTools()
+    {
+        if (Interlocked.Increment(ref _activeToolCount) == 1)
+            Emit(new ToolExecutionStateChangedSessionEvent(true));
+    }
+
+    private void DecrementActiveTools()
+    {
+        var newCount = Interlocked.Decrement(ref _activeToolCount);
+        if (newCount == 0)
+            Emit(new ToolExecutionStateChangedSessionEvent(false));
+        else if (newCount < 0)
+            // Stale decrement после сброса в InitializeInternalAsync — возвращаем 0, событие не эмитируем.
+            Interlocked.Exchange(ref _activeToolCount, 0);
     }
 
     private void Emit(SessionEvent evt) => EventOccurred?.Invoke(this, evt);

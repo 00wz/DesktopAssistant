@@ -37,6 +37,12 @@ public sealed record ToolRequestedSessionEvent(
 /// <summary>Tool-вызов выполнен (или отклонён) — узел обновлён в БД.</summary>
 public sealed record ToolResultSessionEvent(Guid PendingNodeId, string ResultJson, ToolNodeStatus Status) : SessionEvent;
 
+/// <summary>
+/// Изменилось состояние выполнения tool-вызовов:
+/// <c>true</c> — хотя бы один tool сейчас выполняется; <c>false</c> — все завершены.
+/// </summary>
+public sealed record ToolExecutionStateChangedSessionEvent(bool IsExecutingTools) : SessionEvent;
+
 /// <summary>Произошла ошибка во время выполнения LLM-тёрна или tool-вызова.</summary>
 public sealed record SessionErrorEvent(string Message, Exception? Exception = null) : SessionEvent;
 

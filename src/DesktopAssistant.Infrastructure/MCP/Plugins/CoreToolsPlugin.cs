@@ -258,6 +258,21 @@ public class CoreToolsPlugin
         }
     }
     
+#if DEBUG
+    /// <summary>
+    /// Тестовая функция: ожидает 10 секунд
+    /// </summary>
+    [KernelFunction("test_wait")]
+    [Description("Тестовая функция: ожидает 10 секунд и возвращает сообщение. Используется для тестирования отмены и таймаутов.")]
+    public async Task<string> TestWaitAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("TestWait: начало ожидания 10 секунд");
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+        _logger.LogInformation("TestWait: ожидание завершено");
+        return "Ожидание 10 секунд завершено успешно.";
+    }
+#endif
+
     private static string ExpandPath(string path)
     {
         if (path.StartsWith("~"))
