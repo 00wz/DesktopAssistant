@@ -77,7 +77,6 @@ public class LlmTurnExecutor(
 
         var assistantMessage = aggregator.Build();
         var (inputTokenCount, outputTokenCount, totalTokenCount) = TokenUsageHelper.Extract(assistantMessage);
-        LogUsage(inputTokenCount, outputTokenCount, totalTokenCount);
 
         var assistantMetadata = ChatMessageSerializer.Serialize(assistantMessage);
         var assistantNode = await _conversationService.AddNodeAsync(
@@ -127,13 +126,6 @@ public class LlmTurnExecutor(
 
             yield return new ToolCallRequestedDto(callId, toolMeta.PluginName, toolMeta.FunctionName, argsJson, pendingNode.Id);
         }
-    }
-
-    private static void LogUsage(int inputTokenCount, int outputTokenCount, int totalTokenCount)
-    {
-        Console.WriteLine($"Input tokens: {inputTokenCount}");
-        Console.WriteLine($"Output tokens: {outputTokenCount}");
-        Console.WriteLine($"Total tokens: {totalTokenCount}");
     }
 
 }
