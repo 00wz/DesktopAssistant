@@ -55,15 +55,21 @@
             <Setter Property="Background" Value="#444449"/>
         </Style>
 
-        <!-- Пульсация для иконки загрузки -->
+        <!-- Вращение для иконки загрузки -->
         <Style Selector="TextBlock.loadingSpin">
+            <Setter Property="RenderTransformOrigin" Value="50%, 50%"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <RotateTransform/>
+                </Setter.Value>
+            </Setter>
             <Style.Animations>
-                <Animation Duration="0:0:0.5" IterationCount="INFINITE" PlaybackDirection="Alternate">
+                <Animation Duration="0:0:1" IterationCount="INFINITE">
                     <KeyFrame Cue="0%">
-                        <Setter Property="Opacity" Value="1.0"/>
+                        <Setter Property="RotateTransform.Angle" Value="0"/>
                     </KeyFrame>
                     <KeyFrame Cue="100%">
-                        <Setter Property="Opacity" Value="0.1"/>
+                        <Setter Property="RotateTransform.Angle" Value="360"/>
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
@@ -126,52 +132,10 @@
                                             IsVisible="{Binding $parent[Button].IsPointerOver}"/>
 
                                     <!-- Контент пункта -->
-                                    <Grid ColumnDefinitions="22,*" Margin="12,10">
-
-                                        <!-- Иконка статуса сессии -->
-                                        <Panel Grid.Column="0" VerticalAlignment="Center" Width="18">
-
-                                            <!-- Загрузка: пульсирующая иконка; ↻ (U+21BB) в Symbol гарантированно монохромен -->
-                                            <TextBlock Classes="icon loadingSpin"
-                                                       Text="↻"
-                                                       IsVisible="{Binding IsLoadingIcon}"
-                                                       Classes.loadingSpin="{Binding IsLoadingIcon}"
-                                                       Foreground="#4CAF50"
-                                                       FontSize="14"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"/>
-
-                                            <!-- Пауза; ∥ (U+2225) — двойная вертикальная черта -->
-                                            <TextBlock Classes="icon"
-                                                       Text="∥"
-                                                       IsVisible="{Binding IsPausedIcon}"
-                                                       Foreground="#FFC107"
-                                                       FontSize="11"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"/>
-
-                                            <!-- Вопрос: ожидает одобрения tool-вызова -->
-                                            <TextBlock Text="?"
-                                                       IsVisible="{Binding IsQuestionIcon}"
-                                                       Classes.questionPulse="{Binding IsQuestionIcon}"
-                                                       Foreground="#2196F3"
-                                                       FontSize="13"
-                                                       FontWeight="Bold"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"/>
-
-                                            <!-- Ошибка; ⚠ в Segoe UI Symbol — монохромный -->
-                                            <TextBlock Classes="icon"
-                                                       Text="⚠"
-                                                       IsVisible="{Binding IsErrorIcon}"
-                                                       Foreground="#F44336"
-                                                       FontSize="11"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"/>
-                                        </Panel>
+                                    <Grid ColumnDefinitions="*,18" Margin="12,10">
 
                                         <!-- Заголовок и дата -->
-                                        <StackPanel Grid.Column="1" Spacing="3">
+                                        <StackPanel Grid.Column="0" Spacing="3">
                                             <TextBlock Text="{Binding Title}"
                                                        FontSize="13"
                                                        Foreground="White"
@@ -181,6 +145,48 @@
                                                        FontSize="11"
                                                        Foreground="#888888"/>
                                         </StackPanel>
+
+                                        <!-- Иконка статуса сессии -->
+                                        <Panel Grid.Column="1" VerticalAlignment="Center" Width="18">
+
+                                            <!-- Загрузка: вращающаяся звезда; ✳ (U+2733) симметрична по всем осям -->
+                                            <TextBlock Classes="icon loadingSpin"
+                                                       Text="✳"
+                                                       IsVisible="{Binding IsLoadingIcon}"
+                                                       Classes.loadingSpin="{Binding IsLoadingIcon}"
+                                                       Foreground="White"
+                                                       FontSize="13"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Пауза; ∥ (U+2225) — двойная вертикальная черта -->
+                                            <TextBlock Classes="icon"
+                                                       Text="∥"
+                                                       IsVisible="{Binding IsPausedIcon}"
+                                                       Foreground="White"
+                                                       FontSize="11"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Вопрос: ожидает одобрения tool-вызова -->
+                                            <TextBlock Text="?"
+                                                       IsVisible="{Binding IsQuestionIcon}"
+                                                       Classes.questionPulse="{Binding IsQuestionIcon}"
+                                                       Foreground="White"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Ошибка; ⚠ в Segoe UI Symbol — монохромный -->
+                                            <TextBlock Classes="icon"
+                                                       Text="⚠"
+                                                       IsVisible="{Binding IsErrorIcon}"
+                                                       Foreground="White"
+                                                       FontSize="11"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Panel>
                                     </Grid>
                                 </Panel>
                             </Button>
