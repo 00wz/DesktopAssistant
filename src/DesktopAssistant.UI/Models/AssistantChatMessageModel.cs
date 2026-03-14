@@ -11,13 +11,13 @@ public partial class AssistantChatMessageModel : ChatMessageModel
 {
     public ObservableStringBuilder MarkdownBuilder { get; } = new();
 
-    private string _content = string.Empty;
+    private bool _hasContent;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsVisible))]
     private bool _isStreaming;
 
-    public bool IsVisible => !string.IsNullOrEmpty(_content) || IsStreaming;
+    public bool IsVisible => _hasContent || IsStreaming;
 
     public AssistantChatMessageModel()
     {
@@ -28,7 +28,7 @@ public partial class AssistantChatMessageModel : ChatMessageModel
     {
         Id = id;
         NodeType = MessageNodeType.Assistant;
-        _content = content;
+        _hasContent = !string.IsNullOrEmpty(content);
         MarkdownBuilder.Append(content);
         CreatedAt = createdAt;
     }
@@ -36,8 +36,11 @@ public partial class AssistantChatMessageModel : ChatMessageModel
     /// <summary>Добавляет чанк стримингового ответа к контенту.</summary>
     public void AppendContent(string chunk)
     {
-        _content += chunk;
         MarkdownBuilder.Append(chunk);
-        OnPropertyChanged(nameof(IsVisible));
+        if (!_hasContent)
+        {
+            _hasContent = true;
+            OnPropertyChanged(nameof(IsVisible));
+        }
     }
 }
