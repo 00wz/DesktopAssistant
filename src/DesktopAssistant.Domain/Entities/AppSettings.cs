@@ -31,5 +31,6 @@ public class AppSettings : BaseEntity
     {
         public const string DefaultProfileId = "App:DefaultProfileId";
         public const string SummarizationProfileId = "App:SummarizationProfileId";
+        public const string Language = "App:Language";
     }
 }

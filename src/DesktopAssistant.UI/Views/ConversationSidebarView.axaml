@@ -96,17 +96,17 @@
         <Button Grid.Row="0"
                 Classes="sideBtn"
                 Command="{Binding CreateNewChatCommand}"
-                ToolTip.Tip="Начать новый диалог">
+                ToolTip.Tip="{DynamicResource Sidebar.NewChat.Tooltip}">
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <TextBlock Classes="icon" Text="+" FontSize="18" VerticalAlignment="Center" Foreground="#CCCCCC"/>
-                <TextBlock Text="Новый чат" FontSize="13" VerticalAlignment="Center"/>
+                <TextBlock Text="{DynamicResource Sidebar.NewChat}" FontSize="13" VerticalAlignment="Center"/>
             </StackPanel>
         </Button>
 
         <!-- Список диалогов -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <TextBlock Text="Нет сохранённых диалогов"
+                <TextBlock Text="{DynamicResource Sidebar.NoConversations}"
                            Foreground="#888888"
                            Margin="15,20"
                            IsVisible="{Binding !Conversations.Count}"/>
@@ -200,10 +200,10 @@
         <Border Grid.Row="2" BorderBrush="#3A3A3F" BorderThickness="0,1,0,0">
             <Button Classes="sideBtn"
                     Command="{Binding OpenSettingsCommand}"
-                    ToolTip.Tip="Настройки">
+                    ToolTip.Tip="{DynamicResource Sidebar.Settings.Tooltip}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <TextBlock Classes="icon" Text="⚙" FontSize="14" VerticalAlignment="Center" Foreground="#AAAAAA"/>
-                    <TextBlock Text="Настройки" FontSize="13" VerticalAlignment="Center" Foreground="#AAAAAA"/>
+                    <TextBlock Text="{DynamicResource Sidebar.Settings}" FontSize="13" VerticalAlignment="Center" Foreground="#AAAAAA"/>
                 </StackPanel>
             </Button>
         </Border>

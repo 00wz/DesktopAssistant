@@ -14,11 +14,11 @@
 
             <!-- Заголовок -->
             <Panel>
-                <TextBlock Text="Новый профиль ассистента"
+                <TextBlock Text="{DynamicResource ProfileEditor.Title.New}"
                            FontSize="14"
                            FontWeight="SemiBold"
                            IsVisible="{Binding !IsEditMode}"/>
-                <TextBlock Text="Редактирование профиля"
+                <TextBlock Text="{DynamicResource ProfileEditor.Title.Edit}"
                            FontSize="14"
                            FontWeight="SemiBold"
                            IsVisible="{Binding IsEditMode}"/>
@@ -67,11 +67,11 @@
                                Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="5" Grid.Column="0"
-                           Text="Описание" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.Description}" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="5" Grid.Column="1"
                          Text="{Binding Description, Mode=TwoWay}"
-                         Watermark="Мой ассистент"
+                         Watermark="{DynamicResource ProfileEditor.Watermark.Description}"
                          AcceptsReturn="True"
                          TextWrapping="Wrap"
                          MinHeight="60"
@@ -98,10 +98,10 @@
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Spacing="10">
-                <Button Content="Отмена"
+                <Button Content="{DynamicResource ProfileEditor.Button.Cancel}"
                         Command="{Binding CancelCommand}"
                         Padding="14,7"/>
-                <Button Content="Сохранить"
+                <Button Content="{DynamicResource ProfileEditor.Button.Save}"
                         Command="{Binding SaveCommand}"
                         IsEnabled="{Binding !IsLoading}"
                         Padding="16,8"/>

@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace DesktopAssistant.UI.ViewModels;
 
-public enum SettingsSection { Profiles, ToolApproval }
+public enum SettingsSection { General, Profiles, ToolApproval }
 
 /// <summary>
 /// ViewModel-оболочка панели настроек. Управляет навигацией между секциями
@@ -11,23 +11,34 @@ public enum SettingsSection { Profiles, ToolApproval }
 /// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
+    public GeneralSettingsViewModel GeneralSettings { get; }
     public ProfilesSettingsViewModel ProfilesSettings { get; }
     public ToolApprovalSettingsViewModel ToolApprovalSettings { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGeneralActive))]
     [NotifyPropertyChangedFor(nameof(IsProfilesActive))]
     [NotifyPropertyChangedFor(nameof(IsToolApprovalActive))]
-    private SettingsSection _activeSection = SettingsSection.Profiles;
+    private SettingsSection _activeSection = SettingsSection.General;
 
+    public bool IsGeneralActive => ActiveSection == SettingsSection.General;
     public bool IsProfilesActive => ActiveSection == SettingsSection.Profiles;
     public bool IsToolApprovalActive => ActiveSection == SettingsSection.ToolApproval;
 
     public SettingsViewModel(
+        GeneralSettingsViewModel generalSettings,
         ProfilesSettingsViewModel profilesSettings,
         ToolApprovalSettingsViewModel toolApprovalSettings)
     {
+        GeneralSettings = generalSettings;
         ProfilesSettings = profilesSettings;
         ToolApprovalSettings = toolApprovalSettings;
+    }
+
+    [RelayCommand]
+    private void ShowGeneral()
+    {
+        ActiveSection = SettingsSection.General;
     }
 
     [RelayCommand]

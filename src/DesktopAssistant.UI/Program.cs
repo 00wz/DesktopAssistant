@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Infrastructure;
+using DesktopAssistant.UI.Localization;
 using DesktopAssistant.UI.ViewModels;
 
 namespace DesktopAssistant.UI;
@@ -38,13 +39,19 @@ sealed class Program
         services.AddTransient<ProfileEditorViewModel>();
         services.AddTransient<ProfilesSettingsViewModel>();
         services.AddTransient<ToolApprovalSettingsViewModel>();
+        services.AddTransient<GeneralSettingsViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<MainWindowViewModel>();
-        
+
         var serviceProvider = services.BuildServiceProvider();
-        
+
         // Инициализация базы данных
         serviceProvider.InitializeDatabaseAsync().GetAwaiter().GetResult();
+
+        // Загрузка сохранённого языка до запуска Avalonia
+        var locService = serviceProvider.GetRequiredService<ILocalizationService>();
+        var savedLanguage = locService.GetSavedLanguageAsync().GetAwaiter().GetResult();
+        LocalizationManager.Instance.PendingLanguage = savedLanguage;
         
         // Инициализация MCP серверов (в фоне, не блокирует запуск)
         InitializeMcpServersAsync(serviceProvider);

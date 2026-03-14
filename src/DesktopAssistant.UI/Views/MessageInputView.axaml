@@ -23,7 +23,7 @@
             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
                 <TextBox Grid.Column="0"
                          Text="{Binding InputMessage, Mode=TwoWay}"
-                         Watermark="Введите сообщение..."
+                         Watermark="{DynamicResource MessageInput.Placeholder}"
                          AcceptsReturn="False"
                          TextWrapping="Wrap"
                          MinHeight="40"
@@ -35,7 +35,7 @@
                     </TextBox.KeyBindings>
                 </TextBox>
                 <Button Grid.Column="1"
-                        Content="Отправить"
+                        Content="{DynamicResource MessageInput.Send}"
                         Command="{Binding SendMessageCommand}"
                         IsEnabled="{Binding !IsLoading}"
                         Height="40"
@@ -45,7 +45,7 @@
             </Grid>
 
             <!-- Кнопка Resume -->
-            <Button Content="Возобновить"
+            <Button Content="{DynamicResource MessageInput.Resume}"
                     IsVisible="{Binding ShowResumePanel}"
                     Command="{Binding ResumeCommand}"
                     HorizontalAlignment="Stretch"

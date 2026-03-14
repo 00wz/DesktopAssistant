@@ -12,14 +12,14 @@
             BorderBrush="#DDEEFF"
             BorderThickness="0,0,0,1">
         <StackPanel Spacing="10">
-            <TextBlock Text="Настройки диалога"
+            <TextBlock Text="{DynamicResource ChatSettings.Title}"
                        FontSize="14"
                        FontWeight="SemiBold"/>
 
             <!-- Профиль -->
             <Grid ColumnDefinitions="120,*">
                 <TextBlock Grid.Column="0"
-                           Text="Профиль:"
+                           Text="{DynamicResource ChatSettings.Profile.Label}"
                            FontSize="12"
                            Foreground="#555"
                            VerticalAlignment="Center"/>
@@ -44,7 +44,7 @@
             </Grid>
 
             <!-- Кнопка применить профиль -->
-            <Button Content="Применить профиль"
+            <Button Content="{DynamicResource ChatSettings.ApplyProfile}"
                     Command="{Binding ChangeProfileCommand}"
                     CommandParameter="{Binding SelectedProfile}"
                     HorizontalAlignment="Right"
@@ -52,15 +52,15 @@
                     FontSize="12"/>
 
             <!-- Системный промпт -->
-            <TextBlock Text="Системный промпт:" FontSize="12" Foreground="#555"/>
+            <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
             <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
                      MinHeight="80"
                      MaxHeight="160"
-                     Watermark="Системный промпт пуст..."/>
+                     Watermark="{DynamicResource ChatSettings.SystemPrompt.Watermark}"/>
 
-            <Button Content="Сохранить промпт"
+            <Button Content="{DynamicResource ChatSettings.SavePrompt}"
                     Command="{Binding SaveSystemPromptCommand}"
                     HorizontalAlignment="Right"
                     Padding="12,6"

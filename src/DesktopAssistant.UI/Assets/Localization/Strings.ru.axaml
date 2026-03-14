@@ -1,0 +1,88 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Settings navigation -->
+    <sys:String x:Key="Settings.Title">Настройки</sys:String>
+    <sys:String x:Key="Settings.Nav.Group.Main">ОСНОВНЫЕ</sys:String>
+    <sys:String x:Key="Settings.Nav.General">Общие</sys:String>
+    <sys:String x:Key="Settings.Nav.Profiles">Профили ассистентов</sys:String>
+    <sys:String x:Key="Settings.Nav.ToolApproval">Автоподтверждение tools</sys:String>
+
+    <!-- General settings section -->
+    <sys:String x:Key="General.Title">Общие настройки</sys:String>
+    <sys:String x:Key="General.Language.Label">Язык приложения</sys:String>
+    <sys:String x:Key="General.Language.Hint">Язык интерфейса. Изменения применяются немедленно.</sys:String>
+
+    <!-- Profiles section -->
+    <sys:String x:Key="Profiles.Title">Профили ассистентов</sys:String>
+    <sys:String x:Key="Profiles.Create">+ Создать</sys:String>
+    <sys:String x:Key="Profiles.Empty">Нет профилей. Нажмите «+ Создать» для добавления.</sys:String>
+    <sys:String x:Key="Profiles.Badge.Default">По умолчанию</sys:String>
+    <sys:String x:Key="Profiles.Badge.Summarization">Суммаризация</sys:String>
+    <sys:String x:Key="Profiles.Badge.ApiKey">API ключ задан</sys:String>
+    <sys:String x:Key="Profiles.Action.SetDefault">Основным</sys:String>
+    <sys:String x:Key="Profiles.Action.SetSummarization">Суммаризация</sys:String>
+    <sys:String x:Key="Profiles.Action.Edit">Изменить</sys:String>
+    <sys:String x:Key="Profiles.Action.Delete">Удалить</sys:String>
+
+    <!-- Profile editor -->
+    <sys:String x:Key="ProfileEditor.Title.New">Новый профиль ассистента</sys:String>
+    <sys:String x:Key="ProfileEditor.Title.Edit">Редактирование профиля</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.Description">Описание</sys:String>
+    <sys:String x:Key="ProfileEditor.Button.Cancel">Отмена</sys:String>
+    <sys:String x:Key="ProfileEditor.Button.Save">Сохранить</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.Description">Мой ассистент</sys:String>
+
+    <!-- Tool approval section -->
+    <sys:String x:Key="ToolApproval.Title">Автоподтверждение tools</sys:String>
+    <sys:String x:Key="ToolApproval.Description">Включите автоматическое выполнение для доверенных инструментов. Список обновляется при подключении/отключении MCP серверов.</sys:String>
+    <sys:String x:Key="ToolApproval.Empty">Нет доступных tools. Подключите MCP сервер или обновите список.</sys:String>
+    <sys:String x:Key="ToolApproval.AutoApprove.Tooltip">Автоматически выполнять без подтверждения</sys:String>
+
+    <!-- Chat messages -->
+    <sys:String x:Key="Chat.ContextMenu.Summarize">Суммаризировать контекст</sys:String>
+    <sys:String x:Key="Chat.Tooltip.PreviousVersion">Предыдущая версия</sys:String>
+    <sys:String x:Key="Chat.Tooltip.NextVersion">Следующая версия</sys:String>
+    <sys:String x:Key="Chat.Tooltip.Edit">Редактировать</sys:String>
+    <sys:String x:Key="Chat.Action.Save">Сохранить</sys:String>
+    <sys:String x:Key="Chat.Action.Cancel">Отмена</sys:String>
+    <sys:String x:Key="Chat.Summary">Сводка</sys:String>
+    <sys:String x:Key="Chat.Tooltip.ChatSettings">Настройки диалога</sys:String>
+    <sys:String x:Key="Chat.Tool.Approve">Подтвердить</sys:String>
+    <sys:String x:Key="Chat.Tool.Deny">Отклонить</sys:String>
+
+    <!-- Chat settings panel -->
+    <sys:String x:Key="ChatSettings.Title">Настройки диалога</sys:String>
+    <sys:String x:Key="ChatSettings.Profile.Label">Профиль:</sys:String>
+    <sys:String x:Key="ChatSettings.ApplyProfile">Применить профиль</sys:String>
+    <sys:String x:Key="ChatSettings.SystemPrompt.Label">Системный промпт:</sys:String>
+    <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">Системный промпт пуст...</sys:String>
+    <sys:String x:Key="ChatSettings.SavePrompt">Сохранить промпт</sys:String>
+
+    <!-- Message input -->
+    <sys:String x:Key="MessageInput.Placeholder">Введите сообщение...</sys:String>
+    <sys:String x:Key="MessageInput.Send">Отправить</sys:String>
+    <sys:String x:Key="MessageInput.Resume">Возобновить</sys:String>
+
+    <!-- Sidebar -->
+    <sys:String x:Key="Sidebar.NewChat">Новый чат</sys:String>
+    <sys:String x:Key="Sidebar.NewChat.Tooltip">Начать новый диалог</sys:String>
+    <sys:String x:Key="Sidebar.NoConversations">Нет сохранённых диалогов</sys:String>
+    <sys:String x:Key="Sidebar.Settings">Настройки</sys:String>
+    <sys:String x:Key="Sidebar.Settings.Tooltip">Настройки</sys:String>
+
+    <!-- New conversation panel -->
+    <sys:String x:Key="NewConversation.Title">Новый диалог</sys:String>
+    <sys:String x:Key="NewConversation.ConversationTitle.Label">Название диалога</sys:String>
+    <sys:String x:Key="NewConversation.ConversationTitle.Placeholder">Например: Помощник по коду</sys:String>
+    <sys:String x:Key="NewConversation.Profile.Label">Профиль ассистента</sys:String>
+    <sys:String x:Key="NewConversation.Profile.New">+ Новый профиль</sys:String>
+    <sys:String x:Key="NewConversation.Profile.CancelNew">Отмена</sys:String>
+    <sys:String x:Key="NewConversation.Profile.Empty">Нет доступных профилей. Создайте первый профиль.</sys:String>
+    <sys:String x:Key="NewConversation.SystemPrompt.Label">Системный промпт (необязательно)</sys:String>
+    <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">Вы — полезный ИИ-ассистент...</sys:String>
+    <sys:String x:Key="NewConversation.Button.Cancel">Отмена</sys:String>
+    <sys:String x:Key="NewConversation.Button.Create">Создать диалог</sys:String>
+
+</ResourceDictionary>

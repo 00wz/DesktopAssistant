@@ -8,94 +8,114 @@
              x:Class="DesktopAssistant.UI.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-    <Border Background="White">
-        <Grid RowDefinitions="Auto,*">
+   <Border Background="White">
+       <Grid RowDefinitions="Auto,*">
 
-            <!-- Шапка -->
-            <Border Grid.Row="0"
-                    Background="#F0F0F0"
-                    Padding="20,12"
-                    BorderBrush="#E0E0E0"
-                    BorderThickness="0,0,0,1">
-                <TextBlock Text="Настройки"
-                           FontSize="20"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-            </Border>
+           <!-- Шапка -->
+           <Border Grid.Row="0"
+                   Background="#F0F0F0"
+                   Padding="20,12"
+                   BorderBrush="#E0E0E0"
+                   BorderThickness="0,0,0,1">
+               <TextBlock Text="{DynamicResource Settings.Title}"
+                          FontSize="20"
+                          FontWeight="SemiBold"
+                          VerticalAlignment="Center"/>
+           </Border>
 
-            <!-- Двухколоночный layout -->
-            <Grid Grid.Row="1" ColumnDefinitions="200,*">
+           <!-- Двухколоночный layout -->
+           <Grid Grid.Row="1" ColumnDefinitions="200,*">
 
-                <!-- Левая навигация -->
-                <Border Grid.Column="0"
-                        Background="#F8F8F8"
-                        BorderBrush="#E0E0E0"
-                        BorderThickness="0,0,1,0"
-                        Padding="0,16,0,0">
-                    <StackPanel>
-                        <TextBlock Text="ОСНОВНЫЕ"
-                                   FontSize="10"
-                                   Foreground="#999"
-                                   Margin="16,0,0,8"
-                                   FontWeight="SemiBold"
-                                   LetterSpacing="1"/>
+               <!-- Левая навигация -->
+               <Border Grid.Column="0"
+                       Background="#F8F8F8"
+                       BorderBrush="#E0E0E0"
+                       BorderThickness="0,0,1,0"
+                       Padding="0,16,0,0">
+                   <StackPanel>
+                       <TextBlock Text="{DynamicResource Settings.Nav.Group.Main}"
+                                  FontSize="10"
+                                  Foreground="#999"
+                                  Margin="16,0,0,8"
+                                  FontWeight="SemiBold"
+                                  LetterSpacing="1"/>
 
-                        <!-- Профили ассистентов — навигационный элемент -->
-                        <Panel Margin="8,0,8,2">
-                            <Border Background="#E8F0FE"
-                                    CornerRadius="4"
-                                    IsVisible="{Binding IsProfilesActive}"/>
-                            <Button Command="{Binding ShowProfilesCommand}"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    Padding="12,8">
-                                <TextBlock Text="Профили ассистентов"
-                                           FontSize="13"/>
-                            </Button>
-                        </Panel>
+                       <!-- Общие — навигационный элемент -->
+                       <Panel Margin="8,0,8,2">
+                           <Border Background="#E8F0FE"
+                                   CornerRadius="4"
+                                   IsVisible="{Binding IsGeneralActive}"/>
+                           <Button Command="{Binding ShowGeneralCommand}"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Padding="12,8">
+                               <TextBlock Text="{DynamicResource Settings.Nav.General}"
+                                          FontSize="13"/>
+                           </Button>
+                       </Panel>
 
-                        <!-- Автоподтверждение tools — навигационный элемент -->
-                        <Panel Margin="8,0,8,2">
-                            <Border Background="#E8F0FE"
-                                    CornerRadius="4"
-                                    IsVisible="{Binding IsToolApprovalActive}"/>
-                            <Button Command="{Binding ShowToolApprovalCommand}"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    Padding="12,8">
-                                <TextBlock Text="Автоподтверждение tools"
-                                           FontSize="13"/>
-                            </Button>
-                        </Panel>
+                       <!-- Профили ассистентов — навигационный элемент -->
+                       <Panel Margin="8,0,8,2">
+                           <Border Background="#E8F0FE"
+                                   CornerRadius="4"
+                                   IsVisible="{Binding IsProfilesActive}"/>
+                           <Button Command="{Binding ShowProfilesCommand}"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Padding="12,8">
+                               <TextBlock Text="{DynamicResource Settings.Nav.Profiles}"
+                                          FontSize="13"/>
+                           </Button>
+                       </Panel>
 
-                    </StackPanel>
-                </Border>
+                       <!-- Автоподтверждение tools — навигационный элемент -->
+                       <Panel Margin="8,0,8,2">
+                           <Border Background="#E8F0FE"
+                                   CornerRadius="4"
+                                   IsVisible="{Binding IsToolApprovalActive}"/>
+                           <Button Command="{Binding ShowToolApprovalCommand}"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Padding="12,8">
+                               <TextBlock Text="{DynamicResource Settings.Nav.ToolApproval}"
+                                          FontSize="13"/>
+                           </Button>
+                       </Panel>
 
-                <!-- Правая область контента.
-                     Padding вынесен в Margin контента: Avalonia не учитывает ScrollViewer.Padding
-                     при вычислении Extent, и нижние N пикселей контента становятся недостижимы.
-                     HorizontalScrollBarVisibility=Disabled: предотвращает горизонтальный scrollbar,
-                     который при появлении/исчезновении дискретно изменяет ширину контента. -->
-                <ScrollViewer Grid.Column="1"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <Panel Margin="24,20,24,20">
-                        <!-- Секция профилей -->
-                        <Panel IsVisible="{Binding IsProfilesActive}">
-                            <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>
-                        </Panel>
-                        <!-- Секция автоподтверждения tools -->
-                        <Panel IsVisible="{Binding IsToolApprovalActive}">
-                            <views:ToolApprovalSettingsView DataContext="{Binding ToolApprovalSettings}"/>
-                        </Panel>
-                    </Panel>
-                </ScrollViewer>
+                   </StackPanel>
+               </Border>
 
-            </Grid>
-        </Grid>
-    </Border>
+               <!-- Правая область контента.
+                    Padding вынесен в Margin контента: Avalonia не учитывает ScrollViewer.Padding
+                    при вычислении Extent, и нижние N пикселей контента становятся недостижимы.
+                    HorizontalScrollBarVisibility=Disabled: предотвращает горизонтальный scrollbar,
+                    который при появлении/исчезновении дискретно изменяет ширину контента. -->
+               <ScrollViewer Grid.Column="1"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Disabled">
+                   <Panel Margin="24,20,24,20">
+                       <!-- Секция общих настроек -->
+                       <Panel IsVisible="{Binding IsGeneralActive}">
+                           <views:GeneralSettingsView DataContext="{Binding GeneralSettings}"/>
+                       </Panel>
+                       <!-- Секция профилей -->
+                       <Panel IsVisible="{Binding IsProfilesActive}">
+                           <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>
+                       </Panel>
+                       <!-- Секция автоподтверждения tools -->
+                       <Panel IsVisible="{Binding IsToolApprovalActive}">
+                           <views:ToolApprovalSettingsView DataContext="{Binding ToolApprovalSettings}"/>
+                       </Panel>
+                   </Panel>
+               </ScrollViewer>
+
+           </Grid>
+       </Grid>
+   </Border>
 </UserControl>

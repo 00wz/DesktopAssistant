@@ -13,23 +13,23 @@
                 HorizontalAlignment="Center"
                 Margin="20,30,20,20">
             <StackPanel Spacing="16">
-                <TextBlock Text="Новый диалог"
+                <TextBlock Text="{DynamicResource NewConversation.Title}"
                            FontSize="22"
                            FontWeight="SemiBold"
                            HorizontalAlignment="Center"/>
 
                 <!-- Заголовок -->
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Название диалога" FontSize="13" Foreground="#555"/>
+                    <TextBlock Text="{DynamicResource NewConversation.ConversationTitle.Label}" FontSize="13" Foreground="#555"/>
                     <TextBox Text="{Binding ConversationTitle, Mode=TwoWay}"
-                             Watermark="Например: Помощник по коду"/>
+                             Watermark="{DynamicResource NewConversation.ConversationTitle.Placeholder}"/>
                 </StackPanel>
 
                 <!-- Профиль ассистента -->
                 <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0"
-                                   Text="Профиль ассистента"
+                                   Text="{DynamicResource NewConversation.Profile.Label}"
                                    FontSize="13"
                                    Foreground="#555"
                                    VerticalAlignment="Center"/>
@@ -40,8 +40,8 @@
                                 Background="Transparent">
                             <Button.Content>
                                 <Panel>
-                                    <TextBlock Text="Отмена" IsVisible="{Binding IsCreateProfileMode}"/>
-                                    <TextBlock Text="+ Новый профиль" IsVisible="{Binding !IsCreateProfileMode}"/>
+                                    <TextBlock Text="{DynamicResource NewConversation.Profile.CancelNew}" IsVisible="{Binding IsCreateProfileMode}"/>
+                                    <TextBlock Text="{DynamicResource NewConversation.Profile.New}" IsVisible="{Binding !IsCreateProfileMode}"/>
                                 </Panel>
                             </Button.Content>
                         </Button>
@@ -66,7 +66,7 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
 
-                    <TextBlock Text="Нет доступных профилей. Создайте первый профиль."
+                    <TextBlock Text="{DynamicResource NewConversation.Profile.Empty}"
                                Foreground="#CC8800"
                                FontSize="12"
                                IsVisible="{Binding !AvailableProfiles.Count}"/>
@@ -79,7 +79,7 @@
 
                 <!-- Системный промпт -->
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Системный промпт (необязательно)"
+                    <TextBlock Text="{DynamicResource NewConversation.SystemPrompt.Label}"
                                FontSize="13"
                                Foreground="#555"/>
                     <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
@@ -87,7 +87,7 @@
                              TextWrapping="Wrap"
                              MinHeight="80"
                              MaxHeight="200"
-                             Watermark="Вы — полезный ИИ-ассистент..."/>
+                             Watermark="{DynamicResource NewConversation.SystemPrompt.Placeholder}"/>
                 </StackPanel>
 
                 <!-- Ошибка -->
@@ -105,10 +105,10 @@
                             HorizontalAlignment="Right"
                             Spacing="10"
                             Margin="0,8,0,0">
-                    <Button Content="Отмена"
+                    <Button Content="{DynamicResource NewConversation.Button.Cancel}"
                             Command="{Binding CancelCommand}"
                             Padding="16,10"/>
-                    <Button Content="Создать диалог"
+                    <Button Content="{DynamicResource NewConversation.Button.Create}"
                             Command="{Binding ConfirmCommand}"
                             IsEnabled="{Binding !IsLoading}"
                             Padding="20,10"/>

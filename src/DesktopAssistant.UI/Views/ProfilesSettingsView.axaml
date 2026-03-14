@@ -14,12 +14,12 @@
         <!-- Заголовок -->
         <Grid ColumnDefinitions="*,Auto">
             <TextBlock Grid.Column="0"
-                       Text="Профили ассистентов"
+                       Text="{DynamicResource Profiles.Title}"
                        FontSize="18"
                        FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
             <Button Grid.Column="1"
-                    Content="+ Создать"
+                    Content="{DynamicResource Profiles.Create}"
                     Command="{Binding StartCreateCommand}"
                     Padding="14,7"/>
         </Grid>
@@ -40,7 +40,7 @@
                      Height="3"/>
 
         <!-- Пустое состояние -->
-        <TextBlock Text="Нет профилей. Нажмите «+ Создать» для добавления."
+        <TextBlock Text="{DynamicResource Profiles.Empty}"
                    Foreground="#888"
                    FontSize="13"
                    IsVisible="{Binding !Profiles.Count}"/>
@@ -69,7 +69,7 @@
                                             CornerRadius="4"
                                             Padding="6,2"
                                             IsVisible="{Binding IsDefault}">
-                                        <TextBlock Text="По умолчанию"
+                                        <TextBlock Text="{DynamicResource Profiles.Badge.Default}"
                                                    Foreground="White"
                                                    FontSize="10"/>
                                     </Border>
@@ -78,7 +78,7 @@
                                             CornerRadius="4"
                                             Padding="6,2"
                                             IsVisible="{Binding IsSummarizationProfile}">
-                                        <TextBlock Text="Суммаризация"
+                                        <TextBlock Text="{DynamicResource Profiles.Badge.Summarization}"
                                                    Foreground="#6A1B9A"
                                                    FontSize="10"/>
                                     </Border>
@@ -87,7 +87,7 @@
                                             CornerRadius="4"
                                             Padding="6,2"
                                             IsVisible="{Binding HasApiKey}">
-                                        <TextBlock Text="API ключ задан"
+                                        <TextBlock Text="{DynamicResource Profiles.Badge.ApiKey}"
                                                    Foreground="#2E7D32"
                                                    FontSize="10"/>
                                     </Border>
@@ -98,36 +98,36 @@
                                            TextWrapping="Wrap"
                                            IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 								<Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Grid.Column="0" 
-											   Text="{Binding BaseUrl}"
+                                    <TextBlock Grid.Column="0"
+										       Text="{Binding BaseUrl}"
                                                FontSize="11"
                                                Foreground="#999"/>
-									
+
 									<!-- Кнопки действий — WrapPanel: переносятся на новую строку при нехватке ширины -->
 									<WrapPanel Orientation="Horizontal"
 											   VerticalAlignment="Bottom"
 											   HorizontalAlignment="Right">
-										<Button Content="Основным"
+										<Button Content="{DynamicResource Profiles.Action.SetDefault}"
 												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetDefaultCommand}"
 												CommandParameter="{Binding}"
 												FontSize="11"
 												Padding="10,5"
 												Margin="0,0,6,4"
 												IsVisible="{Binding !IsDefault}"/>
-										<Button Content="Суммаризация"
+										<Button Content="{DynamicResource Profiles.Action.SetSummarization}"
 												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).SetSummarizationCommand}"
 												CommandParameter="{Binding}"
 												FontSize="11"
 												Padding="10,5"
 												Margin="0,0,6,4"
 												IsVisible="{Binding !IsSummarizationProfile}"/>
-										<Button Content="Изменить"
+										<Button Content="{DynamicResource Profiles.Action.Edit}"
 												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).StartEditCommand}"
 												CommandParameter="{Binding}"
 												FontSize="11"
 												Padding="10,5"
 												Margin="0,0,6,4"/>
-										<Button Content="Удалить"
+										<Button Content="{DynamicResource Profiles.Action.Delete}"
 												Command="{Binding $parent[ItemsControl].((vm:ProfilesSettingsViewModel)DataContext).DeleteProfileCommand}"
 												CommandParameter="{Binding}"
 												FontSize="11"

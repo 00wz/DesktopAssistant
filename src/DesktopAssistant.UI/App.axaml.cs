@@ -3,6 +3,7 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
+using DesktopAssistant.UI.Localization;
 using DesktopAssistant.UI.ViewModels;
 using DesktopAssistant.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,9 @@ public partial class App : Avalonia.Application
     
     public override void Initialize()
     {
+        // Загружаем словарь локализации до обработки App.axaml,
+        // чтобы все {DynamicResource} сразу получили актуальные строки.
+        LocalizationManager.Instance.LoadLanguage(LocalizationManager.Instance.PendingLanguage);
         AvaloniaXamlLoader.Load(this);
     }
 

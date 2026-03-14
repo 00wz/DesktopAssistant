@@ -62,6 +62,9 @@ public static class DependencyInjection
         services.AddSingleton<IToolApprovalService, ToolApprovalService>();
         services.AddSingleton<IAvailableToolsProvider, AvailableToolsService>();
 
+        // Localization
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+
         // Logging
         services.AddLogging(loggingBuilder =>
         {

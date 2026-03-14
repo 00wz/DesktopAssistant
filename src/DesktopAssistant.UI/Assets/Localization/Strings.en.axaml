@@ -1,0 +1,88 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Settings navigation -->
+    <sys:String x:Key="Settings.Title">Settings</sys:String>
+    <sys:String x:Key="Settings.Nav.Group.Main">GENERAL</sys:String>
+    <sys:String x:Key="Settings.Nav.General">General</sys:String>
+    <sys:String x:Key="Settings.Nav.Profiles">Assistant Profiles</sys:String>
+    <sys:String x:Key="Settings.Nav.ToolApproval">Tool Auto-Approval</sys:String>
+
+    <!-- General settings section -->
+    <sys:String x:Key="General.Title">General Settings</sys:String>
+    <sys:String x:Key="General.Language.Label">Application Language</sys:String>
+    <sys:String x:Key="General.Language.Hint">Interface language. Changes apply immediately.</sys:String>
+
+    <!-- Profiles section -->
+    <sys:String x:Key="Profiles.Title">Assistant Profiles</sys:String>
+    <sys:String x:Key="Profiles.Create">+ Create</sys:String>
+    <sys:String x:Key="Profiles.Empty">No profiles. Click "+ Create" to add one.</sys:String>
+    <sys:String x:Key="Profiles.Badge.Default">Default</sys:String>
+    <sys:String x:Key="Profiles.Badge.Summarization">Summarization</sys:String>
+    <sys:String x:Key="Profiles.Badge.ApiKey">API key set</sys:String>
+    <sys:String x:Key="Profiles.Action.SetDefault">Set Default</sys:String>
+    <sys:String x:Key="Profiles.Action.SetSummarization">Summarization</sys:String>
+    <sys:String x:Key="Profiles.Action.Edit">Edit</sys:String>
+    <sys:String x:Key="Profiles.Action.Delete">Delete</sys:String>
+
+    <!-- Profile editor -->
+    <sys:String x:Key="ProfileEditor.Title.New">New Assistant Profile</sys:String>
+    <sys:String x:Key="ProfileEditor.Title.Edit">Edit Profile</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.Description">Description</sys:String>
+    <sys:String x:Key="ProfileEditor.Button.Cancel">Cancel</sys:String>
+    <sys:String x:Key="ProfileEditor.Button.Save">Save</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.Description">My assistant</sys:String>
+
+    <!-- Tool approval section -->
+    <sys:String x:Key="ToolApproval.Title">Tool Auto-Approval</sys:String>
+    <sys:String x:Key="ToolApproval.Description">Enable automatic execution for trusted tools. The list updates when MCP servers connect or disconnect.</sys:String>
+    <sys:String x:Key="ToolApproval.Empty">No tools available. Connect an MCP server or refresh the list.</sys:String>
+    <sys:String x:Key="ToolApproval.AutoApprove.Tooltip">Execute automatically without confirmation</sys:String>
+
+    <!-- Chat messages -->
+    <sys:String x:Key="Chat.ContextMenu.Summarize">Summarize context</sys:String>
+    <sys:String x:Key="Chat.Tooltip.PreviousVersion">Previous version</sys:String>
+    <sys:String x:Key="Chat.Tooltip.NextVersion">Next version</sys:String>
+    <sys:String x:Key="Chat.Tooltip.Edit">Edit</sys:String>
+    <sys:String x:Key="Chat.Action.Save">Save</sys:String>
+    <sys:String x:Key="Chat.Action.Cancel">Cancel</sys:String>
+    <sys:String x:Key="Chat.Summary">Summary</sys:String>
+    <sys:String x:Key="Chat.Tooltip.ChatSettings">Chat settings</sys:String>
+    <sys:String x:Key="Chat.Tool.Approve">Approve</sys:String>
+    <sys:String x:Key="Chat.Tool.Deny">Deny</sys:String>
+
+    <!-- Chat settings panel -->
+    <sys:String x:Key="ChatSettings.Title">Chat Settings</sys:String>
+    <sys:String x:Key="ChatSettings.Profile.Label">Profile:</sys:String>
+    <sys:String x:Key="ChatSettings.ApplyProfile">Apply Profile</sys:String>
+    <sys:String x:Key="ChatSettings.SystemPrompt.Label">System prompt:</sys:String>
+    <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">System prompt is empty...</sys:String>
+    <sys:String x:Key="ChatSettings.SavePrompt">Save prompt</sys:String>
+
+    <!-- Message input -->
+    <sys:String x:Key="MessageInput.Placeholder">Type a message...</sys:String>
+    <sys:String x:Key="MessageInput.Send">Send</sys:String>
+    <sys:String x:Key="MessageInput.Resume">Resume</sys:String>
+
+    <!-- Sidebar -->
+    <sys:String x:Key="Sidebar.NewChat">New Chat</sys:String>
+    <sys:String x:Key="Sidebar.NewChat.Tooltip">Start a new conversation</sys:String>
+    <sys:String x:Key="Sidebar.NoConversations">No saved conversations</sys:String>
+    <sys:String x:Key="Sidebar.Settings">Settings</sys:String>
+    <sys:String x:Key="Sidebar.Settings.Tooltip">Settings</sys:String>
+
+    <!-- New conversation panel -->
+    <sys:String x:Key="NewConversation.Title">New Conversation</sys:String>
+    <sys:String x:Key="NewConversation.ConversationTitle.Label">Conversation Title</sys:String>
+    <sys:String x:Key="NewConversation.ConversationTitle.Placeholder">E.g.: Code assistant</sys:String>
+    <sys:String x:Key="NewConversation.Profile.Label">Assistant Profile</sys:String>
+    <sys:String x:Key="NewConversation.Profile.New">+ New Profile</sys:String>
+    <sys:String x:Key="NewConversation.Profile.CancelNew">Cancel</sys:String>
+    <sys:String x:Key="NewConversation.Profile.Empty">No profiles available. Create your first profile.</sys:String>
+    <sys:String x:Key="NewConversation.SystemPrompt.Label">System Prompt (optional)</sys:String>
+    <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">You are a helpful AI assistant...</sys:String>
+    <sys:String x:Key="NewConversation.Button.Cancel">Cancel</sys:String>
+    <sys:String x:Key="NewConversation.Button.Create">Create Conversation</sys:String>
+
+</ResourceDictionary>

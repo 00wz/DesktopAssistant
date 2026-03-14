@@ -12,10 +12,10 @@
 
         <!-- Заголовок секции -->
         <StackPanel Spacing="4">
-            <TextBlock Text="Автоподтверждение tools"
+            <TextBlock Text="{DynamicResource ToolApproval.Title}"
                        FontSize="16"
                        FontWeight="SemiBold"/>
-            <TextBlock Text="Включите автоматическое выполнение для доверенных инструментов. Список обновляется при подключении/отключении MCP серверов."
+            <TextBlock Text="{DynamicResource ToolApproval.Description}"
                        FontSize="12"
                        Foreground="#666"
                        TextWrapping="Wrap"/>
@@ -41,7 +41,7 @@
                 Padding="24"
                 CornerRadius="4"
                 IsVisible="{Binding !HasGroups}">
-            <TextBlock Text="Нет доступных tools. Подключите MCP сервер или обновите список."
+            <TextBlock Text="{DynamicResource ToolApproval.Empty}"
                        HorizontalAlignment="Center"
                        Foreground="#888"
                        FontSize="13"/>
@@ -96,7 +96,7 @@
                                                           IsChecked="{Binding IsAutoApproved, Mode=TwoWay}"
                                                           VerticalAlignment="Center"
                                                           Margin="16,0,0,0"
-                                                          ToolTip.Tip="Автоматически выполнять без подтверждения"/>
+                                                          ToolTip.Tip="{DynamicResource ToolApproval.AutoApprove.Tooltip}"/>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
