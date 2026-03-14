@@ -74,15 +74,15 @@
 
     <!-- New conversation panel -->
     <sys:String x:Key="NewConversation.Title">New Conversation</sys:String>
-    <sys:String x:Key="NewConversation.ConversationTitle.Label">Conversation Title</sys:String>
-    <sys:String x:Key="NewConversation.ConversationTitle.Placeholder">E.g.: Code assistant</sys:String>
     <sys:String x:Key="NewConversation.Profile.Label">Assistant Profile</sys:String>
     <sys:String x:Key="NewConversation.Profile.New">+ New Profile</sys:String>
     <sys:String x:Key="NewConversation.Profile.CancelNew">Cancel</sys:String>
     <sys:String x:Key="NewConversation.Profile.Empty">No profiles available. Create your first profile.</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Label">System Prompt (optional)</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">You are a helpful AI assistant...</sys:String>
+    <sys:String x:Key="NewConversation.FirstMessage.Label">First Message</sys:String>
+    <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Write your first message...</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Cancel</sys:String>
-    <sys:String x:Key="NewConversation.Button.Create">Create Conversation</sys:String>
+    <sys:String x:Key="NewConversation.Button.Send">Send</sys:String>
 
 </ResourceDictionary>

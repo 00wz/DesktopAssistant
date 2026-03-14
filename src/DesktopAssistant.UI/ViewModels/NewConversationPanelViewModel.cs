@@ -32,7 +32,8 @@ public partial class NewConversationPanelViewModel : ObservableObject
     private AssistantProfileDto? _selectedProfile;
 
     [ObservableProperty]
-    private string _conversationTitle = "Новый чат";
+    [NotifyCanExecuteChangedFor(nameof(ConfirmCommand))]
+    private string _firstMessage = string.Empty;
 
     [ObservableProperty]
     private string _systemPrompt = string.Empty;
@@ -112,17 +113,24 @@ public partial class NewConversationPanelViewModel : ObservableObject
         InlineProfileEditor = editor;
     }
 
-    private bool CanConfirm() => SelectedProfile != null && !IsLoading;
+    private bool CanConfirm() => SelectedProfile != null && !IsLoading && !string.IsNullOrWhiteSpace(FirstMessage);
 
     [RelayCommand(CanExecute = nameof(CanConfirm))]
     private async Task ConfirmAsync()
     {
         if (SelectedProfile == null || OnConfirm == null) return;
 
+        var trimmedMessage = FirstMessage.Trim();
+        const int maxTitleLength = 50;
+        var title = trimmedMessage.Length <= maxTitleLength
+            ? trimmedMessage
+            : trimmedMessage[..maxTitleLength] + "…";
+
         var parameters = new NewConversationParams(
-            ConversationTitle.Trim().Length > 0 ? ConversationTitle.Trim() : "Новый чат",
+            title,
             SelectedProfile.Id,
-            SystemPrompt.Trim());
+            SystemPrompt.Trim(),
+            trimmedMessage);
 
         await OnConfirm(parameters);
     }
@@ -135,4 +143,4 @@ public partial class NewConversationPanelViewModel : ObservableObject
 }
 
 /// <summary>Параметры для создания нового диалога, возвращаемые из панели.</summary>
-public record NewConversationParams(string Title, Guid AssistantProfileId, string SystemPrompt);
+public record NewConversationParams(string Title, Guid AssistantProfileId, string SystemPrompt, string FirstMessage);

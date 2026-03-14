@@ -206,6 +206,8 @@ public partial class MainWindowViewModel : ObservableObject
             await Sidebar.LoadConversationsAsync();
 
             SelectedChat = chatViewModel;
+
+            await session.SendMessageAsync(parameters.FirstMessage);
             _logger.LogInformation("Created new chat: {Title}", parameters.Title);
         }
         catch (Exception ex)

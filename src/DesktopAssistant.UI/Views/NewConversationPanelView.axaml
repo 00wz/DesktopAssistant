@@ -8,112 +8,142 @@
              x:Class="DesktopAssistant.UI.Views.NewConversationPanelView"
              x:DataType="vm:NewConversationPanelViewModel">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Border MaxWidth="580"
-                HorizontalAlignment="Center"
-                Margin="20,30,20,20">
-            <StackPanel Spacing="16">
-                <TextBlock Text="{DynamicResource NewConversation.Title}"
-                           FontSize="22"
-                           FontWeight="SemiBold"
-                           HorizontalAlignment="Center"/>
+    <Panel>
+        <!-- Кнопка закрытия -->
+        <Button Command="{Binding CancelCommand}"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,8,8,0"
+                Padding="8,4"
+                Background="Transparent"
+                ZIndex="1"
+                ToolTip.Tip="{DynamicResource NewConversation.Button.Cancel}">
+            <TextBlock Text="&#x2715;" FontSize="14"/>
+        </Button>
 
-                <!-- Заголовок -->
-                <StackPanel Spacing="4">
-                    <TextBlock Text="{DynamicResource NewConversation.ConversationTitle.Label}" FontSize="13" Foreground="#555"/>
-                    <TextBox Text="{Binding ConversationTitle, Mode=TwoWay}"
-                             Watermark="{DynamicResource NewConversation.ConversationTitle.Placeholder}"/>
-                </StackPanel>
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto"
+              Margin="20,30,20,20"
+              MaxWidth="620"
+              HorizontalAlignment="Stretch">
 
-                <!-- Профиль ассистента -->
-                <StackPanel Spacing="6">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0"
-                                   Text="{DynamicResource NewConversation.Profile.Label}"
-                                   FontSize="13"
-                                   Foreground="#555"
-                                   VerticalAlignment="Center"/>
-                        <Button Grid.Column="1"
-                                Command="{Binding ToggleCreateProfileModeCommand}"
-                                FontSize="12"
-                                Padding="10,4"
-                                Background="Transparent">
-                            <Button.Content>
-                                <Panel>
-                                    <TextBlock Text="{DynamicResource NewConversation.Profile.CancelNew}" IsVisible="{Binding IsCreateProfileMode}"/>
-                                    <TextBlock Text="{DynamicResource NewConversation.Profile.New}" IsVisible="{Binding !IsCreateProfileMode}"/>
-                                </Panel>
-                            </Button.Content>
-                        </Button>
-                    </Grid>
+            <!-- Заголовок -->
+            <TextBlock Grid.Row="0"
+                       Text="{DynamicResource NewConversation.Title}"
+                       FontSize="22"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,16"/>
 
-                    <ComboBox ItemsSource="{Binding AvailableProfiles}"
-                              SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                              HorizontalAlignment="Stretch"
-                              IsVisible="{Binding !IsCreateProfileMode}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding Description}"
-                                               Foreground="#888"
-                                               FontSize="11"
-                                               VerticalAlignment="Center"
-                                               MaxWidth="200"
-                                               TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
+            <!-- Профиль ассистента -->
+            <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0"
+                               Text="{DynamicResource NewConversation.Profile.Label}"
+                               FontSize="13"
+                               Foreground="#555"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1"
+                            Command="{Binding ToggleCreateProfileModeCommand}"
+                            FontSize="12"
+                            Padding="10,4"
+                            Background="Transparent">
+                        <Button.Content>
+                            <Panel>
+                                <TextBlock Text="{DynamicResource NewConversation.Profile.CancelNew}" IsVisible="{Binding IsCreateProfileMode}"/>
+                                <TextBlock Text="{DynamicResource NewConversation.Profile.New}" IsVisible="{Binding !IsCreateProfileMode}"/>
+                            </Panel>
+                        </Button.Content>
+                    </Button>
+                </Grid>
 
-                    <TextBlock Text="{DynamicResource NewConversation.Profile.Empty}"
-                               Foreground="#CC8800"
-                               FontSize="12"
-                               IsVisible="{Binding !AvailableProfiles.Count}"/>
-                </StackPanel>
+                <ComboBox ItemsSource="{Binding AvailableProfiles}"
+                          SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch"
+                          IsVisible="{Binding !IsCreateProfileMode}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding Description}"
+                                           Foreground="#888"
+                                           FontSize="11"
+                                           VerticalAlignment="Center"
+                                           MaxWidth="200"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
 
-                <!-- Inline-редактор профиля (вместо встроенной формы) -->
+                <TextBlock Text="{DynamicResource NewConversation.Profile.Empty}"
+                           Foreground="#CC8800"
+                           FontSize="12"
+                           IsVisible="{Binding !AvailableProfiles.Count}"/>
+
+                <!-- Inline-редактор профиля -->
                 <Panel IsVisible="{Binding IsCreateProfileMode}">
                     <views:ProfileEditorView DataContext="{Binding InlineProfileEditor}"/>
                 </Panel>
-
-                <!-- Системный промпт -->
-                <StackPanel Spacing="4">
-                    <TextBlock Text="{DynamicResource NewConversation.SystemPrompt.Label}"
-                               FontSize="13"
-                               Foreground="#555"/>
-                    <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
-                             AcceptsReturn="True"
-                             TextWrapping="Wrap"
-                             MinHeight="80"
-                             MaxHeight="200"
-                             Watermark="{DynamicResource NewConversation.SystemPrompt.Placeholder}"/>
-                </StackPanel>
-
-                <!-- Ошибка -->
-                <Border Background="#FFE0E0"
-                        Padding="10"
-                        CornerRadius="4"
-                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                    <TextBlock Text="{Binding ErrorMessage}"
-                               Foreground="#CC0000"
-                               TextWrapping="Wrap"/>
-                </Border>
-
-                <!-- Кнопки -->
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Spacing="10"
-                            Margin="0,8,0,0">
-                    <Button Content="{DynamicResource NewConversation.Button.Cancel}"
-                            Command="{Binding CancelCommand}"
-                            Padding="16,10"/>
-                    <Button Content="{DynamicResource NewConversation.Button.Create}"
-                            Command="{Binding ConfirmCommand}"
-                            IsEnabled="{Binding !IsLoading}"
-                            Padding="20,10"/>
-                </StackPanel>
             </StackPanel>
-        </Border>
-    </ScrollViewer>
+
+            <!-- Системный промпт — растягивается по вертикали -->
+            <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="0,0,0,16">
+                <TextBlock Grid.Row="0"
+                           Text="{DynamicResource NewConversation.SystemPrompt.Label}"
+                           FontSize="13"
+                           Foreground="#555"
+                           Margin="0,0,0,4"/>
+                <TextBox Grid.Row="1"
+                         Text="{Binding SystemPrompt, Mode=TwoWay}"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         HorizontalAlignment="Stretch"
+                         VerticalAlignment="Top"
+                             MinHeight="60"
+                             MaxHeight="200"
+                         Watermark="{DynamicResource NewConversation.SystemPrompt.Placeholder}"/>
+            </Grid>
+
+            <!-- Ошибка -->
+            <Border Grid.Row="3"
+                    Background="#FFE0E0"
+                    Padding="10"
+                    CornerRadius="4"
+                    Margin="0,0,0,8"
+                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#CC0000"
+                           TextWrapping="Wrap"/>
+            </Border>
+
+            <!-- Первое сообщение + кнопка Send -->
+            <Grid Grid.Row="4" RowDefinitions="Auto,Auto">
+                <TextBlock Grid.Row="0"
+                           Text="{DynamicResource NewConversation.FirstMessage.Label}"
+                           FontSize="13"
+                           Foreground="#555"
+                           Margin="0,0,0,4"/>
+                <Panel Grid.Row="1">
+                    <TextBox x:Name="FirstMessageBox"
+                             Text="{Binding FirstMessage, Mode=TwoWay}"
+                             AcceptsReturn="False"
+                             TextWrapping="Wrap"
+                             HorizontalAlignment="Stretch"
+                             MinHeight="60"
+                             MaxHeight="200"
+                             Padding="8,8,8,48"
+                             Watermark="{DynamicResource NewConversation.FirstMessage.Placeholder}"
+                             KeyDown="FirstMessageBox_KeyDown"/>
+                    <Button Command="{Binding ConfirmCommand}"
+                            IsEnabled="{Binding !IsLoading}"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,6,6"
+                            Padding="16,8"
+                            Content="{DynamicResource NewConversation.Button.Send}"/>
+                </Panel>
+            </Grid>
+
+        </Grid>
+    </Panel>
 </UserControl>

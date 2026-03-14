@@ -74,15 +74,15 @@
 
     <!-- New conversation panel -->
     <sys:String x:Key="NewConversation.Title">Новый диалог</sys:String>
-    <sys:String x:Key="NewConversation.ConversationTitle.Label">Название диалога</sys:String>
-    <sys:String x:Key="NewConversation.ConversationTitle.Placeholder">Например: Помощник по коду</sys:String>
     <sys:String x:Key="NewConversation.Profile.Label">Профиль ассистента</sys:String>
     <sys:String x:Key="NewConversation.Profile.New">+ Новый профиль</sys:String>
     <sys:String x:Key="NewConversation.Profile.CancelNew">Отмена</sys:String>
     <sys:String x:Key="NewConversation.Profile.Empty">Нет доступных профилей. Создайте первый профиль.</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Label">Системный промпт (необязательно)</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">Вы — полезный ИИ-ассистент...</sys:String>
+    <sys:String x:Key="NewConversation.FirstMessage.Label">Первое сообщение</sys:String>
+    <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Напишите ваше первое сообщение...</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Отмена</sys:String>
-    <sys:String x:Key="NewConversation.Button.Create">Создать диалог</sys:String>
+    <sys:String x:Key="NewConversation.Button.Send">Отправить</sys:String>
 
 </ResourceDictionary>
