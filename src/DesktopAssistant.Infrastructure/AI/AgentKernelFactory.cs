@@ -2,6 +2,7 @@ using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.MCP.Plugins;
+using DesktopAssistant.Infrastructure.MCP.Search;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
@@ -15,6 +16,7 @@ public class AgentKernelFactory(
     IKernelFactory kernelFactory,
     IMcpServerManager mcpServerManager,
     IMcpConfigurationService mcpConfigurationService,
+    IMcpCatalogSearchService mcpCatalogSearch,
     ILoggerFactory loggerFactory)
 {
     public Kernel Create(AssistantProfile profile, string apiKey)
@@ -31,7 +33,8 @@ public class AgentKernelFactory(
             new McpManagementPlugin(
                 loggerFactory.CreateLogger<McpManagementPlugin>(),
                 mcpServerManager,
-                mcpConfigurationService),
+                mcpConfigurationService,
+                mcpCatalogSearch),
             "McpManagement");
 
         if (mcpServerManager.GetConnectedServers().Count > 0)

@@ -2,6 +2,7 @@ using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI;
+using DesktopAssistant.Infrastructure.MCP.Search;
 using DesktopAssistant.Infrastructure.MCP.Services;
 using DesktopAssistant.Infrastructure.Persistence;
 using DesktopAssistant.Infrastructure.Persistence.Repositories;
@@ -57,6 +58,7 @@ public static class DependencyInjection
         // MCP Services
         services.AddSingleton<IMcpConfigurationService, McpConfigurationService>();
         services.AddSingleton<IMcpServerManager, McpServerManager>();
+        services.AddSingleton<IMcpCatalogSearchService, KeywordMcpCatalogSearchService>();
 
         // Tool approval and discovery
         services.AddSingleton<IToolApprovalService, ToolApprovalService>();

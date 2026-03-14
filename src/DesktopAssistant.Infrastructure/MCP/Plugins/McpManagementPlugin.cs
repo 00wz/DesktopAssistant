@@ -1,11 +1,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Http.Headers;
-using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Infrastructure.MCP.Models;
+using DesktopAssistant.Infrastructure.MCP.Search;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
@@ -20,17 +20,19 @@ public class McpManagementPlugin
     private readonly HttpClient _httpClient;
     private readonly IMcpServerManager _serverManager;
     private readonly IMcpConfigurationService _configService;
-    private McpServersCatalog? _catalog;
-    
+    private readonly IMcpCatalogSearchService _catalogSearch;
+
     public McpManagementPlugin(
         ILogger<McpManagementPlugin> logger,
         IMcpServerManager serverManager,
         IMcpConfigurationService configService,
+        IMcpCatalogSearchService catalogSearch,
         HttpClient? httpClient = null)
     {
         _logger = logger;
         _serverManager = serverManager;
         _configService = configService;
+        _catalogSearch = catalogSearch;
         _httpClient = httpClient ?? new HttpClient();
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
             new ProductInfoHeaderValue("DesktopAssistant", "1.0"));
@@ -44,45 +46,25 @@ public class McpManagementPlugin
     public async Task<string> SearchMcpServersAsync(
         [Description("Поисковый запрос: описание задачи или ключевые слова")] string query)
     {
-        var catalog = await LoadCatalogAsync();
-        
-        if (catalog.Servers.Count == 0)
-        {
-            return "Каталог MCP серверов пуст.";
-        }
-        
-        // Простой поиск по вхождению слов в описание и теги
-        var queryWords = query.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        
-        var results = catalog.Servers
-            .Select(s => new
-            {
-                Server = s,
-                Score = CalculateRelevanceScore(s, queryWords)
-            })
-            .Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score)
-            .Take(5)
-            .ToList();
-        
+        var results = await _catalogSearch.SearchAsync(query);
+
         if (results.Count == 0)
         {
             return $"Не найдено MCP серверов по запросу '{query}'. Попробуйте другие ключевые слова.";
         }
-        
+
         var resultText = $"Найдено {results.Count} MCP серверов:\n\n";
-        
-        foreach (var item in results)
+
+        foreach (var s in results)
         {
-            var s = item.Server;
             resultText += $"**{s.Name}** (id: {s.Id})\n";
             resultText += $"Описание: {s.Description}\n";
             resultText += $"GitHub: {s.GitHubUrl}\n";
             resultText += $"Теги: {string.Join(", ", s.Tags)}\n\n";
         }
-        
+
         resultText += "\nДля установки загрузи README через fetch_mcp_server_readme и следуй инструкциям.\n";
-        
+
         return resultText;
     }
     
@@ -491,52 +473,6 @@ public class McpManagementPlugin
         {
             return (false, $"Ошибка проверки: {ex.Message}");
         }
-    }
-    
-    private async Task<McpServersCatalog> LoadCatalogAsync()
-    {
-        if (_catalog != null)
-        {
-            return _catalog;
-        }
-        
-        try
-        {
-            // Загружаем из embedded resource
-            var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "DesktopAssistant.Infrastructure.MCP.Resources.mcp-servers-catalog.json";
-            
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            if (stream != null)
-            {
-                _catalog = await JsonSerializer.DeserializeAsync<McpServersCatalog>(stream);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading MCP servers catalog");
-        }
-        
-        _catalog ??= new McpServersCatalog();
-        return _catalog;
-    }
-    
-    private static int CalculateRelevanceScore(McpCatalogEntry server, string[] queryWords)
-    {
-        int score = 0;
-        var descLower = server.Description.ToLowerInvariant();
-        var nameLower = server.Name.ToLowerInvariant();
-        var tagsLower = server.Tags.Select(t => t.ToLowerInvariant()).ToList();
-        
-        foreach (var word in queryWords)
-        {
-            if (nameLower.Contains(word)) score += 10;
-            if (descLower.Contains(word)) score += 5;
-            if (tagsLower.Any(t => t.Contains(word))) score += 8;
-            if (tagsLower.Contains(word)) score += 3; // Точное совпадение тега
-        }
-        
-        return score;
     }
     
     private static string ConvertToRawReadmeUrl(string githubUrl)
