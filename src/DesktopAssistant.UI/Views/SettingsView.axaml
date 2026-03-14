@@ -17,18 +17,10 @@
                     Padding="20,12"
                     BorderBrush="#E0E0E0"
                     BorderThickness="0,0,0,1">
-                <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0"
-                               Text="Настройки"
-                               FontSize="20"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center"/>
-                    <Button Grid.Column="1"
-                            Content="✕ Закрыть"
-                            Command="{Binding CloseCommand}"
-                            Background="Transparent"
-                            Padding="12,7"/>
-                </Grid>
+                <TextBlock Text="Настройки"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
             </Border>
 
             <!-- Двухколоночный layout -->

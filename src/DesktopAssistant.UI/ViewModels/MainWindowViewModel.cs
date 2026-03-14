@@ -78,12 +78,23 @@ public partial class MainWindowViewModel : ObservableObject
     // ── Навигация диалогов ────────────────────────────────────────────────────
 
     /// <summary>
+    /// Скрывает все оверлейные панели. Вызывается перед любым переходом к диалогу,
+    /// чтобы не нужно было перечислять каждую панель в каждой команде навигации.
+    /// При добавлении новых оверлеев достаточно дополнить только этот метод.
+    /// </summary>
+    private void CloseOverlays()
+    {
+        NewConversationPanel = null;
+        SettingsView = null;
+    }
+
+    /// <summary>
     /// Открывает диалог: создаёт/восстанавливает сессию и ChatViewModel, делает его активным.
     /// Вызывается через <see cref="SidebarViewModel.OnConversationSelected"/>.
     /// </summary>
     private async Task OpenSelectedConversationAsync(ConversationListItemViewModel item)
     {
-        NewConversationPanel = null;
+        CloseOverlays();
 
         try
         {
@@ -128,7 +139,6 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             var vm = _serviceProvider.GetRequiredService<SettingsViewModel>();
-            vm.OnClose = () => SettingsView = null;
             await vm.ProfilesSettings.LoadProfilesAsync();
             SettingsView = vm;
         }
@@ -149,6 +159,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         try
         {
+            CloseOverlays();
             var panel = _serviceProvider.GetRequiredService<NewConversationPanelViewModel>();
 
             panel.OnConfirm = async (parameters) =>

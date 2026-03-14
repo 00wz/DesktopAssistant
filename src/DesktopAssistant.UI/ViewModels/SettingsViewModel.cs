@@ -11,9 +11,6 @@ public enum SettingsSection { Profiles, ToolApproval }
 /// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
-    /// <summary>Вызывается при закрытии панели настроек.</summary>
-    public Action? OnClose { get; set; }
-
     public ProfilesSettingsViewModel ProfilesSettings { get; }
     public ToolApprovalSettingsViewModel ToolApprovalSettings { get; }
 
@@ -44,12 +41,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         ActiveSection = SettingsSection.ToolApproval;
         await ToolApprovalSettings.LoadAsync();
-    }
-
-    [RelayCommand]
-    private void Close()
-    {
-        OnClose?.Invoke();
     }
 
     public void Dispose()
