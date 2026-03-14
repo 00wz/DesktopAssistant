@@ -437,10 +437,19 @@ internal class ConversationSession : IConversationSession
 
     public async Task SwitchToSiblingAsync(Guid parentNodeId, Guid newChildId, CancellationToken ct = default)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-        await chatService.SwitchToSiblingAsync(ConversationId, parentNodeId, newChildId, cancellationToken: ct);
-        await InitializeAsync(ct);
+        if (!await _runLock.WaitAsync(0, ct))
+            throw new InvalidOperationException("Cannot switch sibling: another LLM turn is already in progress.");
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            await chatService.SwitchToSiblingAsync(ConversationId, parentNodeId, newChildId, cancellationToken: ct);
+            await InitializeInternalAsync(ct);
+        }
+        finally
+        {
+            _runLock.Release();
+        }
     }
 
     public async Task UpdateSystemPromptAsync(string systemPrompt, CancellationToken ct = default)
