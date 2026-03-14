@@ -9,10 +9,14 @@ namespace DesktopAssistant.UI.Models;
 public partial class AssistantChatMessageModel : ChatMessageModel
 {
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsVisible))]
     private string _content = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsVisible))]
     private bool _isStreaming;
+
+    public bool IsVisible => !string.IsNullOrEmpty(Content) || IsStreaming;
 
     public AssistantChatMessageModel()
     {
