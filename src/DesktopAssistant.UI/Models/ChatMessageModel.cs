@@ -6,7 +6,7 @@ namespace DesktopAssistant.UI.Models;
 /// <summary>
 /// Абстрактная базовая модель сообщения для отображения в UI.
 /// Содержит общие свойства: идентификатор, тип, временная метка, родитель, навигация по siblings.
-/// Конкретные подтипы: TextChatMessageModel, ToolChatMessageModel, SummarizationChatMessageModel.
+/// Конкретные подтипы: UserChatMessageModel, AssistantChatMessageModel, ToolChatMessageModel, SummarizationChatMessageModel.
 /// </summary>
 public abstract partial class ChatMessageModel : ObservableObject
 {

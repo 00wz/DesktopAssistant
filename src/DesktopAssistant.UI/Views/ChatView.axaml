@@ -11,28 +11,19 @@
              x:DataType="vm:ChatViewModel">
 
     <UserControl.Resources>
-        <converters:BoolToValueConverter x:Key="UserMessageForegroundConverter"
-                                         TrueValue="White"
-                                         FalseValue="Black"/>
-        <converters:BoolToValueConverter x:Key="UserMessageBackgroundConverter"
-                                         TrueValue="#007ACC"
-                                         FalseValue="#E8E8E8"/>
-        <converters:BoolToValueConverter x:Key="UserMessageAlignmentConverter"
-                                         TrueValue="Right"
-                                         FalseValue="Left"/>
         <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
     </UserControl.Resources>
 
     <UserControl.DataTemplates>
 
-        <!-- TextChatMessageModel -->
-        <DataTemplate DataType="models:TextChatMessageModel">
+        <!-- UserChatMessageModel -->
+        <DataTemplate DataType="models:UserChatMessageModel">
             <Border Margin="5"
                     Padding="12"
                     CornerRadius="12"
                     MaxWidth="500"
-                    Background="{Binding IsUser, Converter={StaticResource UserMessageBackgroundConverter}}"
-                    HorizontalAlignment="{Binding IsUser, Converter={StaticResource UserMessageAlignmentConverter}}">
+                    Background="#007ACC"
+                    HorizontalAlignment="Right">
                 <Border.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Суммаризировать контекст"
@@ -44,9 +35,8 @@
                     <StackPanel IsVisible="{Binding !IsEditing}">
                         <TextBlock Text="{Binding Content}"
                                    TextWrapping="Wrap"
-                                   Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}"/>
-                        <Button IsVisible="{Binding IsUser}"
-                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
+                                   Foreground="White"/>
+                        <Button Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
                                 CommandParameter="{Binding}"
                                 HorizontalAlignment="Right"
                                 Margin="0,5,0,0"
@@ -83,8 +73,53 @@
                                 IsEnabled="{Binding HasPreviousSibling}"
                                 Padding="8,2"
                                 ToolTip.Tip="Предыдущая версия"/>
-                        <TextBlock VerticalAlignment="Center" Margin="10,0"
-                                   Foreground="{Binding IsUser, Converter={StaticResource UserMessageForegroundConverter}}">
+                        <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="White">
+                            <Run Text="{Binding CurrentSiblingIndex}"/>
+                            <Run Text="/"/>
+                            <Run Text="{Binding TotalSiblings}"/>
+                        </TextBlock>
+                        <Button Content="▶"
+                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding HasNextSibling}"
+                                Padding="8,2"
+                                ToolTip.Tip="Следующая версия"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- AssistantChatMessageModel -->
+        <DataTemplate DataType="models:AssistantChatMessageModel">
+            <Border Margin="5"
+                    Padding="12"
+                    CornerRadius="12"
+                    MaxWidth="500"
+                    Background="#E8E8E8"
+                    HorizontalAlignment="Left">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Суммаризировать контекст"
+                                  Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                                  CommandParameter="{Binding}"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
+                <StackPanel>
+                    <TextBlock Text="{Binding Content}"
+                               TextWrapping="Wrap"
+                               Foreground="Black"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="0,5,0,0"
+                                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
+                        <Button Content="◀"
+                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding HasPreviousSibling}"
+                                Padding="8,2"
+                                ToolTip.Tip="Предыдущая версия"/>
+                        <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="Black">
                             <Run Text="{Binding CurrentSiblingIndex}"/>
                             <Run Text="/"/>
                             <Run Text="{Binding TotalSiblings}"/>

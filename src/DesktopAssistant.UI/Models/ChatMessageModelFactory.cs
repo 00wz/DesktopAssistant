@@ -11,7 +11,7 @@ public static class ChatMessageModelFactory
 {
     public static ChatMessageModel FromDto(MessageDto dto) => dto switch
     {
-        UserMessageDto u => new TextChatMessageModel(u.Id, MessageNodeType.User, u.Content, u.CreatedAt)
+        UserMessageDto u => new UserChatMessageModel(u.Id, u.Content, u.CreatedAt)
         {
             ParentId = u.ParentId,
             CurrentSiblingIndex = u.CurrentSiblingIndex,
@@ -22,7 +22,7 @@ public static class ChatMessageModelFactory
             NextSiblingId = u.NextSiblingId
         },
 
-        AssistantMessageDto a => new TextChatMessageModel(a.Id, MessageNodeType.Assistant, a.Content, a.CreatedAt)
+        AssistantMessageDto a => new AssistantChatMessageModel(a.Id, a.Content, a.CreatedAt)
         {
             ParentId = a.ParentId,
             CurrentSiblingIndex = a.CurrentSiblingIndex,

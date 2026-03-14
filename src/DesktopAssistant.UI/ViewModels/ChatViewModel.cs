@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
-using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
@@ -22,7 +21,7 @@ public partial class ChatViewModel : ObservableObject
     private IConversationSession? _conversationSession;
 
     // Используется только при стриминге: текущая модель ассистента, в которую пишутся чанки
-    private TextChatMessageModel? _activeAssistantModel;
+    private AssistantChatMessageModel? _activeAssistantModel;
 
     [ObservableProperty]
     private string _inputMessage = string.Empty;
@@ -200,10 +199,9 @@ public partial class ChatViewModel : ObservableObject
                     break;
 
                 case AssistantTurnStartedSessionEvent turn:
-                    _activeAssistantModel = new TextChatMessageModel
+                    _activeAssistantModel = new AssistantChatMessageModel
                     {
                         Id = turn.TempId,
-                        NodeType = MessageNodeType.Assistant,
                         CreatedAt = turn.StartedAt,
                         IsStreaming = true
                     };
@@ -301,7 +299,7 @@ public partial class ChatViewModel : ObservableObject
     }
     private void CleanupStreamingModel()
     {
-        if (_activeAssistantModel?.IsStreaming == true)
+        if (_activeAssistantModel is { IsStreaming: true })
         {
             Messages.Remove(_activeAssistantModel);
             _activeAssistantModel = null;
@@ -311,9 +309,12 @@ public partial class ChatViewModel : ObservableObject
     // ── Настройки диалога ────────────────────────────────────────────────────
 
     [RelayCommand]
-    private void ToggleSettingsPanel()
+    private async Task ToggleSettingsPanelAsync()
     {
         IsSettingsPanelVisible = !IsSettingsPanelVisible;
+
+        if (IsSettingsPanelVisible)
+            await LoadConversationSettingsAsync(default);
     }
 
     [RelayCommand]
@@ -420,14 +421,14 @@ public partial class ChatViewModel : ObservableObject
     // ── Редактирование сообщений ─────────────────────────────────────────────
 
     [RelayCommand]
-    private void StartEditMessage(TextChatMessageModel message)
+    private void StartEditMessage(UserChatMessageModel message)
     {
         message.IsEditing = true;
         message.EditedContent = message.Content;
     }
 
     [RelayCommand]
-    private async Task SaveEditedMessageAsync(TextChatMessageModel message)
+    private async Task SaveEditedMessageAsync(UserChatMessageModel message)
     {
         if (_conversationSession == null)
             throw new InvalidOperationException("ConversationSession is null");
@@ -456,7 +457,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CancelEditMessage(TextChatMessageModel message)
+    private void CancelEditMessage(UserChatMessageModel message)
     {
         message.IsEditing = false;
         message.EditedContent = string.Empty;
