@@ -463,7 +463,7 @@ public partial class ChatViewModel : ObservableObject
         message.EditedContent = string.Empty;
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task ApproveToolAsync(ToolChatMessageModel model)
     {
         if (_conversationSession == null)
@@ -485,7 +485,7 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(AllowConcurrentExecutions = true)]
     private async Task DenyToolAsync(ToolChatMessageModel model)
     {
         if (_conversationSession == null)
