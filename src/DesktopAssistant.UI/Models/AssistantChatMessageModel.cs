@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DesktopAssistant.Domain.Enums;
+using LiveMarkdown.Avalonia;
 
 namespace DesktopAssistant.UI.Models;
 
@@ -8,15 +9,15 @@ namespace DesktopAssistant.UI.Models;
 /// </summary>
 public partial class AssistantChatMessageModel : ChatMessageModel
 {
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsVisible))]
+    public ObservableStringBuilder MarkdownBuilder { get; } = new();
+
     private string _content = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsVisible))]
     private bool _isStreaming;
 
-    public bool IsVisible => !string.IsNullOrEmpty(Content) || IsStreaming;
+    public bool IsVisible => !string.IsNullOrEmpty(_content) || IsStreaming;
 
     public AssistantChatMessageModel()
     {
@@ -27,10 +28,16 @@ public partial class AssistantChatMessageModel : ChatMessageModel
     {
         Id = id;
         NodeType = MessageNodeType.Assistant;
-        Content = content;
+        _content = content;
+        MarkdownBuilder.Append(content);
         CreatedAt = createdAt;
     }
 
     /// <summary>Добавляет чанк стримингового ответа к контенту.</summary>
-    public void AppendContent(string chunk) => Content += chunk;
+    public void AppendContent(string chunk)
+    {
+        _content += chunk;
+        MarkdownBuilder.Append(chunk);
+        OnPropertyChanged(nameof(IsVisible));
+    }
 }

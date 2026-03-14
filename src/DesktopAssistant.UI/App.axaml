@@ -11,6 +11,7 @@
   
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://LiveMarkdown.Avalonia/Styles.axaml"/>
         <!-- Все иконки принудительно рендерятся шрифтом Segoe UI Symbol (монохромный),
              чтобы исключить случайное использование Segoe UI Emoji (цветной). -->
         <Style Selector="TextBlock.icon">

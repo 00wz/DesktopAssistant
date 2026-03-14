@@ -37,6 +37,9 @@
     
     <!-- MVVM -->
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+
+    <!-- Markdown rendering -->
+    <PackageReference Include="LiveMarkdown.Avalonia" Version="1.1.2" />
     
     <!-- Hosting & DI -->
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
