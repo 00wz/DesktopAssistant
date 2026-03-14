@@ -7,8 +7,7 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.MCP.Plugins;
 
 /// <summary>
-/// Базовые tools для работы с файлами и командами
-/// Используются AI для самостоятельной установки MCP серверов
+/// Базовые инструменты для работы с файловой системой и выполнения команд
 /// </summary>
 public class CoreToolsPlugin
 {
@@ -23,7 +22,7 @@ public class CoreToolsPlugin
     /// Выполняет команду в терминале
     /// </summary>
     [KernelFunction("execute_command")]
-    [Description("Выполняет команду в терминале и возвращает результат. Используется для git clone, npm install, npm run build и других команд установки.")]
+    [Description("Выполняет команду в терминале и возвращает результат выполнения, включая stdout, stderr и код завершения.")]
     public async Task<string> ExecuteCommandAsync(
         [Description("Команда для выполнения (например: git clone https://github.com/repo)")] string command,
         [Description("Рабочая директория для выполнения команды (опционально)")] string? workingDirectory = null,
@@ -129,7 +128,7 @@ public class CoreToolsPlugin
     /// Читает содержимое файла
     /// </summary>
     [KernelFunction("read_file")]
-    [Description("Читает содержимое файла и возвращает его текст. Используется для чтения текущей конфигурации mcp.json и других файлов.")]
+    [Description("Читает содержимое текстового файла и возвращает его текст.")]
     public async Task<string> ReadFileAsync(
         [Description("Путь к файлу для чтения")] string path)
     {
@@ -157,7 +156,7 @@ public class CoreToolsPlugin
     /// Записывает содержимое в файл
     /// </summary>
     [KernelFunction("write_to_file")]
-    [Description("Записывает содержимое в файл. Создаёт директории если нужно. Используется для редактирования конфигурации mcp.json.")]
+    [Description("Записывает содержимое в файл. Создаёт директории если они не существуют.")]
     public async Task<string> WriteToFileAsync(
         [Description("Путь к файлу для записи")] string path,
         [Description("Содержимое для записи в файл")] string content)
