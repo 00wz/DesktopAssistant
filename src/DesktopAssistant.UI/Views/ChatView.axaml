@@ -269,8 +269,9 @@
         </Border>
 
         <!-- Панель настроек диалога -->
-        <views:ChatSettingsPanelView Grid.Row="1"
-                                     IsVisible="{Binding IsSettingsPanelVisible}"/>
+        <Border Grid.Row="1" IsVisible="{Binding IsSettingsPanelVisible}">
+            <views:ChatSettingsPanelView DataContext="{Binding Settings}"/>
+        </Border>
 
         <!-- Список сообщений -->
         <ScrollViewer Grid.Row="2"

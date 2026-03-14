@@ -33,6 +33,7 @@ sealed class Program
         services.AddInfrastructure(configuration);
         
         // Регистрация ViewModels
+        services.AddTransient<ChatSettingsPanelViewModel>();
         services.AddTransient<ChatViewModel>();
         services.AddTransient<SidebarViewModel>();
         services.AddTransient<NewConversationPanelViewModel>();

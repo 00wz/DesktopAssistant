@@ -55,10 +55,10 @@
     <!-- Chat settings panel -->
     <sys:String x:Key="ChatSettings.Title">Chat Settings</sys:String>
     <sys:String x:Key="ChatSettings.Profile.Label">Profile:</sys:String>
-    <sys:String x:Key="ChatSettings.ApplyProfile">Apply Profile</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Label">System prompt:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">System prompt is empty...</sys:String>
-    <sys:String x:Key="ChatSettings.SavePrompt">Save prompt</sys:String>
+    <sys:String x:Key="ChatSettings.Save">Save</sys:String>
+    <sys:String x:Key="ChatSettings.Saved">Saved</sys:String>
 
     <!-- Message input -->
     <sys:String x:Key="MessageInput.Placeholder">Type a message...</sys:String>

@@ -5,66 +5,69 @@
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="220"
              x:Class="DesktopAssistant.UI.Views.ChatSettingsPanelView"
-             x:DataType="vm:ChatViewModel">
+             x:DataType="vm:ChatSettingsPanelViewModel">
 
-    <Border Background="#F8F8FF"
-            Padding="12"
-            BorderBrush="#DDEEFF"
-            BorderThickness="0,0,0,1">
-        <StackPanel Spacing="10">
-            <TextBlock Text="{DynamicResource ChatSettings.Title}"
-                       FontSize="14"
-                       FontWeight="SemiBold"/>
+   <Border Background="#F8F8FF"
+           Padding="12"
+           BorderBrush="#DDEEFF"
+           BorderThickness="0,0,0,1">
+       <StackPanel Spacing="10">
+           <TextBlock Text="{DynamicResource ChatSettings.Title}"
+                      FontSize="14"
+                      FontWeight="SemiBold"/>
 
-            <!-- Профиль -->
-            <Grid ColumnDefinitions="120,*">
-                <TextBlock Grid.Column="0"
-                           Text="{DynamicResource ChatSettings.Profile.Label}"
-                           FontSize="12"
-                           Foreground="#555"
-                           VerticalAlignment="Center"/>
-                <ComboBox Grid.Column="1"
-                          ItemsSource="{Binding AvailableProfiles}"
-                          SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                          HorizontalAlignment="Stretch">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
-                                <TextBlock Text="{Binding Description}"
-                                           Foreground="#888"
-                                           FontSize="11"
-                                           VerticalAlignment="Center"
-                                           MaxWidth="200"
-                                           TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </Grid>
+           <!-- Профиль -->
+           <Grid ColumnDefinitions="120,*">
+               <TextBlock Grid.Column="0"
+                          Text="{DynamicResource ChatSettings.Profile.Label}"
+                          FontSize="12"
+                          Foreground="#555"
+                          VerticalAlignment="Center"/>
+               <ComboBox Grid.Column="1"
+                         ItemsSource="{Binding AvailableProfiles}"
+                         SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                         HorizontalAlignment="Stretch">
+                   <ComboBox.ItemTemplate>
+                       <DataTemplate>
+                           <StackPanel Orientation="Horizontal" Spacing="6">
+                               <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
+                               <TextBlock Text="{Binding Description}"
+                                          Foreground="#888"
+                                          FontSize="11"
+                                          VerticalAlignment="Center"
+                                          MaxWidth="200"
+                                          TextTrimming="CharacterEllipsis"/>
+                           </StackPanel>
+                       </DataTemplate>
+                   </ComboBox.ItemTemplate>
+               </ComboBox>
+           </Grid>
 
-            <!-- Кнопка применить профиль -->
-            <Button Content="{DynamicResource ChatSettings.ApplyProfile}"
-                    Command="{Binding ChangeProfileCommand}"
-                    CommandParameter="{Binding SelectedProfile}"
-                    HorizontalAlignment="Right"
-                    Padding="12,6"
-                    FontSize="12"/>
+           <!-- Системный промпт -->
+           <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
+           <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
+                    AcceptsReturn="True"
+                    TextWrapping="Wrap"
+                    MinHeight="80"
+                    MaxHeight="160"
+                    Watermark="{DynamicResource ChatSettings.SystemPrompt.Watermark}"/>
 
-            <!-- Системный промпт -->
-            <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
-            <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     MinHeight="80"
-                     MaxHeight="160"
-                     Watermark="{DynamicResource ChatSettings.SystemPrompt.Watermark}"/>
-
-            <Button Content="{DynamicResource ChatSettings.SavePrompt}"
-                    Command="{Binding SaveSystemPromptCommand}"
-                    HorizontalAlignment="Right"
-                    Padding="12,6"
-                    FontSize="12"/>
-        </StackPanel>
-    </Border>
+           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+               <TextBlock Text="{Binding ErrorMessage}"
+                          Foreground="Red"
+                          FontSize="11"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+               <TextBlock Text="{DynamicResource ChatSettings.Saved}"
+                          Foreground="#2E7D32"
+                          FontSize="11"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding IsSaved}"/>
+               <Button Content="{DynamicResource ChatSettings.Save}"
+                       Command="{Binding SaveCommand}"
+                       Padding="12,6"
+                       FontSize="12"/>
+           </StackPanel>
+       </StackPanel>
+   </Border>
 </UserControl>

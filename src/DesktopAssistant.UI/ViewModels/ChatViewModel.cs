@@ -14,7 +14,6 @@ namespace DesktopAssistant.UI.ViewModels;
 /// </summary>
 public partial class ChatViewModel : ObservableObject
 {
-    private readonly IAssistantProfileService _profileService;
     private readonly ILogger<ChatViewModel> _logger;
     private readonly SemaphoreSlim _sessionEventHandleLock = new(1, 1);
 
@@ -47,19 +46,11 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSettingsPanelVisible;
 
-    /// <summary>Системный промпт диалога — редактируется пользователем.</summary>
-    [ObservableProperty]
-    private string _systemPrompt = string.Empty;
-
-    /// <summary>Имя активного профиля ассистента.</summary>
+    /// <summary>Имя активного профиля ассистента — отображается в заголовке чата.</summary>
     [ObservableProperty]
     private string _assistantProfileName = string.Empty;
 
-    [ObservableProperty]
-    private ObservableCollection<AssistantProfileDto> _availableProfiles = [];
-
-    [ObservableProperty]
-    private AssistantProfileDto? _selectedProfile;
+    public ChatSettingsPanelViewModel Settings { get; }
 
     /// <summary>
     /// Статистика токенов последнего ответа
@@ -77,10 +68,11 @@ public partial class ChatViewModel : ObservableObject
     public ObservableCollection<ChatMessageModel> Messages { get; } = new();
 
     public ChatViewModel(
-        IAssistantProfileService profileService,
+        ChatSettingsPanelViewModel settings,
         ILogger<ChatViewModel> logger)
     {
-        _profileService = profileService;
+        Settings = settings;
+        Settings.OnProfileApplied = name => AssistantProfileName = name;
         _logger = logger;
     }
 
@@ -108,7 +100,8 @@ public partial class ChatViewModel : ObservableObject
             ConversationStatus = _conversationSession.State;
             _conversationSession.EventOccurred += OnSessionEvent;
 
-            await LoadConversationSettingsAsync(cancellationToken);
+            var settings = await _conversationSession.GetSettingsAsync(cancellationToken);
+            AssistantProfileName = settings?.Profile?.ModelId ?? string.Empty;
         }
         catch (Exception ex)
         {
@@ -145,30 +138,6 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    private async Task LoadConversationSettingsAsync(CancellationToken cancellationToken)
-    {
-        if (_conversationSession == null)
-            throw new InvalidOperationException("ConversationSession is null");
-
-        try
-        {
-            var settings = await _conversationSession.GetSettingsAsync(cancellationToken);
-            if (settings == null) return;
-
-            SystemPrompt = settings.SystemPrompt;
-            AssistantProfileName = settings.Profile?.ModelId ?? string.Empty;
-
-            var profiles = await _profileService.GetAssistantProfilesAsync(cancellationToken);
-            AvailableProfiles = new ObservableCollection<AssistantProfileDto>(profiles);
-            SelectedProfile = settings.AssistantProfileId.HasValue
-                ? AvailableProfiles.FirstOrDefault(p => p.Id == settings.AssistantProfileId.Value)
-                : null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading conversation settings");
-        }
-    }
 
     // ── Обработка событий сессии ─────────────────────────────────────────────
 
@@ -313,44 +282,8 @@ public partial class ChatViewModel : ObservableObject
     {
         IsSettingsPanelVisible = !IsSettingsPanelVisible;
 
-        if (IsSettingsPanelVisible)
-            await LoadConversationSettingsAsync(default);
-    }
-
-    [RelayCommand]
-    private async Task SaveSystemPromptAsync()
-    {
-        if (_conversationSession == null)
-            throw new InvalidOperationException("ConversationSession is null");
-
-        try
-        {
-            await _conversationSession.UpdateSystemPromptAsync(SystemPrompt);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error saving system prompt");
-            ErrorMessage = $"Ошибка сохранения системного промпта: {ex.Message}";
-        }
-    }
-
-    [RelayCommand]
-    private async Task ChangeProfileAsync(AssistantProfileDto profile)
-    {
-        if (_conversationSession == null)
-            throw new InvalidOperationException("ConversationSession is null");
-
-        try
-        {
-            await _conversationSession.ChangeProfileAsync(profile.Id);
-            SelectedProfile = profile;
-            AssistantProfileName = profile.ModelId;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error changing profile");
-            ErrorMessage = $"Ошибка смены профиля: {ex.Message}";
-        }
+        if (IsSettingsPanelVisible && _conversationSession != null)
+            await Settings.LoadAsync(_conversationSession);
     }
 
     // ── Отправка сообщений ───────────────────────────────────────────────────
