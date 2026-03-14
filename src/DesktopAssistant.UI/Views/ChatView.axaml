@@ -93,10 +93,7 @@
         <DataTemplate DataType="models:AssistantChatMessageModel">
             <Border Margin="5"
                     Padding="12"
-                    CornerRadius="12"
-                    MaxWidth="500"
-                    Background="#E8E8E8"
-                    HorizontalAlignment="Left">
+                    HorizontalAlignment="Stretch">
                 <Border.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Суммаризировать контекст"
