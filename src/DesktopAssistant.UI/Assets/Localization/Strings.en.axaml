@@ -65,6 +65,14 @@
     <sys:String x:Key="MessageInput.Send">Send</sys:String>
     <sys:String x:Key="MessageInput.Resume">Resume</sys:String>
 
+    <!-- Main window -->
+    <sys:String x:Key="MainWindow.TitleBar.Minimize">Minimize</sys:String>
+    <sys:String x:Key="MainWindow.TitleBar.MaximizeRestore">Maximize / Restore</sys:String>
+    <sys:String x:Key="MainWindow.TitleBar.Close">Close</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.Title">Welcome to Desktop Assistant!</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.Subtitle">Select a conversation from the list on the left or start a new one</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.NewChat">Start new chat</sys:String>
+
     <!-- Sidebar -->
     <sys:String x:Key="Sidebar.NewChat">New Chat</sys:String>
     <sys:String x:Key="Sidebar.NewChat.Tooltip">Start a new conversation</sys:String>

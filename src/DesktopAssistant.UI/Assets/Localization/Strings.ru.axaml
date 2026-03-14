@@ -65,6 +65,14 @@
     <sys:String x:Key="MessageInput.Send">Отправить</sys:String>
     <sys:String x:Key="MessageInput.Resume">Возобновить</sys:String>
 
+    <!-- Main window -->
+    <sys:String x:Key="MainWindow.TitleBar.Minimize">Свернуть</sys:String>
+    <sys:String x:Key="MainWindow.TitleBar.MaximizeRestore">Развернуть / восстановить</sys:String>
+    <sys:String x:Key="MainWindow.TitleBar.Close">Закрыть</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.Title">Добро пожаловать в Desktop Assistant!</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.Subtitle">Выберите диалог из списка слева или создайте новый</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.NewChat">Начать новый чат</sys:String>
+
     <!-- Sidebar -->
     <sys:String x:Key="Sidebar.NewChat">Новый чат</sys:String>
     <sys:String x:Key="Sidebar.NewChat.Tooltip">Начать новый диалог</sys:String>

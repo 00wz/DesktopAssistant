@@ -73,16 +73,16 @@
                 <!-- Кнопки управления окном -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Classes="winBtn" Click="MinimizeButton_Click"
-                            ToolTip.Tip="Свернуть">
+                            ToolTip.Tip="{DynamicResource MainWindow.TitleBar.Minimize}">
                         <TextBlock Classes="icon" Text="&#x2014;" FontSize="12"/>
                     </Button>
                     <Button Classes="winBtn" x:Name="MaxRestoreButton"
                             Click="MaximizeButton_Click"
-                            ToolTip.Tip="Развернуть / восстановить">
+                            ToolTip.Tip="{DynamicResource MainWindow.TitleBar.MaximizeRestore}">
                         <TextBlock Classes="icon" x:Name="MaxRestoreIcon" Text="&#x25A1;" FontSize="12"/>
                     </Button>
                     <Button Classes="winBtn close" Click="CloseButton_Click"
-                            ToolTip.Tip="Закрыть">
+                            ToolTip.Tip="{DynamicResource MainWindow.TitleBar.Close}">
                         <TextBlock Classes="icon" Text="&#x2715;" FontSize="11"/>
                     </Button>
                 </StackPanel>
@@ -112,14 +112,14 @@
                                 HorizontalAlignment="Center"
                                 Spacing="20"
                                 IsVisible="{Binding !IsNewConversationPanelVisible}">
-                        <TextBlock Text="Добро пожаловать в Desktop Assistant!"
+                        <TextBlock Text="{DynamicResource MainWindow.Welcome.Title}"
                                    FontSize="24"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="Выберите диалог из списка слева или создайте новый"
+                        <TextBlock Text="{DynamicResource MainWindow.Welcome.Subtitle}"
                                    FontSize="14"
                                    Foreground="Gray"
                                    HorizontalAlignment="Center"/>
-                        <Button Content="Начать новый чат"
+                        <Button Content="{DynamicResource MainWindow.Welcome.NewChat}"
                                 Command="{Binding CreateNewChatCommand}"
                                 HorizontalAlignment="Center"
                                 Padding="20,10"/>
