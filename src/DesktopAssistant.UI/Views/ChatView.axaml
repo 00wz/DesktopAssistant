@@ -15,6 +15,22 @@
         <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
     </UserControl.Resources>
 
+    <UserControl.Styles>
+        <Style Selector="Button.nav-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.nav-btn /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.nav-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#20000000"/>
+        </Style>
+        <Style Selector="Button.nav-btn:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </UserControl.Styles>
+
     <UserControl.DataTemplates>
 
         <!-- UserChatMessageModel -->
@@ -37,15 +53,43 @@
                         <TextBlock Text="{Binding Content}"
                                    TextWrapping="Wrap"
                                    Foreground="White"/>
-                        <Button Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
-                                CommandParameter="{Binding}"
-                                HorizontalAlignment="Right"
-                                Margin="0,5,0,0"
-                                Padding="5,2"
-                                Background="Transparent"
-                                ToolTip.Tip="Редактировать">
-                            <TextBlock Classes="icon" Text="✎" FontSize="14"/>
-                        </Button>
+						<!--Редактирование сообщения и смена ветки-->
+						<StackPanel Orientation="Horizontal"
+		                            HorizontalAlignment="Right">
+							<StackPanel Orientation="Horizontal"
+			                            HorizontalAlignment="Center"
+			                            IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
+								<Button Classes="nav-btn"
+										Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+										CommandParameter="{Binding}"
+										IsEnabled="{Binding HasPreviousSibling}"
+										Padding="5,2"
+										ToolTip.Tip="Предыдущая версия">
+										<TextBlock Classes="icon" Text="❮" FontSize="14"/>
+									</Button>
+								<TextBlock VerticalAlignment="Center">
+									<Run Text="{Binding CurrentSiblingIndex}"/>
+									<Run Text="/"/>
+									<Run Text="{Binding TotalSiblings}"/>
+								</TextBlock>
+								<Button Classes="nav-btn"
+										Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
+										CommandParameter="{Binding}"
+										IsEnabled="{Binding HasNextSibling}"
+										Padding="5,2"
+										ToolTip.Tip="Следующая версия">
+										<TextBlock Classes="icon" Text="❯" FontSize="14"/>
+									</Button>
+							</StackPanel>
+							<Button Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
+		                        CommandParameter="{Binding}"
+		                        Padding="5,2"
+		                        Background="Transparent"
+		                        ToolTip.Tip="Редактировать">
+								<TextBlock Classes="icon" Text="✎" FontSize="14"/>
+							</Button>
+						</StackPanel>
+						
                     </StackPanel>
 
                     <StackPanel IsVisible="{Binding IsEditing}">
@@ -62,29 +106,6 @@
                                     Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"
                                     CommandParameter="{Binding}"/>
                         </StackPanel>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Margin="0,5,0,0"
-                                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
-                        <Button Content="◀"
-                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
-                                CommandParameter="{Binding}"
-                                IsEnabled="{Binding HasPreviousSibling}"
-                                Padding="8,2"
-                                ToolTip.Tip="Предыдущая версия"/>
-                        <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="White">
-                            <Run Text="{Binding CurrentSiblingIndex}"/>
-                            <Run Text="/"/>
-                            <Run Text="{Binding TotalSiblings}"/>
-                        </TextBlock>
-                        <Button Content="▶"
-                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
-                                CommandParameter="{Binding}"
-                                IsEnabled="{Binding HasNextSibling}"
-                                Padding="8,2"
-                                ToolTip.Tip="Следующая версия"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -105,30 +126,6 @@
                 </Border.ContextMenu>
                 <StackPanel>
                     <md:MarkdownRenderer MarkdownBuilder="{Binding MarkdownBuilder}"/>
-
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                Margin="0,5,0,0"
-                                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
-                        <Button Content="◀"
-                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
-                                CommandParameter="{Binding}"
-                                IsEnabled="{Binding HasPreviousSibling}"
-                                Padding="8,2"
-                                ToolTip.Tip="Предыдущая версия"/>
-                        <TextBlock VerticalAlignment="Center" Margin="10,0" Foreground="Black">
-                            <Run Text="{Binding CurrentSiblingIndex}"/>
-                            <Run Text="/"/>
-                            <Run Text="{Binding TotalSiblings}"/>
-                        </TextBlock>
-                        <Button Content="▶"
-                                Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
-                                CommandParameter="{Binding}"
-                                IsEnabled="{Binding HasNextSibling}"
-                                Padding="8,2"
-                                ToolTip.Tip="Следующая версия"/>
-                    </StackPanel>
-
                     <ProgressBar IsIndeterminate="True"
                                  IsVisible="{Binding IsStreaming}"
                                  Height="3"
