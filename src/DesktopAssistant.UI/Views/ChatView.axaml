@@ -29,6 +29,15 @@
         <Style Selector="Button.nav-btn:disabled /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
+        <!-- Expander с peek: показывать контент с ограниченной высотой в свёрнутом состоянии -->
+        <Style Selector="Expander.peek /template/ Border#ExpanderContent">
+            <Setter Property="IsVisible" Value="True"/>
+            <Setter Property="MaxHeight" Value="60"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+        <Style Selector="Expander.peek:expanded /template/ Border#ExpanderContent">
+            <Setter Property="MaxHeight" Value="9999"/>
+        </Style>
     </UserControl.Styles>
 
     <UserControl.DataTemplates>
@@ -149,7 +158,7 @@
                                   CommandParameter="{Binding}"/>
                     </ContextMenu>
                 </Border.ContextMenu>
-                <Expander>
+                <Expander Classes="peek">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" Spacing="4">
                             <TextBlock Classes="icon" Text="⚒" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -164,6 +173,21 @@
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel Margin="4" Spacing="6">
+						<StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPending}">
+							<Button Content="{DynamicResource Chat.Tool.Approve}"
+                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="#4CAF50"
+                                    Foreground="White"
+                                    Padding="10,5"/>
+							<Button Content="{DynamicResource Chat.Tool.Deny}"
+                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
+                                    CommandParameter="{Binding}"
+                                    Background="#F44336"
+                                    Foreground="White"
+                                    Padding="10,5"/>
+						</StackPanel>
+						<ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
                         <TextBlock Text="{Binding ArgumentsJson}"
                                    FontFamily="Courier New,Monospace"
                                    FontSize="11"
@@ -175,21 +199,6 @@
                                    FontSize="11"
                                    TextWrapping="Wrap"
                                    Foreground="#226622"/>
-                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPending}">
-                            <Button Content="{DynamicResource Chat.Tool.Approve}"
-                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
-                                    CommandParameter="{Binding}"
-                                    Background="#4CAF50"
-                                    Foreground="White"
-                                    Padding="10,5"/>
-                            <Button Content="{DynamicResource Chat.Tool.Deny}"
-                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
-                                    CommandParameter="{Binding}"
-                                    Background="#F44336"
-                                    Foreground="White"
-                                    Padding="10,5"/>
-                        </StackPanel>
-                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
                     </StackPanel>
                 </Expander>
             </Border>
