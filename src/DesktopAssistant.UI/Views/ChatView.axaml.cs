@@ -7,7 +7,7 @@ public partial class ChatView : UserControl
 {
     private const double BottomThreshold = 2.0;
 
-    // Состояние скролла на каждый ChatViewModel
+    // Scroll state per ChatViewModel
     private readonly Dictionary<object, ScrollState> _scrollStates = new();
     private bool _isAtBottom = true;
     private object? _activeContext;
@@ -25,7 +25,7 @@ public partial class ChatView : UserControl
 
     private void OnDataContextChanged(ScrollViewer sv)
     {
-        // Сохраняем состояние скролла для предыдущего контекста
+        // Save scroll state for the previous context
         if (_activeContext != null)
             _scrollStates[_activeContext] = new ScrollState(sv.Offset.Y, _isAtBottom);
 
@@ -34,7 +34,7 @@ public partial class ChatView : UserControl
         if (DataContext != null && _scrollStates.TryGetValue(DataContext, out var saved))
         {
             _isAtBottom = saved.IsAtBottom;
-            // Восстанавливаем после завершения layout
+            // Restore after layout completes
             Dispatcher.UIThread.Post(
                 () => sv.Offset = sv.Offset.WithY(saved.Offset),
                 DispatcherPriority.Loaded);
@@ -42,7 +42,7 @@ public partial class ChatView : UserControl
         else
         {
             _isAtBottom = true;
-            // Новый чат — прокрутка вниз произойдёт автоматически при загрузке сообщений
+            // New chat — scroll to bottom will happen automatically when messages load
         }
     }
 

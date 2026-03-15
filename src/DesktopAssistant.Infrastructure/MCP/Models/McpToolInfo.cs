@@ -3,22 +3,22 @@ using System.Text.Json;
 namespace DesktopAssistant.Infrastructure.MCP.Models;
 
 /// <summary>
-/// Информация об инструменте MCP сервера
+/// Information about an MCP server tool.
 /// </summary>
 public class McpToolInfo
 {
     /// <summary>
-    /// Имя инструмента
+    /// Tool name.
     /// </summary>
     public string Name { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// Описание инструмента
+    /// Tool description.
     /// </summary>
     public string? Description { get; set; }
-    
+
     /// <summary>
-    /// JSON Schema параметров инструмента
+    /// JSON Schema of the tool's parameters.
     /// </summary>
     public JsonElement? InputSchema { get; set; }
 }

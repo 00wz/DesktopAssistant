@@ -8,34 +8,34 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.MCP.Plugins;
 
 /// <summary>
-/// Плагин для регистрации MCP tools как Kernel Functions
+/// Plugin that registers MCP tools as Kernel Functions.
 /// </summary>
 public class McpToolsPlugin
 {
     private readonly IMcpServerManager _serverManager;
     private readonly ILogger<McpToolsPlugin> _logger;
-    
+
     public McpToolsPlugin(IMcpServerManager serverManager, ILogger<McpToolsPlugin> logger)
     {
         _serverManager = serverManager;
         _logger = logger;
     }
-    
+
     /// <summary>
-    /// Регистрирует все MCP tools как Kernel Functions
+    /// Registers all MCP tools as Kernel Functions.
     /// </summary>
     public void RegisterToolsToKernel(Kernel kernel)
     {
         var tools = _serverManager.GetAllTools();
-        
+
         if (tools.Count == 0)
         {
             _logger.LogDebug("No MCP tools to register");
             return;
         }
-        
+
         var functions = new List<KernelFunction>();
-        
+
         foreach (var tool in tools)
         {
             try
@@ -46,29 +46,29 @@ public class McpToolsPlugin
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to register MCP tool: {ServerId}_{ToolName}", 
+                _logger.LogWarning(ex, "Failed to register MCP tool: {ServerId}_{ToolName}",
                     tool.ServerId, tool.Name);
             }
         }
-        
+
         if (functions.Count > 0)
         {
             kernel.Plugins.AddFromFunctions("MCP", functions);
             _logger.LogInformation("Registered {Count} MCP tools to Kernel", functions.Count);
         }
     }
-    
+
     private KernelFunction CreateKernelFunction(McpToolInfoDto tool)
     {
-        // Санитизируем имя функции: только ASCII буквы, цифры и подчёркивания
+        // Sanitize the function name: only ASCII letters, digits, and underscores
         var rawName = $"{tool.ServerId}_{tool.Name}";
         var functionName = SanitizeFunctionName(rawName);
         var description = $"[MCP:{tool.ServerId}] {tool.Description ?? tool.Name}";
-        
-        // Создаём делегат для вызова tool
+
+        // Create a delegate to invoke the tool
         var method = async (Kernel kernel, KernelArguments arguments) =>
         {
-            // Преобразуем KernelArguments в JsonElement
+            // Convert KernelArguments to JsonElement
             var argsDict = new Dictionary<string, object?>();
             foreach (var arg in arguments)
             {
@@ -76,9 +76,9 @@ public class McpToolsPlugin
             }
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(
                 JsonSerializer.Serialize(argsDict));
-            
+
             var result = await _serverManager.InvokeToolAsync(tool.ServerId, tool.Name, jsonElement);
-            
+
             if (result.IsSuccess)
             {
                 return result.Content ?? string.Empty;
@@ -88,10 +88,10 @@ public class McpToolsPlugin
                 return $"Error: {result.ErrorMessage}";
             }
         };
-        
-        // Создаём метаданные параметров из InputSchema
+
+        // Build parameter metadata from InputSchema
         var parameters = ParseParametersFromSchema(tool.InputSchema);
-        
+
         return KernelFunctionFactory.CreateFromMethod(
             method,
             functionName: functionName,
@@ -99,22 +99,22 @@ public class McpToolsPlugin
             parameters: parameters
         );
     }
-    
+
     private static IEnumerable<KernelParameterMetadata> ParseParametersFromSchema(JsonElement? schema)
     {
         if (schema == null || schema.Value.ValueKind != JsonValueKind.Object)
         {
             yield break;
         }
-        
+
         if (!schema.Value.TryGetProperty("properties", out var properties))
         {
             yield break;
         }
-        
-        // Получаем список required параметров
+
+        // Get the list of required parameters
         var requiredParams = new HashSet<string>();
-        if (schema.Value.TryGetProperty("required", out var required) && 
+        if (schema.Value.TryGetProperty("required", out var required) &&
             required.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in required.EnumerateArray())
@@ -125,18 +125,18 @@ public class McpToolsPlugin
                 }
             }
         }
-        
+
         foreach (var prop in properties.EnumerateObject())
         {
             var paramName = prop.Name;
             var paramDescription = string.Empty;
             Type paramType = typeof(string);
-            
+
             if (prop.Value.TryGetProperty("description", out var desc))
             {
                 paramDescription = desc.GetString() ?? string.Empty;
             }
-            
+
             if (prop.Value.TryGetProperty("type", out var typeElement))
             {
                 var typeStr = typeElement.GetString();
@@ -151,7 +151,7 @@ public class McpToolsPlugin
                     _ => typeof(string)
                 };
             }
-            
+
             yield return new KernelParameterMetadata(paramName)
             {
                 Description = paramDescription,
@@ -160,31 +160,31 @@ public class McpToolsPlugin
             };
         }
     }
-    
+
     /// <summary>
-    /// Санитизирует имя функции для совместимости с Semantic Kernel
-    /// Допустимы только ASCII буквы, цифры и подчёркивания
+    /// Sanitizes a function name for Semantic Kernel compatibility.
+    /// Only ASCII letters, digits, and underscores are allowed.
     /// </summary>
     private static string SanitizeFunctionName(string name)
     {
-        // Заменяем дефисы и точки на подчёркивания
+        // Replace hyphens and dots with underscores
         var sanitized = name.Replace('-', '_').Replace('.', '_');
-        
-        // Удаляем все недопустимые символы
+
+        // Remove all disallowed characters
         sanitized = Regex.Replace(sanitized, @"[^a-zA-Z0-9_]", "");
-        
-        // Если имя начинается с цифры, добавляем префикс
+
+        // If the name starts with a digit, add a prefix
         if (sanitized.Length > 0 && char.IsDigit(sanitized[0]))
         {
             sanitized = "fn_" + sanitized;
         }
-        
-        // Убираем последовательные подчёркивания
+
+        // Collapse consecutive underscores
         sanitized = Regex.Replace(sanitized, @"_+", "_");
-        
-        // Убираем подчёркивания в начале и конце
+
+        // Trim leading and trailing underscores
         sanitized = sanitized.Trim('_');
-        
+
         return sanitized;
     }
 }

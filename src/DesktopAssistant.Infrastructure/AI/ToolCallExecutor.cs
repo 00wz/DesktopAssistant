@@ -11,8 +11,8 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Выполняет или отклоняет ожидающий tool-вызов.
-/// Stateless: все данные восстанавливаются из БД по pendingNodeId.
+/// Executes or rejects a pending tool call.
+/// Stateless: all data is restored from the database by pendingNodeId.
 /// </summary>
 public class ToolCallExecutor(
     IMessageNodeRepository messageNodeRepository,
@@ -28,7 +28,7 @@ public class ToolCallExecutor(
     private readonly ILogger<ToolCallExecutor> _logger = logger;
 
     /// <summary>
-    /// Выполняет pending tool-вызов и обновляет узел результатом.
+    /// Executes the pending tool call and updates the node with the result.
     /// </summary>
     public async Task<ToolCallResult> ApproveAsync(
         Guid pendingNodeId,
@@ -50,7 +50,7 @@ public class ToolCallExecutor(
             ?? throw new InvalidOperationException(
                 $"API key not found for profile '{profile.ModelId}' ({profile.Id}). Please set the API key in profile settings.");
 
-        var kernel = _agentKernelFactory.Create(profile, apiKey);//TODO: зачем этому kernel profile и apikey?
+        var kernel = _agentKernelFactory.Create(profile, apiKey); // TODO: why does this kernel need profile and apiKey?
 
         string resultJson;
         var status = ToolNodeStatus.Completed;
@@ -91,7 +91,7 @@ public class ToolCallExecutor(
     }
 
     /// <summary>
-    /// Отклоняет pending tool-вызов, записывая статус "Denied by user".
+    /// Rejects the pending tool call, recording the status as "Denied by user".
     /// </summary>
     public async Task<ToolCallResult> DenyAsync(
         Guid pendingNodeId,

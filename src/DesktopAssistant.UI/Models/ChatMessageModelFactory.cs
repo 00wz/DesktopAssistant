@@ -4,8 +4,8 @@ using DesktopAssistant.Domain.Enums;
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Фабрика для создания ChatMessageModel подтипов из DTO.
-/// Единственная точка маппинга DTO → UI-модели.
+/// Factory for creating ChatMessageModel subtypes from DTOs.
+/// The single mapping point for DTO → UI model conversions.
 /// </summary>
 public static class ChatMessageModelFactory
 {

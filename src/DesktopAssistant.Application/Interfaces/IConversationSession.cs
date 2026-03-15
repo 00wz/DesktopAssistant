@@ -3,85 +3,85 @@ using DesktopAssistant.Application.Dtos;
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Инкапсулирует состояние и логику одного диалога:
-/// LLM-тёрны, tool-вызовы, autoapprove и данные диалога.
-/// Является фасадом над <see cref="IChatService"/> — потребители (ChatViewModel, субагенты)
-/// не зависят от <see cref="IChatService"/> напрямую.
+/// Encapsulates the state and logic of a single conversation:
+/// LLM turns, tool calls, auto-approve, and conversation data.
+/// Acts as a facade over <see cref="IChatService"/> — consumers (ChatViewModel, sub-agents)
+/// do not depend on <see cref="IChatService"/> directly.
 /// </summary>
 public interface IConversationSession : IDisposable
 {
-    /// <summary>Id диалога.</summary>
+    /// <summary>Conversation Id.</summary>
     Guid ConversationId { get; }
 
-    /// <summary>Текущее состояние диалога.</summary>
+    /// <summary>Current conversation state.</summary>
     ConversationState State { get; }
 
-    /// <summary>True пока сессия автоматически обрабатывает тёрн (стриминг / auto-approve).</summary>
+    /// <summary>True while the session is automatically processing a turn (streaming / auto-approve).</summary>
     bool IsRunning { get; }
 
-    /// <summary>True пока хотя бы один tool-вызов находится в процессе выполнения.</summary>
+    /// <summary>True while at least one tool call is in the process of executing.</summary>
     bool IsExecutingTools { get; }
 
     /// <summary>
-    /// Событие публикуется для всех изменений состояния и данных.
-    /// Обработчик вызывается из произвольного потока — маршалинг в UI-поток на стороне подписчика.
+    /// Event published for all state and data changes.
+    /// The handler is invoked on an arbitrary thread — marshalling to the UI thread is the subscriber's responsibility.
     /// </summary>
     event EventHandler<SessionEvent> EventOccurred;
 
-    // ── Data facade (над IChatService) ────────────────────────────────────────
+    // ── Data facade (over IChatService) ───────────────────────────────────────
 
-    /// <summary>Загружает историю активной ветки.</summary>
+    /// <summary>Loads the history of the active branch.</summary>
     Task<IEnumerable<MessageDto>> LoadHistoryAsync(CancellationToken ct = default);
 
-    /// <summary>Возвращает настройки диалога (системный промпт, профиль).</summary>
+    /// <summary>Returns the conversation settings (system prompt, profile).</summary>
     Task<ConversationSettingsDto?> GetSettingsAsync(CancellationToken ct = default);
 
-    /// <summary>Сохраняет системный промпт диалога.</summary>
+    /// <summary>Saves the conversation's system prompt.</summary>
     Task UpdateSystemPromptAsync(string systemPrompt, CancellationToken ct = default);
 
-    /// <summary>Меняет профиль ассистента для диалога.</summary>
+    /// <summary>Changes the assistant profile for the conversation.</summary>
     Task ChangeProfileAsync(Guid profileId, CancellationToken ct = default);
 
     /// <summary>
-    /// Суммаризирует контекст начиная с выбранного узла.
-    /// Публикует <see cref="SummarizationSessionEvent"/> для каждого события процесса.
+    /// Summarizes the context starting from the selected node.
+    /// Publishes <see cref="SummarizationSessionEvent"/> for each step of the process.
     /// </summary>
     Task SummarizeAsync(Guid selectedNodeId, CancellationToken ct = default);
 
     /// <summary>
-    /// Переключается на альтернативную ветку (sibling) и переинициализирует сессию.
-    /// Публикует <see cref="InitializeSessionEvent"/> по завершении.
+    /// Switches to an alternative branch (sibling) and reinitializes the session.
+    /// Publishes <see cref="InitializeSessionEvent"/> on completion.
     /// </summary>
     Task SwitchToSiblingAsync(Guid parentNodeId, Guid newChildId, CancellationToken ct = default);
 
-    // ── LLM-операции ─────────────────────────────────────────────────────────
+    // ── LLM operations ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Добавляет сообщение пользователя и запускает LLM-тёрн.
+    /// Adds a user message and starts an LLM turn.
     /// <para>
-    /// Если <paramref name="parentNodeId"/> не задан — добавляется к текущему листу (<see cref="ConversationSession.CurrentLeafNodeId"/>).
-    /// Если <paramref name="parentNodeId"/> отличается от текущего листа — выполняется ветвление:
-    /// сессия переинициализируется и публикует <see cref="InitializeSessionEvent"/>.
+    /// If <paramref name="parentNodeId"/> is not specified — the message is appended to the current leaf (<see cref="ConversationSession.CurrentLeafNodeId"/>).
+    /// If <paramref name="parentNodeId"/> differs from the current leaf — branching is performed:
+    /// the session is reinitialized and publishes <see cref="InitializeSessionEvent"/>.
     /// </para>
     /// </summary>
     Task SendMessageAsync(string message, Guid? parentNodeId = null, CancellationToken ct = default);
 
     /// <summary>
-    /// Возобновляет диалог с текущего листа (например, после прерывания приложения).
-    /// Допустимо только в состоянии <see cref="ConversationState.LastMessageIsUser"/>
-    /// или <see cref="ConversationState.AllToolCallsCompleted"/>.
+    /// Resumes the conversation from the current leaf (e.g., after the application was interrupted).
+    /// Only valid in state <see cref="ConversationState.LastMessageIsUser"/>
+    /// or <see cref="ConversationState.AllToolCallsCompleted"/>.
     /// </summary>
     Task ResumeAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Одобряет ожидающий tool-вызов.
-    /// После завершения всех tool-вызовов текущего тёрна автоматически запускает следующий LLM-тёрн.
+    /// Approves a pending tool call.
+    /// After all tool calls of the current turn are complete, automatically starts the next LLM turn.
     /// </summary>
     Task ApproveToolAsync(Guid pendingNodeId, CancellationToken ct = default);
 
     /// <summary>
-    /// Отклоняет ожидающий tool-вызов.
-    /// После завершения всех tool-вызовов текущего тёрна автоматически запускает следующий LLM-тёрн.
+    /// Denies a pending tool call.
+    /// After all tool calls of the current turn are complete, automatically starts the next LLM turn.
     /// </summary>
     Task DenyToolAsync(Guid pendingNodeId, CancellationToken ct = default);
 }

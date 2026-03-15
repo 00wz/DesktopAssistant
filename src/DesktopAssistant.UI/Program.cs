@@ -19,20 +19,20 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        // Настройка конфигурации
+        // Configure configuration
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true)
             .Build();
         
-        // Настройка DI
+        // Configure DI
         var services = new ServiceCollection();
         
-        // Регистрация инфраструктурных сервисов
+        // Register infrastructure services
         services.AddInfrastructure(configuration);
         
-        // Регистрация ViewModels
+        // Register ViewModels
         services.AddTransient<ChatSettingsPanelViewModel>();
         services.AddTransient<ChatViewModel>();
         services.AddTransient<SidebarViewModel>();
@@ -46,25 +46,25 @@ sealed class Program
 
         var serviceProvider = services.BuildServiceProvider();
 
-        // Инициализация базы данных
+        // Initialize database
         serviceProvider.InitializeDatabaseAsync().GetAwaiter().GetResult();
 
-        // Загрузка сохранённого языка до запуска Avalonia
+        // Load saved language before starting Avalonia
         var locService = serviceProvider.GetRequiredService<ILocalizationService>();
         var savedLanguage = locService.GetSavedLanguageAsync().GetAwaiter().GetResult();
         LocalizationManager.Instance.PendingLanguage = savedLanguage;
         
-        // Инициализация MCP серверов (в фоне, не блокирует запуск)
+        // Initialize MCP servers (in background, does not block startup)
         InitializeMcpServersAsync(serviceProvider);
         
-        // Передаём ServiceProvider в приложение
+        // Pass ServiceProvider to the application
         App.SetServiceProvider(serviceProvider);
         
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
     
     /// <summary>
-    /// Асинхронно инициализирует MCP серверы в фоне
+    /// Asynchronously initializes MCP servers in the background
     /// </summary>
     private static async void InitializeMcpServersAsync(IServiceProvider serviceProvider)
     {

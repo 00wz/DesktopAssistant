@@ -1,13 +1,13 @@
 namespace DesktopAssistant.Application.Dtos;
 
 /// <summary>
-/// Персистируемый статус tool-узла. Хранится в ToolNodeMetadata и передаётся через ToolResultDto.
-/// Не включает Executing — это runtime-only состояние UI.
+/// Persistable status of a tool node. Stored in ToolNodeMetadata and passed through ToolResultDto.
+/// Does not include Executing — that is a runtime-only UI state.
 /// </summary>
 public enum ToolNodeStatus
 {
-    Pending,    // ResultJson == null — ожидает подтверждения
-    Completed,  // Успешно выполнен
-    Failed,     // Завершился ошибкой
-    Denied      // Отклонён пользователем
+    Pending,    // ResultJson == null — awaiting confirmation
+    Completed,  // Successfully executed
+    Failed,     // Finished with an error
+    Denied      // Denied by the user
 }

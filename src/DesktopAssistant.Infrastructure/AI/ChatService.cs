@@ -12,7 +12,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Реализация IChatService — управление диалогами, история сообщений, LLM и tool-calls.
+/// IChatService implementation — conversation management, message history, LLM and tool calls.
 /// </summary>
 public class ChatService : IChatService
 {
@@ -48,7 +48,7 @@ public class ChatService : IChatService
         _logger = logger;
     }
 
-    // ── Управление диалогами ─────────────────────────────────────────────────
+    // ── Conversation management ──────────────────────────────────────────────
 
     /// <inheritdoc />
     public async Task<ConversationDto> CreateConversationAsync(
@@ -288,7 +288,7 @@ public class ChatService : IChatService
             {
                 case MessageNodeType.User:
                     return ConversationState.LastMessageIsUser;
-                /// узлы типов <see cref="MessageNodeType.Root"/> и <see cref="MessageNodeType.Summary"/> пока приравниваем к сообщениям ассистента.
+                /// nodes of types <see cref="MessageNodeType.Root"/> and <see cref="MessageNodeType.Summary"/> are treated as assistant messages for now.
                 default:
                     return ConversationState.LastMessageIsAssistant;
             }

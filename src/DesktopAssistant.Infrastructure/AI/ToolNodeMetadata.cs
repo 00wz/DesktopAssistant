@@ -5,9 +5,9 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Единая структура метаданных tool-узла — хранится в MessageNode.Metadata.
-/// Status является источником истины о состоянии вызова.
-/// ResultJson == null только для Pending-узлов (структурный инвариант).
+/// Unified metadata structure for a tool node — stored in MessageNode.Metadata.
+/// Status is the source of truth for the call's state.
+/// ResultJson is null only for Pending nodes (structural invariant).
 /// </summary>
 internal sealed record ToolNodeMetadata(
     string CallId,
@@ -22,14 +22,14 @@ internal sealed record ToolNodeMetadata(
     internal static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     /// <summary>
-    /// Сериализует в JSON для хранения в MessageNode.Metadata.
+    /// Serializes to JSON for storage in MessageNode.Metadata.
     /// </summary>
     internal string ToJson() => JsonSerializer.Serialize(this, JsonOptions);
 
     /// <summary>
-    /// Пытается десериализовать строку как ToolNodeMetadata.
-    /// Возвращает null если строка пустая, невалидный JSON или не является ToolNodeMetadata.
-    /// Признак валидного ToolNodeMetadata: CallId != null (отличает от старого ChatMessageContent JSON).
+    /// Attempts to deserialize a string as ToolNodeMetadata.
+    /// Returns null if the string is empty, invalid JSON, or not a ToolNodeMetadata.
+    /// A valid ToolNodeMetadata is identified by CallId != null (distinguishes it from legacy ChatMessageContent JSON).
     /// </summary>
     internal static ToolNodeMetadata? TryDeserialize(string? json)
     {
@@ -46,7 +46,7 @@ internal sealed record ToolNodeMetadata(
     }
 
     /// <summary>
-    /// Сериализует аргументы FunctionCallContent в JSON-строку.
+    /// Serializes FunctionCallContent arguments to a JSON string.
     /// </summary>
     internal static string SerializeFunctionArgs(FunctionCallContent functionCall)
     {

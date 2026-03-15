@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.Infrastructure.MCP.Services;
 
 /// <summary>
-/// Сервис управления конфигурацией MCP серверов
+/// MCP server configuration management service.
 /// </summary>
 public class McpConfigurationService : IMcpConfigurationService, IDisposable
 {
@@ -35,10 +35,10 @@ public class McpConfigurationService : IMcpConfigurationService, IDisposable
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
         
-        // Создаём директорию если не существует
+        // Create the config directory if it does not exist
         EnsureConfigDirectoryExists();
-        
-        // Создаём FileWatcher для отслеживания изменений
+
+        // Create a FileWatcher to track changes
         try
         {
             _fileWatcher = new FileSystemWatcher(DefaultConfigDirectory, "mcp.json")
@@ -68,7 +68,7 @@ public class McpConfigurationService : IMcpConfigurationService, IDisposable
             
             var json = await File.ReadAllTextAsync(ConfigFilePath, cancellationToken);
             
-            // Обрабатываем пустой файл или файл с пробелами
+            // Handle empty file or file with only whitespace
             if (string.IsNullOrWhiteSpace(json))
             {
                 _logger.LogInformation("Config file is empty, returning empty configuration");
@@ -150,7 +150,7 @@ public class McpConfigurationService : IMcpConfigurationService, IDisposable
     {
         _logger.LogDebug("Config file changed: {ChangeType}", e.ChangeType);
         
-        // Небольшая задержка чтобы файл успел записаться полностью
+        // Short delay to let the file finish writing
         await Task.Delay(100);
         
         try

@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Группа tools одного плагина/MCP-сервера для отображения в настройках auto-approve.
+/// Group of tools for a single plugin/MCP server, displayed in the auto-approve settings.
 /// </summary>
 public class ToolApprovalGroupModel
 {

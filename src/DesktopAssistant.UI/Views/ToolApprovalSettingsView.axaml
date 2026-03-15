@@ -10,7 +10,7 @@
 
     <StackPanel Spacing="16">
 
-        <!-- Заголовок секции -->
+        <!-- Section header -->
         <StackPanel Spacing="4">
             <TextBlock Text="{DynamicResource ToolApproval.Title}"
                        FontSize="16"
@@ -21,7 +21,7 @@
                        TextWrapping="Wrap"/>
         </StackPanel>
 
-        <!-- Ошибка -->
+        <!-- Error -->
         <Border Background="#FFE0E0"
                 Padding="12"
                 CornerRadius="4"
@@ -31,12 +31,12 @@
                        TextWrapping="Wrap"/>
         </Border>
 
-        <!-- Индикатор загрузки -->
+        <!-- Loading indicator -->
         <ProgressBar IsIndeterminate="True"
                      Height="2"
                      IsVisible="{Binding IsLoading}"/>
 
-        <!-- Пустой список -->
+        <!-- Empty list -->
         <Border Background="#F8F8F8"
                 Padding="24"
                 CornerRadius="4"
@@ -47,7 +47,7 @@
                        FontSize="13"/>
         </Border>
 
-        <!-- Группы плагинов/серверов -->
+        <!-- Plugin/server groups -->
         <ItemsControl ItemsSource="{Binding Groups}"
                       IsVisible="{Binding HasGroups}">
             <ItemsControl.ItemTemplate>
@@ -59,7 +59,7 @@
                             ClipToBounds="True">
 
                         <StackPanel>
-                            <!-- Заголовок группы -->
+                            <!-- Group header -->
                             <Border Background="#F0F4FF"
                                     Padding="14,9">
                                 <TextBlock Text="{Binding PluginName}"
@@ -68,7 +68,7 @@
                                            Foreground="#1A3C6E"/>
                             </Border>
 
-                            <!-- Tools группы -->
+                            <!-- Group tools -->
                             <ItemsControl ItemsSource="{Binding Tools}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="models:ToolApprovalItemModel">
@@ -78,7 +78,7 @@
                                                 Background="White">
                                             <Grid ColumnDefinitions="*,Auto">
 
-                                                <!-- Информация о tool -->
+                                                <!-- Tool info -->
                                                 <StackPanel Grid.Column="0"
                                                             Spacing="2"
                                                             VerticalAlignment="Center">
@@ -91,7 +91,7 @@
                                                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                                 </StackPanel>
 
-                                                <!-- Тоггл auto-approve -->
+                                                <!-- Auto-approve toggle -->
                                                 <CheckBox Grid.Column="1"
                                                           IsChecked="{Binding IsAutoApproved, Mode=TwoWay}"
                                                           VerticalAlignment="Center"

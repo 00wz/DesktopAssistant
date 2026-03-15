@@ -12,24 +12,24 @@ internal class ConversationSession : IConversationSession
     private readonly ILogger<ConversationSession> _logger;
     private readonly IToolApprovalService _toolApprovalService;
 
-    /// <summary>Предотвращает одновременный запуск нескольких LLM-тёрнов.</summary>
+    /// <summary>Prevents multiple LLM turns from running concurrently.</summary>
     private readonly SemaphoreSlim _runLock = new(1, 1);
 
     /// <summary>
-    /// Счётчик tool-вызовов, находящихся в процессе выполнения (одобрение/отклонение запущено, результат ещё не обработан).
-    /// Доступ только через <see cref="Interlocked"/> — tool-вызовы выполняются конкурентно.
+    /// Counter of tool calls currently in progress (approve/deny started, result not yet processed).
+    /// Access only via <see cref="Interlocked"/> — tool calls execute concurrently.
     /// </summary>
     private int _activeToolCount;
 
     /// <summary>
-    /// ID узлов-ассистентов, для которых уже запущен следующий тёрн.
-    /// Доступ только под <see cref="_runLock"/>.
+    /// IDs of assistant nodes for which the next turn has already been started.
+    /// Access only under <see cref="_runLock"/>.
     /// </summary>
     private readonly HashSet<Guid> _startedTurns = [];
 
     /// <summary>
-    /// Отменяет все активные операции Approve/Deny при переинициализации сессии
-    /// (например, при переключении на другую ветку диалога).
+    /// Cancels all active Approve/Deny operations on session re-initialization
+    /// (e.g. when switching to another conversation branch).
     /// </summary>
     private CancellationTokenSource _toolsCancellationTokenSource = new();
 
@@ -53,7 +53,7 @@ internal class ConversationSession : IConversationSession
         _toolApprovalService = toolApprovalService;
     }
 
-    // ── Инициализация ────────────────────────────────────────────────────────
+    // ── Initialization ───────────────────────────────────────────────────────
 
     public async Task InitializeAsync(CancellationToken ct = default)
     {
@@ -71,15 +71,15 @@ internal class ConversationSession : IConversationSession
 
     private async Task InitializeInternalAsync(CancellationToken ct = default)
     {
-        // Отменяем все незавершённые Approve/Deny операции из предыдущего состояния
+        // Cancel all incomplete Approve/Deny operations from the previous state
         _toolsCancellationTokenSource.Cancel();
         _toolsCancellationTokenSource.Dispose();
         _toolsCancellationTokenSource = new CancellationTokenSource();
         _startedTurns.Clear();
 
-        // Сбрасываем счётчик выполняющихся tool-вызовов.
-        // Отменённые задачи всё ещё могут дойти до своих finally-блоков и вызвать DecrementActiveTools —
-        // защита от underflow обеспечена там.
+        // Reset the active tool call counter.
+        // Cancelled tasks may still reach their finally blocks and call DecrementActiveTools —
+        // underflow protection is handled there.
         if (Interlocked.Exchange(ref _activeToolCount, 0) > 0)
             Emit(new ToolExecutionStateChangedSessionEvent(false));
 
@@ -98,7 +98,7 @@ internal class ConversationSession : IConversationSession
         Emit(new InitializeSessionEvent());
     }
 
-    // ── LLM-операции ─────────────────────────────────────────────────────────
+    // ── LLM operations ───────────────────────────────────────────────────────
 
     public async Task SendMessageAsync(string message, Guid? parentNodeId = null, CancellationToken ct = default)
     {
@@ -108,10 +108,10 @@ internal class ConversationSession : IConversationSession
         {
             SetRunning(true);
 
-            // targetParentId вычисляется под локом, чтобы CurrentLeafNodeId не изменился до использования
+            // targetParentId is computed under the lock so CurrentLeafNodeId cannot change before use
             var targetParentId = parentNodeId ?? CurrentLeafNodeId;
 
-            // Если parentNodeId отличается от текущего листа — проверяем состояние той ветки отдельно
+            // If parentNodeId differs from the current leaf — check the state of that branch separately
             ConversationState parentState;
             if (targetParentId == CurrentLeafNodeId)
             {
@@ -140,7 +140,7 @@ internal class ConversationSession : IConversationSession
 
             if (targetParentId != CurrentLeafNodeId)
             {
-                // Добавление к не-текущей ветке (редактирование сообщения) → переинициализируем сессию
+                // Adding to a non-current branch (message editing) → re-initialize the session
                 await InitializeInternalAsync(ct);
             }
             else
@@ -214,7 +214,7 @@ internal class ConversationSession : IConversationSession
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
 
-        // Запускаем обработчики только после завершения стриминга — все tool-узлы уже в БД.
+        // Start handlers only after streaming completes — all tool nodes are already in the DB.
         var pendingToolRequests = new List<ToolCallRequestedDto>();
 
         await foreach (var evt in chatService.GetAssistantResponseAsync(ConversationId, CurrentLeafNodeId, ct))
@@ -248,9 +248,9 @@ internal class ConversationSession : IConversationSession
     }
 
     /// <summary>
-    /// Обрабатывает входящий tool-вызов: определяет нужно ли автоподтверждение,
-    /// публикует <see cref="ToolRequestedSessionEvent"/> и при необходимости автоматически одобряет.
-    /// Вызывается через fire-and-forget — все исключения обрабатываются внутри.
+    /// Handles an incoming tool call: determines whether auto-approval is needed,
+    /// publishes <see cref="ToolRequestedSessionEvent"/>, and auto-approves if required.
+    /// Invoked fire-and-forget — all exceptions are handled internally.
     /// </summary>
     private async Task HandleToolCallRequestedAsync(ToolCallRequestedDto toolReq, CancellationToken ct)
     {
@@ -272,9 +272,9 @@ internal class ConversationSession : IConversationSession
         }
         catch (Exception ex)
         {
-            // Перехватываем все исключения (включая OperationCanceledException),
-            // так как метод вызывается через fire-and-forget — необработанное исключение
-            // привело бы к UnobservedTaskException.
+            // Catch all exceptions (including OperationCanceledException),
+            // because the method is called fire-and-forget — an unhandled exception
+            // would result in an UnobservedTaskException.
             _logger.LogError(ex,
                 "Error handling tool call {PluginName}.{FunctionName} in conversation {ConversationId}",
                 toolReq.PluginName, toolReq.FunctionName, ConversationId);
@@ -343,8 +343,8 @@ internal class ConversationSession : IConversationSession
             await _runLock.WaitAsync(ct);
             try
             {
-                // Дедупликация: один тёрн на каждый LLM-ответ. AssistantNodeId == default
-                // означает устаревший узел без поля — требуем ручного Resume.
+                // Deduplication: one turn per LLM response. AssistantNodeId == default
+                // means a legacy node without the field — require manual Resume.
                 if (toolCallResult.AssistantNodeId == default
                     || !_startedTurns.Add(toolCallResult.AssistantNodeId))
                     return;
@@ -473,7 +473,7 @@ internal class ConversationSession : IConversationSession
         await chatService.ChangeConversationProfileAsync(ConversationId, profileId, ct);
     }
 
-    // ── Вспомогательные методы ───────────────────────────────────────────────
+    // ── Helper methods ───────────────────────────────────────────────────────
 
     private void UpdateState(ConversationState state)
     {
@@ -499,7 +499,7 @@ internal class ConversationSession : IConversationSession
         if (newCount == 0)
             Emit(new ToolExecutionStateChangedSessionEvent(false));
         else if (newCount < 0)
-            // Stale decrement после сброса в InitializeInternalAsync — возвращаем 0, событие не эмитируем.
+            // Stale decrement after reset in InitializeInternalAsync — restore to 0, do not emit event.
             Interlocked.Exchange(ref _activeToolCount, 0);
     }
 

@@ -3,7 +3,7 @@ using DesktopAssistant.Domain.Entities;
 namespace DesktopAssistant.Domain.Interfaces;
 
 /// <summary>
-/// Базовый интерфейс репозитория
+/// Base repository interface.
 /// </summary>
 public interface IRepository<T> where T : BaseEntity
 {
@@ -16,7 +16,7 @@ public interface IRepository<T> where T : BaseEntity
 }
 
 /// <summary>
-/// Репозиторий для работы с диалогами
+/// Repository for working with conversations.
 /// </summary>
 public interface IConversationRepository : IRepository<Conversation>
 {
@@ -26,7 +26,7 @@ public interface IConversationRepository : IRepository<Conversation>
 }
 
 /// <summary>
-/// Репозиторий для работы с узлами сообщений
+/// Repository for working with message nodes.
 /// </summary>
 public interface IMessageNodeRepository : IRepository<MessageNode>
 {
@@ -36,14 +36,14 @@ public interface IMessageNodeRepository : IRepository<MessageNode>
 }
 
 /// <summary>
-/// Репозиторий для работы с профилями ассистентов
+/// Repository for working with assistant profiles.
 /// </summary>
 public interface IAssistantProfileRepository : IRepository<AssistantProfile>
 {
 }
 
 /// <summary>
-/// Репозиторий для работы с настройками приложения
+/// Repository for working with application settings.
 /// </summary>
 public interface IAppSettingsRepository
 {

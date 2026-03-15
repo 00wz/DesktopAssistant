@@ -10,7 +10,7 @@
     <Border Background="#F5F5F5" Padding="10">
         <StackPanel Spacing="6">
 
-            <!-- Ошибка -->
+            <!-- Error -->
             <Border Background="#FFE0E0"
                     Padding="10"
                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -19,7 +19,7 @@
                            TextWrapping="Wrap"/>
             </Border>
 
-            <!-- Ввод сообщения -->
+            <!-- Message input -->
             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
                 <TextBox Grid.Column="0"
                          Text="{Binding InputMessage, Mode=TwoWay}"
@@ -44,7 +44,7 @@
                         VerticalContentAlignment="Center"/>
             </Grid>
 
-            <!-- Кнопка Resume -->
+            <!-- Resume button -->
             <Button Content="{DynamicResource MessageInput.Resume}"
                     IsVisible="{Binding ShowResumePanel}"
                     Command="{Binding ResumeCommand}"

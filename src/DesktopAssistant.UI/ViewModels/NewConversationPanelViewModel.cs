@@ -9,8 +9,8 @@ using System.Collections.ObjectModel;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel для inline-панели создания нового диалога.
-/// Отображается в главном окне вместо пустого экрана или TabControl.
+/// ViewModel for the inline new conversation creation panel.
+/// Displayed in the main window instead of the empty screen or TabControl.
 /// </summary>
 public partial class NewConversationPanelViewModel : ObservableObject
 {
@@ -18,10 +18,10 @@ public partial class NewConversationPanelViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<NewConversationPanelViewModel> _logger;
 
-    /// <summary>Вызывается при подтверждении создания диалога.</summary>
+    /// <summary>Called when the user confirms conversation creation.</summary>
     public Func<NewConversationParams, Task>? OnConfirm { get; set; }
 
-    /// <summary>Вызывается при отмене.</summary>
+    /// <summary>Called when the user cancels.</summary>
     public Action? OnCancel { get; set; }
 
     [ObservableProperty]
@@ -38,12 +38,12 @@ public partial class NewConversationPanelViewModel : ObservableObject
     [ObservableProperty]
     private string _systemPrompt = string.Empty;
 
-    /// <summary>Inline-редактор профиля (null если форма скрыта).</summary>
+    /// <summary>Inline profile editor (null when the form is hidden).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCreateProfileMode))]
     private ProfileEditorViewModel? _inlineProfileEditor;
 
-    /// <summary>True если форма создания профиля видима.</summary>
+    /// <summary>True if the profile creation form is visible.</summary>
     public bool IsCreateProfileMode => InlineProfileEditor != null;
 
     [ObservableProperty]
@@ -76,14 +76,14 @@ public partial class NewConversationPanelViewModel : ObservableObject
             SelectedProfile = AvailableProfiles.FirstOrDefault(p => p.IsDefault)
                 ?? AvailableProfiles.FirstOrDefault();
 
-            // Если профилей нет — сразу открываем форму создания
+            // If no profiles exist — immediately open the creation form
             if (AvailableProfiles.Count == 0)
                 ToggleCreateProfileMode();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading assistant profiles");
-            ErrorMessage = $"Ошибка загрузки профилей: {ex.Message}";
+            ErrorMessage = $"Error loading profiles: {ex.Message}";
         }
         finally
         {
@@ -142,5 +142,5 @@ public partial class NewConversationPanelViewModel : ObservableObject
     }
 }
 
-/// <summary>Параметры для создания нового диалога, возвращаемые из панели.</summary>
+/// <summary>Parameters for creating a new conversation, returned from the panel.</summary>
 public record NewConversationParams(string Title, Guid AssistantProfileId, string SystemPrompt, string FirstMessage);

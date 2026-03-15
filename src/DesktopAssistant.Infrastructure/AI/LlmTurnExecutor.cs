@@ -14,7 +14,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Выполняет один LLM-тёрн: собирает контекст, стримит ответ, сохраняет узлы, создаёт pending tool-узлы.
+/// Executes a single LLM turn: builds context, streams the response, saves nodes, and creates pending tool nodes.
 /// </summary>
 public class LlmTurnExecutor(
     ConversationService conversationService,
@@ -28,9 +28,9 @@ public class LlmTurnExecutor(
     private readonly ILogger<LlmTurnExecutor> _logger = logger;
 
     /// <summary>
-    /// Запускает один LLM-тёрн начиная с lastMessageId.
-    /// Возвращает поток событий: AssistantTurnDto → AssistantChunkDto* → AssistantResponseSavedDto
-    /// → (ToolCallRequestedDto* если есть tool-вызовы).
+    /// Runs a single LLM turn starting from lastMessageId.
+    /// Returns a stream of events: AssistantTurnDto → AssistantChunkDto* → AssistantResponseSavedDto
+    /// → (ToolCallRequestedDto* if there are tool calls).
     /// </summary>
     public IAsyncEnumerable<StreamEvent> ExecuteAsync(
         Guid conversationId,
@@ -45,7 +45,7 @@ public class LlmTurnExecutor(
         Guid lastMessageId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Загружаем системный промпт и профиль из диалога
+        // Load the system prompt and profile from the conversation
         var systemPrompt = await _conversationService.GetSystemPromptAsync(conversationId, cancellationToken);
         var profile = await _conversationService.GetAssistantProfileAsync(conversationId, cancellationToken)
             ?? throw new InvalidOperationException($"AssistantProfile not found for conversation {conversationId}");

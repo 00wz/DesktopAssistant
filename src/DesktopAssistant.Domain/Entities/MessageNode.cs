@@ -3,9 +3,9 @@ using DesktopAssistant.Domain.Enums;
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
-/// Узел сообщения в графе истории диалога.
-/// Каждое сообщение может иметь родителя и множество дочерних узлов (ветвление).
-/// Специальный тип Summary используется для хранения суммаризированного контекста.
+/// A message node in the conversation history graph.
+/// Each message can have a parent and multiple child nodes (branching).
+/// The special Summary type is used to store a summarized context.
 /// </summary>
 public class MessageNode : BaseEntity
 {
@@ -17,13 +17,13 @@ public class MessageNode : BaseEntity
     public string? Metadata { get; private set; }
     public Guid? ActiveChildId { get; private set; }
 
-    // Навигационные свойства
+    // Navigation properties
     public MessageNode? Parent { get; private set; }
     public ICollection<MessageNode> Children { get; private set; } = new List<MessageNode>();
     public MessageNode? ActiveChild { get; private set; }
     public Conversation? Conversation { get; private set; }
 
-    private MessageNode() { } // Для EF Core
+    private MessageNode() { } // For EF Core
 
     public MessageNode(
         Guid conversationId,
@@ -42,7 +42,7 @@ public class MessageNode : BaseEntity
     }
 
     /// <summary>
-    /// Проверяет, является ли узел узлом суммаризации
+    /// Checks whether the node is a summarization node.
     /// </summary>
     public bool IsSummaryNode => NodeType == MessageNodeType.Summary;
 
@@ -60,7 +60,7 @@ public class MessageNode : BaseEntity
     }
 
     /// <summary>
-    /// Устанавливает активного дочернего узла
+    /// Sets the active child node.
     /// </summary>
     public void SetActiveChild(Guid childId)
     {
@@ -69,7 +69,7 @@ public class MessageNode : BaseEntity
     }
 
     /// <summary>
-    /// Перепривязывает узел к новому родителю (используется при инжекции summary-узла в дерево)
+    /// Re-parents the node to a new parent (used when injecting a summary node into the tree).
     /// </summary>
     public void ReparentTo(Guid newParentId)
     {
@@ -78,7 +78,7 @@ public class MessageNode : BaseEntity
     }
 
     /// <summary>
-    /// Находит листовой узел, следуя по цепочке ActiveChild
+    /// Finds the leaf node by following the ActiveChild chain.
     /// </summary>
     public MessageNode? FindLeafNode()
     {

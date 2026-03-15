@@ -1,11 +1,11 @@
 namespace DesktopAssistant.Application.Dtos;
 
 /// <summary>
-/// Базовый DTO для сообщений диалога. Заменяет прямое использование доменной сущности MessageNode в UI.
+/// Base DTO for conversation messages. Replaces direct use of the domain entity MessageNode in the UI.
 /// </summary>
 public abstract record MessageDto(Guid Id, Guid? ParentId, DateTime CreatedAt);
 
-/// <summary>Сообщение пользователя. Включает информацию о siblings для навигации по ветвям.</summary>
+/// <summary>User message. Includes sibling information for branch navigation.</summary>
 public record UserMessageDto(
     Guid Id,
     Guid? ParentId,
@@ -19,7 +19,7 @@ public record UserMessageDto(
     Guid? NextSiblingId = null
 ) : MessageDto(Id, ParentId, CreatedAt);
 
-/// <summary>Сообщение ассистента. Включает информацию о siblings.</summary>
+/// <summary>Assistant message. Includes sibling information.</summary>
 public record AssistantMessageDto(
     Guid Id,
     Guid? ParentId,
@@ -37,8 +37,8 @@ public record AssistantMessageDto(
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>
-/// Результат выполнения tool-вызова.
-/// Status == Pending: узел сохранён в БД, ожидает подтверждения пользователя.
+/// Result of a tool call execution.
+/// Status == Pending: the node is saved in the database, awaiting user confirmation.
 /// </summary>
 public record ToolResultDto(
     Guid Id,
@@ -52,7 +52,7 @@ public record ToolResultDto(
     string ArgumentsJson = ""
 ) : MessageDto(Id, ParentId, CreatedAt);
 
-/// <summary>Сводный узел — сжатый контекст предыдущего диалога.</summary>
+/// <summary>Summary node — a condensed context of the previous conversation.</summary>
 public record SummaryMessageDto(
     Guid Id,
     Guid? ParentId,
@@ -60,7 +60,7 @@ public record SummaryMessageDto(
     string SummaryContent
 ) : MessageDto(Id, ParentId, CreatedAt);
 
-/// <summary>DTO диалога — возвращается из IChatService вместо Domain-сущности Conversation.</summary>
+/// <summary>Conversation DTO — returned from IChatService instead of the domain entity Conversation.</summary>
 public record ConversationDto(
     Guid Id,
     string Title,

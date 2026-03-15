@@ -7,7 +7,7 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.MCP.Plugins;
 
 /// <summary>
-/// Базовые инструменты для работы с файловой системой и выполнения команд
+/// Basic tools for file system operations and command execution
 /// </summary>
 public class CoreToolsPlugin
 {
@@ -19,18 +19,18 @@ public class CoreToolsPlugin
     }
     
     /// <summary>
-    /// Выполняет команду в терминале
+    /// Executes a command in the terminal
     /// </summary>
     [KernelFunction("execute_command")]
-    [Description("Выполняет команду в терминале и возвращает результат выполнения, включая stdout, stderr и код завершения.")]
+    [Description("Executes a command in the terminal and returns the execution result including stdout, stderr, and exit code.")]
     public async Task<string> ExecuteCommandAsync(
-        [Description("Команда для выполнения (например: git clone https://github.com/repo)")] string command,
-        [Description("Рабочая директория для выполнения команды (опционально)")] string? workingDirectory = null,
+        [Description("Command to execute (e.g. git clone https://github.com/repo)")] string command,
+        [Description("Working directory for the command (optional)")] string? workingDirectory = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            // Определяем shell в зависимости от ОС
+            // Determine shell based on OS
             string shell, shellArgs;
             if (OperatingSystem.IsWindows())
             {
@@ -55,7 +55,7 @@ public class CoreToolsPlugin
                 WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory()
             };
             
-            // Создаём рабочую директорию если не существует
+            // Create working directory if it does not exist
             if (!string.IsNullOrEmpty(workingDirectory) && !Directory.Exists(workingDirectory))
             {
                 Directory.CreateDirectory(workingDirectory);
@@ -86,7 +86,7 @@ public class CoreToolsPlugin
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             
-            // Таймаут 5 минут для длинных операций (npm install, build)
+            // 5-minute timeout for long operations (npm install, build)
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromMinutes(5));
             try
@@ -96,8 +96,8 @@ public class CoreToolsPlugin
             catch (OperationCanceledException)
             {
                 process.Kill(entireProcessTree: true);
-                var reason = cancellationToken.IsCancellationRequested ? "отменена" : "превысила таймаут (5 минут)";
-                return $"Ошибка: команда {reason}\nВывод до отмены:\n{output}\n\nОшибки:\n{error}";
+                var reason = cancellationToken.IsCancellationRequested ? "was cancelled" : "exceeded timeout (5 minutes)";
+                return $"Error: command {reason}\nOutput before cancellation:\n{output}\n\nErrors:\n{error}";
             }
             
             var result = new StringBuilder();
@@ -105,13 +105,13 @@ public class CoreToolsPlugin
             
             if (output.Length > 0)
             {
-                result.AppendLine("\nВывод:");
+                result.AppendLine("\nOutput:");
                 result.AppendLine(output.ToString());
             }
-            
+
             if (error.Length > 0)
             {
-                result.AppendLine("\nОшибки/предупреждения:");
+                result.AppendLine("\nErrors/warnings:");
                 result.AppendLine(error.ToString());
             }
             
@@ -120,26 +120,26 @@ public class CoreToolsPlugin
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing command: {Command}", command);
-            return $"Ошибка выполнения команды: {ex.Message}";
+            return $"Error executing command: {ex.Message}";
         }
     }
     
     /// <summary>
-    /// Читает содержимое файла
+    /// Reads file contents
     /// </summary>
     [KernelFunction("read_file")]
-    [Description("Читает содержимое текстового файла и возвращает его текст.")]
+    [Description("Reads the contents of a text file and returns its text.")]
     public async Task<string> ReadFileAsync(
-        [Description("Путь к файлу для чтения")] string path)
+        [Description("Path to the file to read")] string path)
     {
         try
         {
-            // Расширяем ~ до домашней директории
+            // Expand ~ to home directory
             path = ExpandPath(path);
-            
+
             if (!File.Exists(path))
             {
-                return $"Файл не найден: {path}";
+                return $"File not found: {path}";
             }
             
             var content = await File.ReadAllTextAsync(path);
@@ -148,25 +148,25 @@ public class CoreToolsPlugin
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reading file: {Path}", path);
-            return $"Ошибка чтения файла: {ex.Message}";
+            return $"Error reading file: {ex.Message}";
         }
     }
     
     /// <summary>
-    /// Записывает содержимое в файл
+    /// Writes content to a file
     /// </summary>
     [KernelFunction("write_to_file")]
-    [Description("Записывает содержимое в файл. Создаёт директории если они не существуют.")]
+    [Description("Writes content to a file. Creates directories if they do not exist.")]
     public async Task<string> WriteToFileAsync(
-        [Description("Путь к файлу для записи")] string path,
-        [Description("Содержимое для записи в файл")] string content)
+        [Description("Path to the file to write")] string path,
+        [Description("Content to write to the file")] string content)
     {
         try
         {
-            // Расширяем ~ до домашней директории
+            // Expand ~ to home directory
             path = ExpandPath(path);
-            
-            // Создаём директорию если не существует
+
+            // Create directory if it does not exist
             var directory = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
@@ -175,100 +175,100 @@ public class CoreToolsPlugin
             
             await File.WriteAllTextAsync(path, content);
             
-            return $"Файл успешно записан: {path}";
+            return $"File written successfully: {path}";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error writing to file: {Path}", path);
-            return $"Ошибка записи файла: {ex.Message}";
+            return $"Error writing file: {ex.Message}";
         }
     }
     
     /// <summary>
-    /// Проверяет существование файла или директории
+    /// Checks whether a file or directory exists
     /// </summary>
     [KernelFunction("path_exists")]
-    [Description("Проверяет существование файла или директории по указанному пути.")]
+    [Description("Checks whether a file or directory exists at the specified path.")]
     public string PathExists(
-        [Description("Путь для проверки")] string path)
+        [Description("Path to check")] string path)
     {
         path = ExpandPath(path);
         
         if (File.Exists(path))
         {
-            return $"Файл существует: {path}";
+            return $"File exists: {path}";
         }
-        
+
         if (Directory.Exists(path))
         {
-            return $"Директория существует: {path}";
+            return $"Directory exists: {path}";
         }
-        
-        return $"Путь не существует: {path}";
+
+        return $"Path does not exist: {path}";
     }
     
     /// <summary>
-    /// Список файлов в директории
+    /// Lists files in a directory
     /// </summary>
     [KernelFunction("list_directory")]
-    [Description("Возвращает список файлов и поддиректорий в указанной директории.")]
+    [Description("Returns a list of files and subdirectories in the specified directory.")]
     public string ListDirectory(
-        [Description("Путь к директории")] string path)
+        [Description("Path to the directory")] string path)
     {
         path = ExpandPath(path);
         
         if (!Directory.Exists(path))
         {
-            return $"Директория не существует: {path}";
+            return $"Directory does not exist: {path}";
         }
-        
+
         try
         {
             var result = new StringBuilder();
-            result.AppendLine($"Содержимое директории: {path}\n");
-            
+            result.AppendLine($"Directory contents: {path}\n");
+
             var dirs = Directory.GetDirectories(path);
             if (dirs.Length > 0)
             {
-                result.AppendLine("Директории:");
+                result.AppendLine("Directories:");
                 foreach (var dir in dirs)
                 {
                     result.AppendLine($"  [DIR] {Path.GetFileName(dir)}");
                 }
             }
-            
+
             var files = Directory.GetFiles(path);
             if (files.Length > 0)
             {
-                result.AppendLine("\nФайлы:");
+                result.AppendLine("\nFiles:");
                 foreach (var file in files)
                 {
                     var info = new FileInfo(file);
                     result.AppendLine($"  {Path.GetFileName(file)} ({info.Length} bytes)");
                 }
             }
-            
+
             return result.ToString();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error listing directory: {Path}", path);
-            return $"Ошибка чтения директории: {ex.Message}";
+            return $"Error reading directory: {ex.Message}";
         }
     }
     
 #if DEBUG
     /// <summary>
-    /// Тестовая функция: ожидает 10 секунд
+    /// Test function: waits 10 seconds
     /// </summary>
     [KernelFunction("test_wait")]
-    [Description("Тестовая функция: ожидает 10 секунд и возвращает сообщение. Используется для тестирования отмены и таймаутов.")]
+    [Description("Test function: waits 10 seconds and returns a message. Used for testing cancellation and timeouts.")]
     public async Task<string> TestWaitAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("TestWait: начало ожидания 10 секунд");
+        _logger.LogInformation("TestWait: starting 10-second wait");
         await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-        _logger.LogInformation("TestWait: ожидание завершено");
-        return "Ожидание 10 секунд завершено успешно.";
+        _logger.LogInformation("TestWait: wait complete");
+        return "10-second wait completed successfully.";
     }
 #endif
 

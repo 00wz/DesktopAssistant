@@ -9,16 +9,16 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel боковой панели диалогов.
-/// Управляет списком диалогов, их сессионными статусами и навигацией.
+/// ViewModel for the conversation sidebar panel.
+/// Manages the conversation list, their session statuses, and navigation.
 /// <para>
-/// Связь с <see cref="MainWindowViewModel"/> — только через делегаты
-/// <see cref="OnConversationSelected"/> и <see cref="OnNewChatRequested"/>,
-/// без прямой зависимости в обе стороны.
+/// Communication with <see cref="MainWindowViewModel"/> is done only through delegates
+/// <see cref="OnConversationSelected"/> and <see cref="OnNewChatRequested"/>,
+/// without a direct two-way dependency.
 /// </para>
 /// <para>
-/// Спроектирован для расширения: замена плоского <see cref="Conversations"/>
-/// на иерархическую коллекцию потребует изменений только в этом классе.
+/// Designed for extensibility: replacing the flat <see cref="Conversations"/>
+/// with a hierarchical collection requires changes only in this class.
 /// </para>
 /// </summary>
 public partial class SidebarViewModel : ObservableObject
@@ -27,18 +27,18 @@ public partial class SidebarViewModel : ObservableObject
     private readonly IConversationSessionService _sessionService;
     private readonly ILogger<SidebarViewModel> _logger;
 
-    /// <summary>Вызывается, когда пользователь выбирает диалог из списка.</summary>
+    /// <summary>Called when the user selects a conversation from the list.</summary>
     public Func<ConversationListItemViewModel, Task>? OnConversationSelected { get; set; }
 
-    /// <summary>Вызывается при нажатии кнопки «Новый чат» в заголовке панели.</summary>
+    /// <summary>Called when the "New Chat" button in the panel header is pressed.</summary>
     public Func<Task>? OnNewChatRequested { get; set; }
 
-    /// <summary>Вызывается при нажатии кнопки «Настройки» в нижней части панели.</summary>
+    /// <summary>Called when the "Settings" button at the bottom of the panel is pressed.</summary>
     public Func<Task>? OnSettingsRequested { get; set; }
 
     /// <summary>
-    /// Плоский список диалогов. В будущем будет заменён иерархической коллекцией
-    /// узлов без изменений в <see cref="MainWindowViewModel"/>.
+    /// Flat list of conversations. Will be replaced in future by a hierarchical collection
+    /// of nodes without changes to <see cref="MainWindowViewModel"/>.
     /// </summary>
     public ObservableCollection<ConversationListItemViewModel> Conversations { get; } = new();
 
@@ -52,10 +52,10 @@ public partial class SidebarViewModel : ObservableObject
         _logger = logger;
     }
 
-    // ── Загрузка данных ──────────────────────────────────────────────────────
+    // ── Data loading ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Загружает список диалогов из БД и синхронизирует состояние активных сессий.
+    /// Loads the conversation list from the database and synchronizes the state of active sessions.
     /// </summary>
     public async Task LoadConversationsAsync()
     {
@@ -99,24 +99,24 @@ public partial class SidebarViewModel : ObservableObject
         }
     }
 
-    // ── Управление состоянием (вызывается из MainWindowViewModel) ────────────
+    // ── State management (called from MainWindowViewModel) ───────────────────
 
-    /// <summary>Подключает сессию к соответствующему элементу списка.</summary>
+    /// <summary>Attaches a session to the corresponding list item.</summary>
     public void AttachSession(Guid conversationId, IConversationSession session)
         => FindItem(conversationId)?.AttachSession(session);
 
-    /// <summary>Отключает сессию от соответствующего элемента списка.</summary>
+    /// <summary>Detaches the session from the corresponding list item.</summary>
     public void DetachSession(Guid conversationId)
         => FindItem(conversationId)?.DetachSession();
 
-    /// <summary>Обновляет флаг <see cref="ConversationListItemViewModel.IsSelected"/> для всех элементов.</summary>
+    /// <summary>Updates the <see cref="ConversationListItemViewModel.IsSelected"/> flag for all items.</summary>
     public void MarkSelected(Guid? conversationId)
     {
         foreach (var item in Conversations)
             item.IsSelected = item.Id == conversationId;
     }
 
-    // ── Команды ──────────────────────────────────────────────────────────────
+    // ── Commands ─────────────────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task OpenConversationAsync(ConversationListItemViewModel? item)
@@ -133,7 +133,7 @@ public partial class SidebarViewModel : ObservableObject
     private Task OpenSettingsAsync()
         => OnSettingsRequested?.Invoke() ?? Task.CompletedTask;
 
-    // ── Вспомогательные ──────────────────────────────────────────────────────
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private ConversationListItemViewModel? FindItem(Guid id)
         => Conversations.FirstOrDefault(c => c.Id == id);

@@ -3,15 +3,15 @@ using DesktopAssistant.Application.Dtos;
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Сервис для взаимодействия с LLM через чат: управление диалогами, история сообщений, LLM и tool-calls.
+/// Service for interacting with an LLM via chat: conversation management, message history, LLM and tool calls.
 /// </summary>
 public interface IChatService
 {
-    // ── Управление диалогами ────────────────────────────────────────────────
+    // ── Conversation management ──────────────────────────────────────────────
 
     /// <summary>
-    /// Создаёт новый диалог.
-    /// Если assistantProfileId не задан — используется профиль по умолчанию.
+    /// Creates a new conversation.
+    /// If assistantProfileId is not specified — the default profile is used.
     /// </summary>
     Task<ConversationDto> CreateConversationAsync(
         string title,
@@ -19,67 +19,67 @@ public interface IChatService
         string systemPrompt = "",
         CancellationToken cancellationToken = default);
 
-    /// <summary>Получает все активные диалоги.</summary>
+    /// <summary>Returns all active conversations.</summary>
     Task<IEnumerable<ConversationDto>> GetConversationsAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Получает диалог по ID. Возвращает null если не найден.</summary>
+    /// <summary>Gets a conversation by ID. Returns null if not found.</summary>
     Task<ConversationDto?> GetConversationAsync(Guid conversationId, CancellationToken cancellationToken = default);
 
-    /// <summary>Возвращает настройки диалога (системный промпт, профиль).</summary>
+    /// <summary>Returns the conversation settings (system prompt, profile).</summary>
     Task<ConversationSettingsDto?> GetConversationSettingsAsync(Guid conversationId, CancellationToken cancellationToken = default);
 
-    /// <summary>Обновляет системный промпт диалога.</summary>
+    /// <summary>Updates the conversation's system prompt.</summary>
     Task UpdateConversationSystemPromptAsync(Guid conversationId, string systemPrompt, CancellationToken cancellationToken = default);
 
-    /// <summary>Меняет профиль ассистента для диалога.</summary>
+    /// <summary>Changes the assistant profile for the conversation.</summary>
     Task ChangeConversationProfileAsync(Guid conversationId, Guid newProfileId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Получает историю сообщений текущей активной ветки диалога в виде DTO.
-    /// Включает информацию о siblings для каждого узла.
-    /// Системные сообщения не включаются.
+    /// Gets the message history of the current active branch of a conversation as DTOs.
+    /// Includes sibling information for each node.
+    /// System messages are not included.
     /// </summary>
     Task<IEnumerable<MessageDto>> GetConversationHistoryAsync(Guid conversationId, Guid lastNodeId, CancellationToken cancellationToken = default);
 
-    /// <summary>Переключается на альтернативную ветку (sibling) сообщения.</summary>
+    /// <summary>Switches to an alternative branch (sibling) of a message.</summary>
     Task SwitchToSiblingAsync(Guid conversationId, Guid parentNodeId, Guid newChildId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Добавляет пользовательское сообщение как дочерний узел указанного родителя (для создания sibling).
-    /// Возвращает DTO с информацией о siblings.
+    /// Adds a user message as a child node of the specified parent (to create a sibling).
+    /// Returns a DTO with sibling information.
     /// </summary>
     Task<UserMessageDto> AddUserMessageAsync(Guid conversationId, Guid parentNodeId, string content, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Формирует контекст начиная с указанного сообщения и выполняет запрос ассистенту.
-    /// Возвращает IAsyncEnumerable поток событий:
+    /// Builds context starting from the specified message and submits a request to the assistant.
+    /// Returns an IAsyncEnumerable stream of events:
     /// AssistantTurnDto → (ChunkReceived events) → ToolCallRequestedDto →
     /// AssistantResponseSavedDto → ...
     /// </summary>
     IAsyncEnumerable<StreamEvent> GetAssistantResponseAsync(Guid conversationId, Guid lastMessageId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Выполняет ожидающий tool-вызов (pendingNodeId — ID узла с ToolNodeMetadata.ResultJson == null).
-    /// Stateless: все данные восстанавливаются из БД по pendingNodeId.
+    /// Executes a pending tool call (pendingNodeId — ID of the node with ToolNodeMetadata.ResultJson == null).
+    /// Stateless: all data is restored from the database by pendingNodeId.
     /// </summary>
     Task<ToolCallResult> ApproveToolCallAsync(Guid pendingNodeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Отклоняет ожидающий tool-вызов.
-    /// Обновляет узел статусом "Denied by user" и возвращает ToolCallResult.
+    /// Denies a pending tool call.
+    /// Updates the node with status "Denied by user" and returns a ToolCallResult.
     /// </summary>
     Task<ToolCallResult> DenyToolCallAsync(Guid pendingNodeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Определяет текущее состояние диалога, начиная обход с lastNodeId.
-    /// Возвращает <see cref="ConversationState"/>, описывающий доступные действия пользователя.
+    /// Determines the current state of the conversation, starting traversal from lastNodeId.
+    /// Returns <see cref="ConversationState"/> describing the available user actions.
     /// </summary>
     Task<ConversationState> GetConversationStateAsync(Guid lastNodeId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Суммаризирует контекст диалога начиная с выбранного узла.
-    /// Создаёт summary-узел в дереве как дочерний по отношению к selectedNodeId.
-    /// Поток событий: SummarizationStartedDto → SummarizationCompletedDto.
+    /// Summarizes the conversation context starting from the selected node.
+    /// Creates a summary node in the tree as a child of selectedNodeId.
+    /// Event stream: SummarizationStartedDto → SummarizationCompletedDto.
     /// </summary>
     IAsyncEnumerable<SummarizationEvent> SummarizeAsync(
         Guid conversationId,

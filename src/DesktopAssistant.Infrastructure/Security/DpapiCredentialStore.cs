@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.Infrastructure.Security;
 
 /// <summary>
-/// Хранилище API-ключей на основе Windows DPAPI (DataProtectionScope.CurrentUser).
-/// Зашифрованные значения сохраняются в таблице AppSettings с ключом "apikey:{profileId}".
-/// На не-Windows платформах использует XOR-обфускацию (не является криптографической защитой).
+/// API key store based on Windows DPAPI (DataProtectionScope.CurrentUser).
+/// Encrypted values are stored in the AppSettings table with the key "apikey:{profileId}".
+/// On non-Windows platforms, XOR obfuscation is used (this is not cryptographic protection).
 /// </summary>
 public class DpapiCredentialStore : ISecureCredentialStore
 {
@@ -31,7 +31,7 @@ public class DpapiCredentialStore : ISecureCredentialStore
     public void SetApiKey(Guid profileId, string apiKey)
     {
         var encrypted = Encrypt(apiKey);
-        // Синхронный вызов через .GetAwaiter().GetResult() — допустимо при инициализации профиля
+        // Synchronous call via .GetAwaiter().GetResult() — acceptable during profile initialization
         _appSettingsRepository.SetAsync(
             KeyPrefix + profileId,
             encrypted,
@@ -64,7 +64,7 @@ public class DpapiCredentialStore : ISecureCredentialStore
     /// <inheritdoc />
     public void DeleteApiKey(Guid profileId)
     {
-        // AppSettings не имеет метода удаления — перезаписываем пустой строкой
+        // AppSettings has no delete method — overwrite with an empty string
         _appSettingsRepository.SetAsync(
             KeyPrefix + profileId,
             string.Empty)
@@ -93,7 +93,7 @@ public class DpapiCredentialStore : ISecureCredentialStore
             return Convert.ToBase64String(encrypted);
         }
 
-        // Не-Windows: base64 (обфускация, не безопасна)
+        // Non-Windows: base64 (obfuscation, not secure)
         return Convert.ToBase64String(bytes);
     }
 
@@ -107,7 +107,7 @@ public class DpapiCredentialStore : ISecureCredentialStore
             return Encoding.UTF8.GetString(decrypted);
         }
 
-        // Не-Windows: простой base64
+        // Non-Windows: plain base64
         return Encoding.UTF8.GetString(bytes);
     }
 }

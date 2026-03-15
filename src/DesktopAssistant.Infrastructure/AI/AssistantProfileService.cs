@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Реализация IAssistantProfileService — управление профилями ассистента.
+/// IAssistantProfileService implementation — manages assistant profiles.
 /// </summary>
 public class AssistantProfileService : IAssistantProfileService
 {

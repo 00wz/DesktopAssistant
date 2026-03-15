@@ -6,8 +6,8 @@ namespace DesktopAssistant.UI.ViewModels;
 public enum SettingsSection { General, Profiles, ToolApproval }
 
 /// <summary>
-/// ViewModel-оболочка панели настроек. Управляет навигацией между секциями
-/// и предоставляет точку входа для закрытия панели.
+/// Wrapper ViewModel for the settings panel. Manages navigation between sections
+/// and provides an entry point for closing the panel.
 /// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {

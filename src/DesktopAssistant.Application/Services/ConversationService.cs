@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.Application.Services;
 
 /// <summary>
-/// Сервис для управления деревом узлов диалога.
-/// Не зависит от LLM-инфраструктуры (Semantic Kernel).
+/// Service for managing the conversation node tree.
+/// Does not depend on LLM infrastructure (Semantic Kernel).
 /// </summary>
 public class ConversationService
 {
@@ -29,8 +29,8 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Создаёт новый диалог с якорным корневым узлом.
-    /// Системный промпт хранится в Conversation.SystemPrompt и инжектируется в BuildChatHistory.
+    /// Creates a new conversation with an anchor root node.
+    /// The system prompt is stored in Conversation.SystemPrompt and injected via BuildChatHistory.
     /// </summary>
     public async Task<Conversation> CreateConversationAsync(
         string title,
@@ -43,12 +43,12 @@ public class ConversationService
 
         var conversation = new Conversation(title, assistantProfileId, systemPrompt);
 
-        // Добавляем якорный корневой узел (пустой System-узел как точка входа в дерево)
+        // Add anchor root node (empty System node as an entry point into the tree)
         var rootMessage = conversation.AddRootMessage();
 
         await _conversationRepository.AddAsync(conversation, cancellationToken);
 
-        // Устанавливаем ActiveLeafNodeId
+        // Set ActiveLeafNodeId
         conversation.SetActiveLeafNode(rootMessage.Id);
         await _conversationRepository.UpdateAsync(conversation, cancellationToken);
 
@@ -59,8 +59,8 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Добавляет узел в дерево диалога. Не зависит от SK-типов.
-    /// metadata — предсериализованная строка (или null).
+    /// Adds a node to the conversation tree. Does not depend on SK types.
+    /// metadata — pre-serialized string (or null).
     /// </summary>
     public async Task<MessageNode> AddNodeAsync(
         Guid conversationId,
@@ -95,7 +95,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Возвращает полный упорядоченный путь от корня до указанного узла
+    /// Returns the full ordered path from the root to the specified node
     /// </summary>
     public async Task<IEnumerable<MessageNode>> GetBranchPathAsync(
         Guid nodeId,
@@ -109,7 +109,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Собирает контекст для LLM - идёт назад по ветке до Summary Node или корня
+    /// Builds context for the LLM — walks back along the branch to a Summary Node or root
     /// </summary>
     public async Task<IEnumerable<MessageNode>> BuildContextAsync(
         Guid headNodeId,
@@ -127,7 +127,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Возвращает системный промпт диалога
+    /// Returns the system prompt for the conversation
     /// </summary>
     public async Task<string> GetSystemPromptAsync(
         Guid conversationId,
@@ -138,7 +138,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Меняет профиль ассистента для диалога
+    /// Changes the assistant profile for the conversation
     /// </summary>
     public async Task UpdateAssistantProfileAsync(
         Guid conversationId,
@@ -159,7 +159,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Обновляет системный промпт диалога
+    /// Updates the system prompt of the conversation
     /// </summary>
     public async Task UpdateSystemPromptAsync(
         Guid conversationId,
@@ -176,7 +176,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Возвращает профиль ассистента для указанного диалога
+    /// Returns the assistant profile for the specified conversation
     /// </summary>
     public async Task<AssistantProfile?> GetAssistantProfileAsync(
         Guid conversationId,
@@ -189,7 +189,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Получает диалог по ID
+    /// Gets a conversation by ID
     /// </summary>
     public async Task<Conversation?> GetConversationAsync(
         Guid conversationId,
@@ -197,7 +197,7 @@ public class ConversationService
         => await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
 
     /// <summary>
-    /// Получает все активные диалоги
+    /// Gets all active conversations
     /// </summary>
     public async Task<IEnumerable<Conversation>> GetActiveConversationsAsync(
         CancellationToken cancellationToken = default)
@@ -206,7 +206,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Soft-delete диалога
+    /// Soft-deletes a conversation
     /// </summary>
     public async Task DeleteConversationAsync(
         Guid conversationId,
@@ -217,9 +217,9 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Инжектирует summary-узел между selectedNode и его дочерними узлами.
-    /// После операции: selectedNode → summaryNode → (бывшие дочерние узлы selectedNode).
-    /// Если selectedNode является листом диалога, ActiveLeafNodeId обновляется на summaryNode.
+    /// Injects a summary node between selectedNode and its children.
+    /// After the operation: selectedNode → summaryNode → (former children of selectedNode).
+    /// If selectedNode is the conversation leaf, ActiveLeafNodeId is updated to summaryNode.
     /// </summary>
     public async Task<MessageNode> InjectSummaryNodeAsync(
         Guid conversationId,
@@ -236,30 +236,30 @@ public class ConversationService
         var children = (await _messageNodeRepository.GetChildrenAsync(selectedNodeId, cancellationToken)).ToList();
         var isLeaf = children.Count == 0;
 
-        // Создаём summary-узел как дочерний по отношению к selectedNode
+        // Create summary node as a child of selectedNode
         var summaryNode = new MessageNode(conversationId, MessageNodeType.Summary, summaryContent, selectedNodeId, tokenCount);
         if (metadata != null) summaryNode.SetMetadata(metadata);
         await _messageNodeRepository.AddAsync(summaryNode, cancellationToken);
 
-        // Перепривязываем всех бывших детей selectedNode к summaryNode
+        // Re-parent all former children of selectedNode to summaryNode
         foreach (var child in children)
         {
             child.ReparentTo(summaryNode.Id);
             await _messageNodeRepository.UpdateAsync(child, cancellationToken);
         }
 
-        // summaryNode наследует активного ребёнка selectedNode
+        // summaryNode inherits the active child of selectedNode
         if (oldActiveChildId.HasValue)
         {
             summaryNode.SetActiveChild(oldActiveChildId.Value);
             await _messageNodeRepository.UpdateAsync(summaryNode, cancellationToken);
         }
 
-        // selectedNode теперь указывает на summaryNode
+        // selectedNode now points to summaryNode
         selectedNode.SetActiveChild(summaryNode.Id);
         await _messageNodeRepository.UpdateAsync(selectedNode, cancellationToken);
 
-        // Если selectedNode был листом — summaryNode становится новым листом диалога
+        // If selectedNode was a leaf — summaryNode becomes the new conversation leaf
         if (isLeaf)
         {
             var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
@@ -276,7 +276,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Переключается на sibling сообщение
+    /// Switches to a sibling message
     /// </summary>
     public async Task SwitchToSiblingAsync(
         Guid conversationId,
@@ -307,7 +307,7 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Находит лист, следуя по цепочке ActiveChildId
+    /// Finds the leaf by following the ActiveChildId chain
     /// </summary>
     private async Task<MessageNode> FindLeafFromNodeAsync(
         MessageNode startNode,

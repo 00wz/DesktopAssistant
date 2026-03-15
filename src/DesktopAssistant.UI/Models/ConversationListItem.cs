@@ -1,7 +1,7 @@
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Элемент списка сохранённых диалогов
+/// An item in the saved conversations list.
 /// </summary>
 public class ConversationListItem
 {
@@ -10,7 +10,7 @@ public class ConversationListItem
     public DateTime UpdatedAt { get; set; }
 
     /// <summary>
-    /// Форматированное время последнего обновления
+    /// Formatted time of the last update.
     /// </summary>
     public string FormattedDate
     {
@@ -20,12 +20,12 @@ public class ConversationListItem
             var now = DateTime.Now;
             var diff = now - local;
 
-            if (diff.TotalMinutes < 1) return "только что";
-            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} мин. назад";
-            if (diff.TotalHours < 24 && local.Date == now.Date) return $"сегодня, {local:HH:mm}";
-            if (diff.TotalHours < 48 && local.Date == now.Date.AddDays(-1)) return $"вчера, {local:HH:mm}";
+            if (diff.TotalMinutes < 1) return "just now";
+            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min. ago";
+            if (diff.TotalHours < 24 && local.Date == now.Date) return $"today, {local:HH:mm}";
+            if (diff.TotalHours < 48 && local.Date == now.Date.AddDays(-1)) return $"yesterday, {local:HH:mm}";
             if (diff.TotalDays < 7) return local.ToString("dddd, HH:mm");
-            
+
             return local.ToString("d MMMM, HH:mm");
         }
     }

@@ -4,18 +4,18 @@ using Avalonia.Data.Converters;
 namespace DesktopAssistant.UI.Converters;
 
 /// <summary>
-/// Универсальный конвертер bool в произвольное значение.
-/// TrueValue и FalseValue задаются в AXAML.
+/// Universal bool-to-arbitrary-value converter.
+/// TrueValue and FalseValue are set in AXAML.
 /// </summary>
 public class BoolToValueConverter : IValueConverter
 {
     /// <summary>
-    /// Значение, возвращаемое при true
+    /// Value returned when the input is true.
     /// </summary>
     public object? TrueValue { get; set; }
-    
+
     /// <summary>
-    /// Значение, возвращаемое при false
+    /// Value returned when the input is false.
     /// </summary>
     public object? FalseValue { get; set; }
 

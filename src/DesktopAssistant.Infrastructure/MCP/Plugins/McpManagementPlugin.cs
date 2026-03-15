@@ -12,7 +12,7 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.MCP.Plugins;
 
 /// <summary>
-/// Плагин с tools для управления MCP серверами (поиск, установка)
+/// Plugin with tools for managing MCP servers (search, installation)
 /// </summary>
 public class McpManagementPlugin
 {
@@ -39,46 +39,46 @@ public class McpManagementPlugin
     }
     
     /// <summary>
-    /// Ищет MCP серверы в каталоге по описанию или тегам
+    /// Searches for MCP servers in the catalog by description or tags
     /// </summary>
     [KernelFunction("search_mcp_servers")]
-    [Description("Поиск MCP серверов в каталоге по описанию задачи или ключевым словам. Возвращает список подходящих серверов с GitHub URL. ВАЖНО: После нахождения сервера ОБЯЗАТЕЛЬНО загрузи README через fetch_mcp_server_readme для получения ТОЧНОЙ команды установки.")]
+    [Description("Search for MCP servers in the catalog by task description or keywords. Returns a list of matching servers with GitHub URLs. IMPORTANT: After finding a server, you MUST load the README via fetch_mcp_server_readme to get the EXACT installation command.")]
     public async Task<string> SearchMcpServersAsync(
-        [Description("Поисковый запрос: описание задачи или ключевые слова")] string query)
+        [Description("Search query: task description or keywords")] string query)
     {
         var results = await _catalogSearch.SearchAsync(query);
 
         if (results.Count == 0)
         {
-            return $"Не найдено MCP серверов по запросу '{query}'. Попробуйте другие ключевые слова.";
+            return $"No MCP servers found for query '{query}'. Try different keywords.";
         }
 
-        var resultText = $"Найдено {results.Count} MCP серверов:\n\n";
+        var resultText = $"Found {results.Count} MCP servers:\n\n";
 
         foreach (var s in results)
         {
             resultText += $"**{s.Name}** (id: {s.Id})\n";
-            resultText += $"Описание: {s.Description}\n";
+            resultText += $"Description: {s.Description}\n";
             resultText += $"GitHub: {s.GitHubUrl}\n";
-            resultText += $"Теги: {string.Join(", ", s.Tags)}\n\n";
+            resultText += $"Tags: {string.Join(", ", s.Tags)}\n\n";
         }
 
-        resultText += "\nДля установки загрузи README через fetch_mcp_server_readme и следуй инструкциям.\n";
+        resultText += "\nTo install, load the README via fetch_mcp_server_readme and follow the instructions.\n";
 
         return resultText;
     }
     
     /// <summary>
-    /// Загружает README.md из репозитория MCP сервера
+    /// Loads README.md from the MCP server repository
     /// </summary>
     [KernelFunction("fetch_mcp_server_readme")]
-    [Description("Загружает README.md из GitHub репозитория MCP сервера. README содержит ТОЧНУЮ команду установки (npx ...) - используй ИМЕННО её, не изменяя имя пакета! Ищи строки вида 'npx -y package-name' или секцию с конфигурацией.")]
+    [Description("Loads README.md from the GitHub repository of an MCP server. The README contains the EXACT installation command (npx ...) — use it AS-IS, do not change the package name! Look for lines like 'npx -y package-name' or a configuration section.")]
     public async Task<string> FetchMcpServerReadmeAsync(
-        [Description("URL GitHub репозитория (например: https://github.com/upstash/context7-mcp)")] string githubUrl)
+        [Description("GitHub repository URL (e.g. https://github.com/upstash/context7-mcp)")] string githubUrl)
     {
         try
         {
-            // Преобразуем GitHub URL в raw URL для README
+            // Convert GitHub URL to raw URL for README
             var rawUrl = ConvertToRawReadmeUrl(githubUrl);
             _logger.LogDebug("[TOOL fetch_mcp_server_readme] Converted to raw URL: {RawUrl}", rawUrl);
             
@@ -87,7 +87,7 @@ public class McpManagementPlugin
             
             if (!response.IsSuccessStatusCode)
             {
-                // Пробуем альтернативные имена
+                // Try alternative names
                 var altUrls = new[]
                 {
                     rawUrl.Replace("README.md", "readme.md"),
@@ -111,35 +111,35 @@ public class McpManagementPlugin
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("[TOOL fetch_mcp_server_readme] Failed to load README, status: {Status}", response.StatusCode);
-                return $"Не удалось загрузить README из {githubUrl}. Код ответа: {response.StatusCode}";
+                return $"Failed to load README from {githubUrl}. Response code: {response.StatusCode}";
             }
             
             var readme = await response.Content.ReadAsStringAsync();
             
-            return $"README из {githubUrl}:\n\n{readme}";
+            return $"README from {githubUrl}:\n\n{readme}";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching README from {Url}", githubUrl);
-            return $"Ошибка при загрузке README: {ex.Message}";
+            return $"Error loading README: {ex.Message}";
         }
     }
     
     /// <summary>
-    /// Возвращает путь к файлу конфигурации MCP
+    /// Returns the path to the MCP configuration file
     /// </summary>
     [KernelFunction("get_mcp_config_path")]
-    [Description("Возвращает путь к файлу конфигурации MCP серверов (mcp.json). Используй для информации - для добавления сервера лучше использовать add_mcp_server.")]
+    [Description("Returns the path to the MCP server configuration file (mcp.json). Use for informational purposes — to add a server, use add_mcp_server instead.")]
     public string GetMcpConfigPath()
     {
         return _configService.ConfigFilePath;
     }
     
     /// <summary>
-    /// Возвращает путь для клонирования MCP серверов
+    /// Returns the path for cloning MCP servers
     /// </summary>
     [KernelFunction("get_mcp_servers_directory")]
-    [Description("Возвращает путь к директории для клонирования MCP серверов")]
+    [Description("Returns the path to the directory for cloning MCP servers")]
     public string GetMcpServersDirectory()
     {
         return Path.Combine(
@@ -149,34 +149,34 @@ public class McpManagementPlugin
     }
     
     /// <summary>
-    /// Универсальный tool для добавления MCP сервера в конфигурацию.
-    /// Работает с любыми серверами: npx, node, python и т.д.
+    /// Universal tool for adding an MCP server to the configuration.
+    /// Works with any server: npx, node, python, etc.
     /// </summary>
     [KernelFunction("add_mcp_server")]
-    [Description(@"Добавляет MCP сервер в конфигурацию и пытается подключиться.
-Работает для ЛЮБЫХ серверов: npx, node, python и т.д.
+    [Description(@"Adds an MCP server to the configuration and attempts to connect.
+Works with ANY server: npx, node, python, etc.
 
-Примеры:
-- npx сервер: command='npx', args='[""-y"", ""tavily-mcp@0.2.1""]'
-- node сервер: command='node', args='[""/path/to/server/build/index.js""]'
-- python сервер: command='python', args='[""/path/to/server/main.py""]'
+Examples:
+- npx server: command='npx', args='[""-y"", ""tavily-mcp@0.2.1""]'
+- node server: command='node', args='[""/path/to/server/build/index.js""]'
+- python server: command='python', args='[""/path/to/server/main.py""]'
 
-Автоматически:
-1. Для npx - проверяет существование npm пакета
-2. Записывает конфигурацию в mcp.json
-3. Пытается подключиться к серверу
-4. Возвращает результат с доступными tools или ошибкой
+Automatically:
+1. For npx — validates the npm package exists
+2. Writes configuration to mcp.json
+3. Attempts to connect to the server
+4. Returns the result with available tools or an error
 
-ВАЖНО: Для npx серверов имя пакета должно быть ТОЧНО из README!")]
+IMPORTANT: For npx servers the package name must be EXACTLY from the README!")]
     public async Task<string> AddMcpServerAsync(
-        [Description("Уникальный ID сервера для конфигурации (например: 'tavily', 'weather-server')")] string serverId,
-        [Description("Команда для запуска: 'npx', 'node', 'python' и т.д.")] string command,
-        [Description("Аргументы командной строки в формате JSON массива")] string argsJson,
-        [Description("Переменные окружения в формате JSON объекта. Может быть пустым: {}")] string envJson)
+        [Description("Unique server ID for the configuration (e.g. 'tavily', 'weather-server')")] string serverId,
+        [Description("Launch command: 'npx', 'node', 'python', etc.")] string command,
+        [Description("Command-line arguments as a JSON array")] string argsJson,
+        [Description("Environment variables as a JSON object. Can be empty: {}")] string envJson)
     {
         try
         {
-            // 1. Парсим аргументы
+            // 1. Parse arguments
             List<string> args;
             try
             {
@@ -184,11 +184,11 @@ public class McpManagementPlugin
             }
             catch (JsonException ex)
             {
-                return $"❌ ОШИБКА: Некорректный формат args JSON: {ex.Message}\n" +
-                       "Формат должен быть JSON массивом: [\"-y\", \"package-name@version\"]";
+                return $"❌ ERROR: Invalid args JSON format: {ex.Message}\n" +
+                       "Format must be a JSON array: [\"-y\", \"package-name@version\"]";
             }
             
-            // 2. Парсим env
+            // 2. Parse env
             Dictionary<string, string> env;
             try
             {
@@ -196,18 +196,18 @@ public class McpManagementPlugin
             }
             catch (JsonException ex)
             {
-                return $"❌ ОШИБКА: Некорректный формат env JSON: {ex.Message}\n" +
-                       "Формат должен быть JSON объектом: {\"KEY\": \"value\"}";
+                return $"❌ ERROR: Invalid env JSON format: {ex.Message}\n" +
+                       "Format must be a JSON object: {\"KEY\": \"value\"}";
             }
             
-            // 3. Универсальная валидация перед записью конфигурации
+            // 3. Universal validation before writing configuration
             var validationError = await ValidateServerConfigAsync(command, args);
             if (validationError != null)
             {
                 return validationError;
             }
             
-            // 4. Записываем конфигурацию
+            // 4. Write configuration
             var serverConfig = new McpServerConfigDto
             {
                 Command = command,
@@ -219,47 +219,47 @@ public class McpManagementPlugin
             await _configService.AddServerAsync(serverId, serverConfig);
             _logger.LogInformation("MCP server config written for '{ServerId}'", serverId);
             
-            // 6. Ждём немного и пробуем подключиться
-            await Task.Delay(500); // Даём время FileWatcher обработать изменение
-            
-            // 7. Проверяем статус подключения с несколькими попытками
+            // 6. Wait briefly and attempt to connect
+            await Task.Delay(500); // Give FileWatcher time to process the change
+
+            // 7. Check connection status with several attempts
             const int maxAttempts = 120;
             const int delayMs = 1000;
             
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                // Используем GetServerInfo для получения информации включая ошибки
+                // Use GetServerInfo to get information including errors
                 var serverInfo = _serverManager.GetServerInfo(serverId);
                 
                 if (serverInfo != null)
                 {
-                    // Проверяем успешное подключение
+                    // Check for successful connection
                     if (serverInfo.Status == McpServerStatusDto.Connected)
                     {
                         var toolsList = serverInfo.Tools.Any()
                             ? string.Join("\n", serverInfo.Tools.Select(t => $"  - {t.Name}: {t.Description ?? "no description"}"))
-                            : "  (нет tools)";
-                        
-                        return $"✅ MCP СЕРВЕР '{serverId}' УСПЕШНО УСТАНОВЛЕН И ПОДКЛЮЧЕН!\n\n" +
-                               $"Конфигурация:\n" +
+                            : "  (no tools)";
+
+                        return $"✅ MCP SERVER '{serverId}' SUCCESSFULLY INSTALLED AND CONNECTED!\n\n" +
+                               $"Configuration:\n" +
                                $"  Command: {command}\n" +
                                $"  Args: {string.Join(" ", args)}\n" +
-                               (env.Any() ? $"  Env: {env.Keys.Count} переменных\n" : "") +
-                               $"\nДоступные tools ({serverInfo.Tools.Count}):\n{toolsList}\n\n" +
-                               "Теперь ты можешь использовать эти tools для выполнения задач пользователя.";
+                               (env.Any() ? $"  Env: {env.Keys.Count} variables\n" : "") +
+                               $"\nAvailable tools ({serverInfo.Tools.Count}):\n{toolsList}\n\n" +
+                               "You can now use these tools to perform user tasks.";
                     }
                     
-                    // Проверяем ошибку подключения - сразу возвращаем ошибку, не ждём
+                    // Check for connection error — return immediately, don't wait
                     if (serverInfo.Status == McpServerStatusDto.Error)
                     {
-                        return $"❌ ОШИБКА ПОДКЛЮЧЕНИЯ к MCP серверу '{serverId}'!\n\n" +
-                               $"Конфигурация записана, но сервер не запустился.\n" +
-                               $"Ошибка: {serverInfo.ErrorMessage}\n\n" +
-                               "Возможные причины:\n" +
-                               "1. Неверный формат команды или аргументов\n" +
-                               "2. Отсутствуют необходимые переменные окружения (API ключи)\n" +
-                               "3. Пакет требует дополнительной настройки\n\n" +
-                               "РЕШЕНИЕ: Проверь README и убедись что все параметры указаны верно.";
+                        return $"❌ CONNECTION ERROR for MCP server '{serverId}'!\n\n" +
+                               $"Configuration written, but the server failed to start.\n" +
+                               $"Error: {serverInfo.ErrorMessage}\n\n" +
+                               "Possible reasons:\n" +
+                               "1. Invalid command or argument format\n" +
+                               "2. Missing required environment variables (API keys)\n" +
+                               "3. The package requires additional configuration\n\n" +
+                               "SOLUTION: Check the README and make sure all parameters are correct.";
                     }
                 }
                 
@@ -269,26 +269,26 @@ public class McpManagementPlugin
                 }
             }
             
-            // 8. Таймаут - сервер всё ещё в статусе Connecting
-            return $"⚠️ MCP сервер '{serverId}' - конфигурация записана, но подключение не завершилось за {maxAttempts} секунд.\n\n" +
-                   "Конфигурация сохранена в mcp.json.\n\n" +
-                   "Возможная причина: сервер запускается медленно";
+            // 8. Timeout — server still in Connecting status
+            return $"⚠️ MCP server '{serverId}' — configuration written, but connection did not complete within {maxAttempts} seconds.\n\n" +
+                   "Configuration saved to mcp.json.\n\n" +
+                   "Possible reason: server is starting slowly";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error installing MCP server '{ServerId}'", serverId);
-            return $"❌ КРИТИЧЕСКАЯ ОШИБКА при установке MCP сервера: {ex.Message}";
+            return $"❌ CRITICAL ERROR installing MCP server: {ex.Message}";
         }
     }
     
     /// <summary>
-    /// Универсальная валидация конфигурации сервера перед записью
+    /// Universal validation of server configuration before writing
     /// </summary>
     private async Task<string?> ValidateServerConfigAsync(string command, List<string> args)
     {
         var commandLower = command.ToLowerInvariant();
         
-        // 1. Для npx - валидируем npm пакет
+        // 1. For npx — validate npm package
         if (commandLower == "npx")
         {
             string? packageName = null;
@@ -306,22 +306,22 @@ public class McpManagementPlugin
                 var validationResult = await ValidateNpmPackageInternalAsync(packageName);
                 if (!validationResult.IsValid)
                 {
-                    return $"❌ ОШИБКА ВАЛИДАЦИИ npm пакета!\n\n" +
-                           $"Пакет: {packageName}\n" +
-                           $"Ошибка: {validationResult.Error}\n\n" +
-                           "Возможные причины:\n" +
-                           "1. Имя пакета написано с ошибкой\n" +
-                           "2. Ты ПРИДУМАЛ имя пакета вместо копирования из README\n\n" +
-                           "РЕШЕНИЕ: Вернись к README (fetch_mcp_server_readme) и найди ТОЧНОЕ имя пакета!";
+                    return $"❌ npm PACKAGE VALIDATION ERROR!\n\n" +
+                           $"Package: {packageName}\n" +
+                           $"Error: {validationResult.Error}\n\n" +
+                           "Possible reasons:\n" +
+                           "1. Package name is misspelled\n" +
+                           "2. You INVENTED the package name instead of copying it from the README\n\n" +
+                           "SOLUTION: Return to README (fetch_mcp_server_readme) and find the EXACT package name!";
                 }
             }
             return null;
         }
         
-        // 2. Для node/python - проверяем существование файла скрипта
+        // 2. For node/python — check script file existence
         if (commandLower == "node" || commandLower == "python" || commandLower == "python3")
         {
-            // Ищем путь к файлу в аргументах
+            // Find script file path in arguments
             string? scriptPath = null;
             foreach (var arg in args)
             {
@@ -334,33 +334,33 @@ public class McpManagementPlugin
             
             if (!string.IsNullOrEmpty(scriptPath) && !File.Exists(scriptPath))
             {
-                return $"❌ ОШИБКА: Файл скрипта не найден!\n\n" +
-                       $"Путь: {scriptPath}\n\n" +
-                       "Возможные причины:\n" +
-                       "1. Сервер не был склонирован или не собран\n" +
-                       "2. Путь указан неверно\n\n" +
-                       "РЕШЕНИЕ:\n" +
-                       "1. Убедись что репозиторий склонирован в get_mcp_servers_directory()\n" +
-                       "2. Выполни сборку: execute_command('npm install && npm run build')\n" +
-                       "3. Проверь правильность пути к собранному файлу";
+                return $"❌ ERROR: Script file not found!\n\n" +
+                       $"Path: {scriptPath}\n\n" +
+                       "Possible reasons:\n" +
+                       "1. The server was not cloned or not built\n" +
+                       "2. Path is incorrect\n\n" +
+                       "SOLUTION:\n" +
+                       "1. Make sure the repository is cloned in get_mcp_servers_directory()\n" +
+                       "2. Run the build: execute_command('npm install && npm run build')\n" +
+                       "3. Verify the path to the built file";
             }
             return null;
         }
         
-        // 3. Проверяем что команда доступна в системе
+        // 3. Check that the command is available on the system
         var commandExists = await CheckCommandExistsAsync(command);
         if (!commandExists)
         {
-            return $"⚠️ ПРЕДУПРЕЖДЕНИЕ: Команда '{command}' может быть недоступна в системе.\n\n" +
-                   "Конфигурация будет записана, но сервер может не запуститься.\n" +
-                   "Убедись что программа установлена и доступна в PATH.";
+            return $"⚠️ WARNING: Command '{command}' may not be available on the system.\n\n" +
+                   "Configuration will be written, but the server may fail to start.\n" +
+                   "Make sure the program is installed and available in PATH.";
         }
         
         return null;
     }
     
     /// <summary>
-    /// Проверяет доступность команды в системе
+    /// Checks whether a command is available on the system
     /// </summary>
     private async Task<bool> CheckCommandExistsAsync(string command)
     {
@@ -396,33 +396,33 @@ public class McpManagementPlugin
         }
         catch
         {
-            return true; // В случае ошибки проверки - пропускаем
+            return true; // If check fails — skip
         }
     }
     
     /// <summary>
-    /// Внутренний метод валидации npm пакета
+    /// Internal method for npm package validation
     /// </summary>
     private async Task<(bool IsValid, string? Error)> ValidateNpmPackageInternalAsync(string packageName)
     {
         try
         {
-            // Убираем версию из имени пакета для проверки
+            // Strip version from package name for validation
             var cleanPackageName = packageName;
             
-            // Обработка scoped пакетов (@scope/name@version)
+            // Handle scoped packages (@scope/name@version)
             if (packageName.StartsWith("@"))
             {
                 var parts = packageName.Split('@');
                 if (parts.Length >= 3)
                 {
-                    // @scope/name@version -> @scope/name
+                    // @scope/name@version → @scope/name
                     cleanPackageName = "@" + parts[1];
                 }
             }
             else if (packageName.Contains("@"))
             {
-                // name@version -> name
+                // name@version → name
                 cleanPackageName = packageName.Split('@')[0];
             }
             
@@ -454,35 +454,35 @@ public class McpManagementPlugin
             var output = await process.StandardOutput.ReadToEndAsync();
             var error = await process.StandardError.ReadToEndAsync();
             
-            var completed = await Task.Run(() => process.WaitForExit(30000)); // 30 сек таймаут
+            var completed = await Task.Run(() => process.WaitForExit(30000)); // 30 sec timeout
             
             if (!completed)
             {
                 process.Kill();
-                return (false, "Таймаут при проверке npm пакета");
+                return (false, "Timeout while checking npm package");
             }
             
             if (process.ExitCode != 0)
             {
-                return (false, $"Пакет не найден в npm registry. Вывод: {output} {error}");
+                return (false, $"Package not found in npm registry. Output: {output} {error}");
             }
             
             return (true, null);
         }
         catch (Exception ex)
         {
-            return (false, $"Ошибка проверки: {ex.Message}");
+            return (false, $"Validation error: {ex.Message}");
         }
     }
     
     private static string ConvertToRawReadmeUrl(string githubUrl)
     {
-        // Обрабатываем URL с подкаталогами:
-        // https://github.com/owner/repo/tree/main/src/subdir -> README из подкаталога
-        // https://github.com/owner/repo/blob/main/src/subdir/README.md -> прямая ссылка
-        // https://github.com/owner/repo -> README из корня
-        
-        // Паттерн для URL с tree (подкаталог)
+        // Handle URLs with subdirectories:
+        // https://github.com/owner/repo/tree/main/src/subdir -> README from subdirectory
+        // https://github.com/owner/repo/blob/main/src/subdir/README.md -> direct link
+        // https://github.com/owner/repo -> README from root
+
+        // Pattern for URL with tree (subdirectory)
         var treeMatch = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)/tree/([^/]+)/(.+)");
         if (treeMatch.Success)
         {
@@ -493,7 +493,7 @@ public class McpManagementPlugin
             return $"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}/README.md";
         }
         
-        // Паттерн для URL с blob (прямая ссылка на файл)
+        // Pattern for URL with blob (direct file link)
         var blobMatch = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)");
         if (blobMatch.Success)
         {
@@ -504,7 +504,7 @@ public class McpManagementPlugin
             return $"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{filePath}";
         }
         
-        // Базовый паттерн для корня репозитория
+        // Base pattern for repository root
         var baseMatch = Regex.Match(githubUrl, @"github\.com/([^/]+)/([^/]+)");
         if (baseMatch.Success)
         {

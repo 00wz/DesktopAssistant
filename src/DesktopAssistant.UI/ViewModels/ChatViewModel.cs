@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel для чата с AI-ассистентом
+/// ViewModel for the AI assistant chat
 /// </summary>
 public partial class ChatViewModel : ObservableObject
 {
@@ -19,7 +19,7 @@ public partial class ChatViewModel : ObservableObject
 
     private IConversationSession? _conversationSession;
 
-    // Используется только при стриминге: текущая модель ассистента, в которую пишутся чанки
+    // Used only during streaming: the current assistant model that receives chunks
     private AssistantChatMessageModel? _activeAssistantModel;
 
     [ObservableProperty]
@@ -33,7 +33,7 @@ public partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    /// <summary>Текущее состояние диалога — управляет доступностью SendMessage и Resume.</summary>
+    /// <summary>Current conversation state — controls availability of SendMessage and Resume.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendMessageCommand))]
     [NotifyCanExecuteChangedFor(nameof(ResumeCommand))]
@@ -41,19 +41,19 @@ public partial class ChatViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowResumePanel))]
     private ConversationState _conversationStatus;
 
-    // ── Настройки диалога ────────────────────────────────────────────────────
+    // ── Conversation settings ────────────────────────────────────────────────
 
     [ObservableProperty]
     private bool _isSettingsPanelVisible;
 
-    /// <summary>Имя активного профиля ассистента — отображается в заголовке чата.</summary>
+    /// <summary>Name of the active assistant profile — displayed in the chat header.</summary>
     [ObservableProperty]
     private string _assistantProfileName = string.Empty;
 
     public ChatSettingsPanelViewModel Settings { get; }
 
     /// <summary>
-    /// Статистика токенов последнего ответа
+    /// Token statistics for the last response
     /// </summary>
     [ObservableProperty]
     private int _lastTotalTokenCount;
@@ -76,10 +76,10 @@ public partial class ChatViewModel : ObservableObject
         _logger = logger;
     }
 
-    // ── Инициализация ────────────────────────────────────────────────────────
+    // ── Initialization ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// Привязывается к сессии диалога
+    /// Binds to a conversation session
     /// </summary>
     public async Task InitializeAsync(
         IConversationSession conversationSession,
@@ -106,7 +106,7 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error initializing chat");
-            ErrorMessage = $"Ошибка инициализации чата: {ex.Message}";
+            ErrorMessage = $"Error initializing chat: {ex.Message}";
         }
         finally
         {
@@ -139,7 +139,7 @@ public partial class ChatViewModel : ObservableObject
     }
 
 
-    // ── Обработка событий сессии ─────────────────────────────────────────────
+    // ── Session event handling ───────────────────────────────────────────────
 
     private void OnSessionEvent(object? sender, SessionEvent evt)
     {
@@ -148,8 +148,8 @@ public partial class ChatViewModel : ObservableObject
 
     private async Task HandleSessionEvent(SessionEvent evt)
     {
-        /// _sessionEventHandleLock защищает от коллизии обработки SessionEvent,
-        /// например, когда во время обработки InitializeSessionEvent приходит UserMessageAddedSessionEvent 
+        /// _sessionEventHandleLock guards against collision when handling SessionEvents,
+        /// e.g. when a UserMessageAddedSessionEvent arrives while InitializeSessionEvent is being processed
         await _sessionEventHandleLock.WaitAsync();
         try
         {
@@ -218,7 +218,7 @@ public partial class ChatViewModel : ObservableObject
                     break;
 
                 case SessionErrorEvent error:
-                    ErrorMessage = $"Ошибка: {error.Message}";
+                    ErrorMessage = $"Error: {error.Message}";
                     CleanupStreamingModel();
                     break;
 
@@ -275,7 +275,7 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    // ── Настройки диалога ────────────────────────────────────────────────────
+    // ── Conversation settings ─────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task ToggleSettingsPanelAsync()
@@ -286,7 +286,7 @@ public partial class ChatViewModel : ObservableObject
             await Settings.LoadAsync(_conversationSession);
     }
 
-    // ── Отправка сообщений ───────────────────────────────────────────────────
+    // ── Sending messages ─────────────────────────────────────────────────────
 
     [RelayCommand(CanExecute = nameof(CanSendMessage))]
     private async Task SendMessageAsync()
@@ -308,7 +308,7 @@ public partial class ChatViewModel : ObservableObject
         catch(Exception ex)
         {
             _logger.LogError(ex, "Error sending message");
-            ErrorMessage = $"Ошибка отправки сообщения: {ex.Message}";
+            ErrorMessage = $"Error sending message: {ex.Message}";
         }
     }
 
@@ -347,11 +347,11 @@ public partial class ChatViewModel : ObservableObject
         catch(Exception ex)
         {
             _logger.LogError(ex, "Error resuming dialogue");
-            ErrorMessage = $"Ошибка возобновления диалога: {ex.Message}";
+            ErrorMessage = $"Error resuming conversation: {ex.Message}";
         }
     }
 
-    // ── Редактирование сообщений ─────────────────────────────────────────────
+    // ── Message editing ──────────────────────────────────────────────────────
 
     [RelayCommand]
     private void StartEditMessage(UserChatMessageModel message)
@@ -384,7 +384,7 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving edited message");
-            ErrorMessage = $"Ошибка сохранения сообщения: {ex.Message}";
+            ErrorMessage = $"Error saving message: {ex.Message}";
             message.IsEditing = false;
         }
     }
@@ -440,7 +440,7 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
-    // ── Суммаризация ─────────────────────────────────────────────────────────
+    // ── Summarization ────────────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task SummarizeMessageAsync(ChatMessageModel message)
@@ -457,11 +457,11 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error summarizing message {MessageId}", message.Id);
-            ErrorMessage = $"Ошибка суммаризации: {ex.Message}";
+            ErrorMessage = $"Summarization error: {ex.Message}";
         }
     }
 
-    // ── Навигация по siblings ─────────────────────────────────────────────────
+    // ── Sibling navigation ───────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task NavigateToPreviousSiblingAsync(ChatMessageModel message)
@@ -481,7 +481,7 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error navigating to previous sibling");
-            ErrorMessage = $"Ошибка навигации: {ex.Message}";
+            ErrorMessage = $"Navigation error: {ex.Message}";
         }
     }
 
@@ -503,7 +503,7 @@ public partial class ChatViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error navigating to next sibling");
-            ErrorMessage = $"Ошибка навигации: {ex.Message}";
+            ErrorMessage = $"Navigation error: {ex.Message}";
         }
     }
 

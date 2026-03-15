@@ -5,9 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DesktopAssistant.Infrastructure.Settings;
 
 /// <summary>
-/// Хранит настройки auto-approve для каждого tool в таблице AppSettings.
-/// Ключ: "tool-autoapprove:{pluginName}:{functionName}".
-/// По умолчанию (нет записи) — подтверждение требуется (false).
+/// Stores auto-approve settings for each tool in the AppSettings table.
+/// Key: "tool-autoapprove:{pluginName}:{functionName}".
+/// Default (no entry) — approval is required (false).
 /// </summary>
 public class ToolApprovalService : IToolApprovalService
 {
@@ -33,7 +33,7 @@ public class ToolApprovalService : IToolApprovalService
         await repo.SetAsync(
             BuildKey(pluginName, functionName),
             value ? "true" : "false",
-            $"Auto-approve для {pluginName}.{functionName}");
+            $"Auto-approve for {pluginName}.{functionName}");
     }
 
     private static string BuildKey(string pluginName, string functionName)

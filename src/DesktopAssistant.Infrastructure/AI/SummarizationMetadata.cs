@@ -6,8 +6,8 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Метаданные summary-узла. Хранит сериализованные ChatMessageContent, полученные от ChatHistorySummarizationReducer.
-/// Хранится в MessageNode.Metadata.
+/// Metadata for a summary node. Stores serialized ChatMessageContent received from ChatHistorySummarizationReducer.
+/// Stored in MessageNode.Metadata.
 /// </summary>
 internal sealed record SummarizationMetadata(string[] SerializedMessages)
 {

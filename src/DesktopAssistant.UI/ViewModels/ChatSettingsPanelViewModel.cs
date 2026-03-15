@@ -8,8 +8,8 @@ using System.Collections.ObjectModel;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel панели настроек диалога.
-/// Хранит черновые значения всех настроек и применяет их единой командой Save.
+/// ViewModel for the conversation settings panel.
+/// Stores draft values for all settings and applies them with a single Save command.
 /// </summary>
 public partial class ChatSettingsPanelViewModel : ObservableObject
 {
@@ -18,11 +18,11 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
 
     private IConversationSession? _session;
 
-    // Снапшот значений на момент загрузки — используется для определения HasChanges
+    // Snapshot of values at load time — used to determine HasChanges
     private string _originalSystemPrompt = string.Empty;
     private Guid? _originalProfileId;
 
-    /// <summary>Вызывается после успешного сохранения, передаёт новое имя профиля.</summary>
+    /// <summary>Called after a successful save; passes the new profile name.</summary>
     public Action<string>? OnProfileApplied { get; set; }
 
     [ObservableProperty]
@@ -42,7 +42,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    /// <summary>True в течение короткого времени после успешного сохранения.</summary>
+    /// <summary>True for a brief period after a successful save.</summary>
     [ObservableProperty]
     private bool _isSaved;
 
@@ -83,7 +83,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading conversation settings");
-            ErrorMessage = $"Ошибка загрузки настроек: {ex.Message}";
+            ErrorMessage = $"Error loading settings: {ex.Message}";
         }
         finally
         {
@@ -120,7 +120,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving conversation settings");
-            ErrorMessage = $"Ошибка сохранения настроек: {ex.Message}";
+            ErrorMessage = $"Error saving settings: {ex.Message}";
         }
         finally
         {

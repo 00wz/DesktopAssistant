@@ -1,22 +1,22 @@
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Иконка статуса активной сессии диалога в боковой панели.
+/// Status icon for an active conversation session in the sidebar.
 /// </summary>
 public enum SessionStatusIcon
 {
-    /// <summary>Иконка не отображается.</summary>
+    /// <summary>Icon is not displayed.</summary>
     None,
 
-    /// <summary>Анимированная иконка загрузки — сессия выполняет LLM-тёрн.</summary>
+    /// <summary>Animated loading icon — the session is executing an LLM turn.</summary>
     Loading,
 
-    /// <summary>Иконка паузы — ожидание ввода пользователя или возобновления.</summary>
+    /// <summary>Pause icon — waiting for user input or resumption.</summary>
     Paused,
 
-    /// <summary>Анимированная иконка вопроса — ожидание одобрения tool-вызова.</summary>
+    /// <summary>Animated question icon — waiting for tool-call approval.</summary>
     Question,
 
-    /// <summary>Иконка ошибки — несоответствие идентификаторов tool-вызовов.</summary>
+    /// <summary>Error icon — tool-call ID mismatch.</summary>
     Error,
 }

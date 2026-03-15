@@ -5,8 +5,8 @@ using DesktopAssistant.UI.Localization;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel секции «Общие» панели настроек.
-/// Управляет выбором языка интерфейса.
+/// ViewModel for the "General" section of the settings panel.
+/// Manages UI language selection.
 /// </summary>
 public partial class GeneralSettingsViewModel : ObservableObject
 {

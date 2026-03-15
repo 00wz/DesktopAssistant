@@ -1,53 +1,53 @@
 namespace DesktopAssistant.Infrastructure.MCP.Models;
 
 /// <summary>
-/// Информация о подключённом MCP сервере
+/// Information about a connected MCP server.
 /// </summary>
 public class McpServerInfo
 {
     /// <summary>
-    /// Уникальный идентификатор сервера (имя в конфигурации)
+    /// Unique server identifier (name from configuration).
     /// </summary>
     public string Id { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// Статус подключения
+    /// Connection status.
     /// </summary>
     public McpServerStatus Status { get; set; } = McpServerStatus.Disconnected;
-    
+
     /// <summary>
-    /// Доступные инструменты сервера
+    /// Tools available on this server.
     /// </summary>
     public List<McpToolInfo> Tools { get; set; } = new();
-    
+
     /// <summary>
-    /// Сообщение об ошибке (если Status == Error)
+    /// Error message (when Status == Error).
     /// </summary>
     public string? ErrorMessage { get; set; }
 }
 
 /// <summary>
-/// Статус MCP сервера
+/// MCP server status.
 /// </summary>
 public enum McpServerStatus
 {
     /// <summary>
-    /// Отключён
+    /// Disconnected.
     /// </summary>
     Disconnected,
-    
+
     /// <summary>
-    /// Подключение в процессе
+    /// Connection in progress.
     /// </summary>
     Connecting,
-    
+
     /// <summary>
-    /// Подключён и работает
+    /// Connected and operational.
     /// </summary>
     Connected,
-    
+
     /// <summary>
-    /// Ошибка подключения
+    /// Connection error.
     /// </summary>
     Error
 }

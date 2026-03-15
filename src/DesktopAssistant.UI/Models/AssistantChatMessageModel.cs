@@ -5,7 +5,7 @@ using LiveMarkdown.Avalonia;
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Модель сообщения ассистента. Поддерживает потоковое добавление текста.
+/// Assistant message model. Supports streaming text append.
 /// </summary>
 public partial class AssistantChatMessageModel : ChatMessageModel
 {
@@ -33,7 +33,7 @@ public partial class AssistantChatMessageModel : ChatMessageModel
         CreatedAt = createdAt;
     }
 
-    /// <summary>Добавляет чанк стримингового ответа к контенту.</summary>
+    /// <summary>Appends a streaming response chunk to the content.</summary>
     public void AppendContent(string chunk)
     {
         MarkdownBuilder.Append(chunk);

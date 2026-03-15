@@ -40,8 +40,8 @@ internal class ConversationSessionService : IConversationSessionService
 
         await newSession.InitializeAsync();
 
-        // Если параллельный вызов успел добавить сессию первым — используем её,
-        // а только что созданную освобождаем
+        // If a concurrent call added the session first — use that one
+        // and dispose the one we just created
         var session = _sessions.GetOrAdd(conversationId, newSession);
         if (!ReferenceEquals(session, newSession))
         {

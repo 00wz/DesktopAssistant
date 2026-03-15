@@ -16,7 +16,7 @@
                       FontSize="14"
                       FontWeight="SemiBold"/>
 
-           <!-- Профиль -->
+           <!-- Profile -->
            <Grid ColumnDefinitions="120,*">
                <TextBlock Grid.Column="0"
                           Text="{DynamicResource ChatSettings.Profile.Label}"
@@ -43,7 +43,7 @@
                </ComboBox>
            </Grid>
 
-           <!-- Системный промпт -->
+           <!-- System prompt -->
            <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
            <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
                     AcceptsReturn="True"

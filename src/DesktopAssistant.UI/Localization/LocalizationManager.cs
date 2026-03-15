@@ -5,10 +5,10 @@ using Avalonia.Markup.Xaml;
 namespace DesktopAssistant.UI.Localization;
 
 /// <summary>
-/// Управляет текущим языком интерфейса.
-/// Загружает ResourceDictionary из Avalonia-ресурсов и добавляет его в
-/// Application.Resources.MergedDictionaries, заменяя предыдущий.
-/// Использование в XAML: <c>{DynamicResource KeyName}</c>.
+/// Manages the current UI language.
+/// Loads a ResourceDictionary from Avalonia resources and adds it to
+/// Application.Resources.MergedDictionaries, replacing the previous one.
+/// Usage in XAML: <c>{DynamicResource KeyName}</c>.
 /// </summary>
 public sealed class LocalizationManager
 {
@@ -23,8 +23,8 @@ public sealed class LocalizationManager
     private IResourceDictionary? _currentDict;
 
     /// <summary>
-    /// Язык, который будет загружен при вызове <see cref="LoadLanguage"/>
-    /// во время инициализации приложения.
+    /// The language that will be loaded when <see cref="LoadLanguage"/> is called
+    /// during application initialization.
     /// </summary>
     public string PendingLanguage { get; set; } = "en";
 
@@ -33,8 +33,8 @@ public sealed class LocalizationManager
     private LocalizationManager() { }
 
     /// <summary>
-    /// Загружает словарь для указанного языка и применяет его к ресурсам приложения.
-    /// Должен вызываться после того, как <see cref="Application.Current"/> доступен.
+    /// Loads the dictionary for the specified language and applies it to the application resources.
+    /// Must be called after <see cref="Application.Current"/> is available.
     /// </summary>
     public void LoadLanguage(string languageCode)
     {

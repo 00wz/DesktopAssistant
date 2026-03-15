@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DesktopAssistant.Infrastructure.Persistence;
 
 /// <summary>
-/// Контекст базы данных приложения
+/// Application database context
 /// </summary>
 public class AppDbContext : DbContext
 {

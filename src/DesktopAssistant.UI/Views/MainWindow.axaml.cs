@@ -19,7 +19,7 @@ public partial class MainWindow : Window
         if (change.Property == WindowStateProperty)
         {
             UpdateMaxRestoreIcon();
-            // Компенсируем невидимую рамку Windows при развёрнутом окне
+            // Compensate for the invisible Windows border when the window is maximized
             RootGrid.Margin = WindowState == WindowState.Maximized
                 ? OffScreenMargin
                 : default;
@@ -34,7 +34,7 @@ public partial class MainWindow : Window
     private void UpdateMaxRestoreIcon()
     {
         if (MaxRestoreIcon is null) return;
-        // □ — развернуть, ❐ — восстановить
+        // □ — maximize, ❐ — restore
         MaxRestoreIcon.Text = WindowState == WindowState.Maximized ? "❐" : "□";
     }
 

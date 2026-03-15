@@ -9,9 +9,9 @@ using System.Collections.ObjectModel;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel секции «Автоподтверждение tools» в панели настроек.
-/// Отображает tools, сгруппированные по плагину/MCP-серверу.
-/// Динамически обновляется при подключении/отключении MCP серверов.
+/// ViewModel for the "Tool Auto-Approval" section of the settings panel.
+/// Displays tools grouped by plugin/MCP server.
+/// Dynamically updates when MCP servers connect or disconnect.
 /// </summary>
 public partial class ToolApprovalSettingsViewModel : ObservableObject, IDisposable
 {
@@ -78,7 +78,7 @@ public partial class ToolApprovalSettingsViewModel : ObservableObject, IDisposab
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading tool approval settings");
-            ErrorMessage = $"Ошибка загрузки настроек: {ex.Message}";
+            ErrorMessage = $"Error loading settings: {ex.Message}";
         }
         finally
         {

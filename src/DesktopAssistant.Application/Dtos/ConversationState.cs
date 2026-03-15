@@ -1,25 +1,25 @@
 namespace DesktopAssistant.Application.Dtos;
 
 /// <summary>
-/// Состояние диалога с точки зрения UI — определяет доступные действия пользователя.
+/// Conversation state from the UI perspective — determines the actions available to the user.
 /// </summary>
 public enum ConversationState
 {
-    /// <summary>Последнее сообщение — от ассистента без tool-вызовов. Пользователь может писать.</summary>
+    /// <summary>The last message is from the assistant with no tool calls. The user can type.</summary>
     LastMessageIsAssistant = 0,
 
-    /// <summary>Последнее сообщение — от пользователя (LLM не ответил). Показать кнопку «Возобновить».</summary>
+    /// <summary>The last message is from the user (the LLM has not responded). Show the "Resume" button.</summary>
     LastMessageIsUser,
 
-    /// <summary>Все tool-вызовы выполнены, но LLM ещё не получил результаты. Показать кнопку «Возобновить».</summary>
+    /// <summary>All tool calls have been executed, but the LLM has not yet received the results. Show the "Resume" button.</summary>
     AllToolCallsCompleted,
 
-    /// <summary>Есть ожидающие tool-вызовы. Пользователь ждёт подтверждения/отклонения.</summary>
+    /// <summary>There are pending tool calls. The user is waiting to approve or deny them.</summary>
     HasPendingToolCalls,
 
     /// <summary>
-    /// Идентификаторы tool-результатов не совпадают с идентификаторами tool-вызовов ассистента.
-    /// Например: узел с результатом не был создан, или был передан id не последнего результата.
+    /// Tool result identifiers do not match the tool call identifiers from the assistant.
+    /// For example: the result node was not created, or a non-latest result id was provided.
     /// </summary>
     ToolCallIdMismatch,
 }

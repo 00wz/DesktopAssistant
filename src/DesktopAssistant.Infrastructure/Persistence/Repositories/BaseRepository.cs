@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DesktopAssistant.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Базовая реализация репозитория
+/// Base repository implementation.
 /// </summary>
 public abstract class BaseRepository<T> : IRepository<T> where T : BaseEntity
 {

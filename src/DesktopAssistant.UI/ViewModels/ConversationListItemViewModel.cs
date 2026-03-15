@@ -7,8 +7,8 @@ using DesktopAssistant.UI.Models;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel элемента в списке диалогов.
-/// Оборачивает <see cref="ConversationListItem"/> и отслеживает статус активной сессии в реальном времени.
+/// ViewModel for an item in the conversation list.
+/// Wraps <see cref="ConversationListItem"/> and tracks the active session status in real time.
 /// </summary>
 public partial class ConversationListItemViewModel : ObservableObject, IDisposable
 {
@@ -19,11 +19,11 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
     public string Title => _model.Title;
     public string FormattedDate => _model.FormattedDate;
 
-    /// <summary>True если для диалога существует активная <see cref="IConversationSession"/>.</summary>
+    /// <summary>True if an active <see cref="IConversationSession"/> exists for this conversation.</summary>
     [ObservableProperty]
     private bool _isActive;
 
-    /// <summary>True если диалог открыт в основной области.</summary>
+    /// <summary>True if the conversation is open in the main area.</summary>
     [ObservableProperty]
     private bool _isSelected;
 
@@ -36,7 +36,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
     [ObservableProperty]
     private ConversationState _sessionState = ConversationState.LastMessageIsAssistant;
 
-    // ── Вычисляемые иконки — прямой биндинг в XAML ───────────────────────────
+    // ── Computed icons — direct binding in XAML ───────────────────────────────
 
     public bool IsLoadingIcon  => IsActive && (IsRunning || IsExecutingTools);
 
@@ -55,7 +55,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
         _model = model;
     }
 
-    /// <summary>Подписывается на события сессии и начинает отслеживать её состояние.</summary>
+    /// <summary>Subscribes to session events and starts tracking its state.</summary>
     public void AttachSession(IConversationSession session)
     {
         if (_session != null)
@@ -70,7 +70,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
         session.EventOccurred += OnSessionEvent;
     }
 
-    /// <summary>Отписывается от событий сессии и сбрасывает состояние.</summary>
+    /// <summary>Unsubscribes from session events and resets state.</summary>
     public void DetachSession()
     {
         if (_session is null) return;
@@ -103,7 +103,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
         }
     }
 
-    // Пересчёт вычисляемых иконок при изменении любого зависимого поля
+    // Recompute derived icon properties whenever any dependent field changes
     partial void OnIsActiveChanged(bool value)             => NotifyIconProperties();
     partial void OnIsRunningChanged(bool value)            => NotifyIconProperties();
     partial void OnIsExecutingToolsChanged(bool value)     => NotifyIconProperties();

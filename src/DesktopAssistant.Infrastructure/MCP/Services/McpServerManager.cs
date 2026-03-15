@@ -7,7 +7,7 @@ using ModelContextProtocol.Client;
 namespace DesktopAssistant.Infrastructure.MCP.Services;
 
 /// <summary>
-/// Менеджер MCP серверов - управляет подключениями и вызовом tools
+/// MCP server manager — manages connections and tool invocations.
 /// </summary>
 public class McpServerManager : IMcpServerManager, IAsyncDisposable
 {
@@ -25,7 +25,7 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
         _logger = logger;
         _configService = configService;
         
-        // Подписываемся на изменения конфигурации
+        // Subscribe to configuration changes
         _configService.ConfigurationChanged += OnConfigurationChanged;
     }
     
@@ -59,7 +59,7 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
     {
         _logger.LogInformation("Connecting to MCP server '{ServerId}'...", serverId);
         
-        // Обновляем статус
+        // Update status
         UpdateServerStatus(serverId, McpServerStatusDto.Connecting);
         
         try
@@ -71,13 +71,13 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
                 throw new InvalidOperationException($"Server '{serverId}' not found in configuration");
             }
             
-            // Отключаем старое подключение если есть
+            // Disconnect the old connection if one exists
             if (_clients.TryRemove(serverId, out var oldClient))
             {
                 await oldClient.DisposeAsync();
             }
             
-            // Создаём транспорт и клиент через McpClientFactory
+            // Create transport and client via McpClientFactory
             var transportOptions = new StdioClientTransportOptions
             {
                 Name = serverId,
@@ -93,7 +93,7 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
             var transport = new StdioClientTransport(transportOptions);
             var client = await McpClientFactory.CreateAsync(transport, cancellationToken: cancellationToken);
             
-            // Получаем список tools (ListToolsAsync возвращает IList<McpClientTool>)
+            // Retrieve the tools list (ListToolsAsync returns IList<McpClientTool>)
             var mcpTools = await client.ListToolsAsync(cancellationToken: cancellationToken);
             var tools = mcpTools.Select(t => new McpToolInfoDto
             {
@@ -105,7 +105,7 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
                     : null
             }).ToList();
             
-            // Сохраняем клиент и информацию
+            // Save the client and server info
             _clients[serverId] = client;
             _serverInfos[serverId] = new McpServerInfoDto
             {
@@ -193,7 +193,7 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
         
         try
         {
-            // Преобразуем JsonElement в Dictionary для MCP SDK
+            // Convert JsonElement to Dictionary for the MCP SDK
             var argsDict = new Dictionary<string, object?>();
             if (arguments.ValueKind == JsonValueKind.Object)
             {
@@ -208,7 +208,7 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
                 argsDict,
                 cancellationToken: cancellationToken);
             
-            // Собираем текстовый результат
+            // Collect text result
             var content = string.Join("\n", result.Content
                 .Where(c => c.Type == "text")
                 .Select(c => c.Text));
@@ -253,24 +253,24 @@ public class McpServerManager : IMcpServerManager, IAsyncDisposable
     {
         _logger.LogInformation("MCP configuration changed, reloading servers...");
         
-        // Определяем какие серверы добавить/удалить/обновить
+        // Determine which servers to add/remove/update
         var currentServers = _serverInfos.Keys.ToHashSet();
         var newServers = e.NewConfiguration.McpServers.Keys.ToHashSet();
-        
-        // Удаляем серверы которых больше нет в конфигурации
+
+        // Remove servers that are no longer in the configuration
         var toRemove = currentServers.Except(newServers);
         foreach (var serverId in toRemove)
         {
             await DisconnectServerAsync(serverId);
             _serverInfos.TryRemove(serverId, out _);
         }
-        
-        // Добавляем/обновляем серверы
+
+        // Add/update servers
         foreach (var (serverId, serverConfig) in e.NewConfiguration.McpServers)
         {
             if (serverConfig.Enabled)
             {
-                // Переподключаем если конфигурация изменилась
+                // Reconnect if the configuration has changed
                 await RestartServerAsync(serverId);
             }
             else if (_clients.ContainsKey(serverId))

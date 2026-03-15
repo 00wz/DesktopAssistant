@@ -5,15 +5,15 @@ namespace DesktopAssistant.UI.Models;
 
 public enum SummarizationStatus
 {
-    Pending,    // Ожидает запуска
-    Running,    // Выполняется
-    Completed,  // Завершено
-    Failed      // Ошибка
+    Pending,    // Awaiting start
+    Running,    // In progress
+    Completed,  // Done
+    Failed      // Error
 }
 
 /// <summary>
-/// Модель summary-узла — сжатого контекста предыдущего диалога.
-/// Отображается компактной плашкой с индикатором статуса.
+/// Model for a summary node — a condensed context of the previous conversation.
+/// Displayed as a compact chip with a status indicator.
 /// </summary>
 public partial class SummarizationChatMessageModel : ChatMessageModel
 {
@@ -29,10 +29,10 @@ public partial class SummarizationChatMessageModel : ChatMessageModel
 
     public string StatusText => Status switch
     {
-        SummarizationStatus.Pending   => "Ожидание...",
-        SummarizationStatus.Running   => "Выполняется...",
-        SummarizationStatus.Completed => "Готово",
-        SummarizationStatus.Failed    => "Ошибка",
+        SummarizationStatus.Pending   => "Pending...",
+        SummarizationStatus.Running   => "Running...",
+        SummarizationStatus.Completed => "Done",
+        SummarizationStatus.Failed    => "Error",
         _                             => Status.ToString()
     };
 

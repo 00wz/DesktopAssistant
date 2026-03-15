@@ -5,10 +5,10 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.AI.Filters;
 
 /// <summary>
-/// Фильтр для логирования вызовов функций (tools) Semantic Kernel
-/// Логирует все вызовы включая аргументы и результаты
+/// Filter for logging Semantic Kernel function (tool) invocations.
+/// Logs all calls including arguments and results.
 /// </summary>
-[Obsolete("Логирование tools перенесено в ToolCallExecutor. Этот фильтр больше не используется.")]
+[Obsolete("Tool logging has been moved to ToolCallExecutor. This filter is no longer used.")]
 public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
 {
     private readonly ILogger<FunctionLoggingFilter> _logger;
@@ -29,7 +29,7 @@ public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
     {
         var functionName = $"{context.Function.PluginName}.{context.Function.Name}";
         
-        // Логируем начало вызова с аргументами
+        // Log the start of the call with arguments
         try
         {
             var argsJson = SerializeArguments(context.Arguments);
@@ -46,12 +46,12 @@ public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
         
         try
         {
-            // Вызываем следующий фильтр или саму функцию
+            // Invoke the next filter or the function itself
             await next(context);
             
             var duration = DateTime.UtcNow - startTime;
             
-            // Логируем результат
+            // Log the result
             try
             {
                 var resultValue = context.Result?.GetValue<object>();
@@ -66,7 +66,7 @@ public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
                 _logger.LogWarning(ex, "[TOOL RESULT] {FunctionName} - Error serializing result", functionName);
             }
             
-            // Логируем метаданные если есть (например, token usage)
+            // Log metadata if present (e.g. token usage)
             if (context.Result?.Metadata != null && context.Result.Metadata.Count > 0)
             {
                 try
@@ -76,7 +76,7 @@ public sealed class FunctionLoggingFilter : IFunctionInvocationFilter
                 }
                 catch
                 {
-                    // Игнорируем ошибки сериализации метаданных
+                    // Ignore metadata serialization errors
                 }
             }
         }

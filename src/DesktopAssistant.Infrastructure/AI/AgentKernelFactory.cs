@@ -9,8 +9,8 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Создаёт полностью сконфигурированное ядро для выполнения агентских тёрнов:
-/// LLM-коннектор + фильтры + все плагины (CoreTools, McpManagement, MCP-инструменты).
+/// Creates a fully configured kernel for executing agent turns:
+/// LLM connector + filters + all plugins (CoreTools, McpManagement, MCP tools).
 /// </summary>
 public class AgentKernelFactory(
     IKernelFactory kernelFactory,

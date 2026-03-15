@@ -1,48 +1,48 @@
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Сервис для управления конфигурацией MCP серверов
+/// Service for managing MCP server configuration.
 /// </summary>
 public interface IMcpConfigurationService
 {
     /// <summary>
-    /// Путь к файлу конфигурации mcp.json
+    /// Path to the mcp.json configuration file.
     /// </summary>
     string ConfigFilePath { get; }
-    
+
     /// <summary>
-    /// Загружает конфигурацию из файла
+    /// Loads the configuration from the file.
     /// </summary>
     Task<McpConfigurationDto> LoadAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Сохраняет конфигурацию в файл
+    /// Saves the configuration to the file.
     /// </summary>
     Task SaveAsync(McpConfigurationDto config, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Добавляет новый сервер в конфигурацию
+    /// Adds a new server to the configuration.
     /// </summary>
     Task AddServerAsync(string serverId, McpServerConfigDto serverConfig, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Удаляет сервер из конфигурации
+    /// Removes a server from the configuration.
     /// </summary>
     Task RemoveServerAsync(string serverId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Обновляет конфигурацию сервера
+    /// Updates a server's configuration.
     /// </summary>
     Task UpdateServerAsync(string serverId, McpServerConfigDto serverConfig, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Событие изменения конфигурации (от FileWatcher)
+    /// Configuration change event (raised by the FileWatcher).
     /// </summary>
     event EventHandler<McpConfigChangedEventArgs>? ConfigurationChanged;
 }
 
 /// <summary>
-/// DTO конфигурации MCP
+/// MCP configuration DTO.
 /// </summary>
 public class McpConfigurationDto
 {
@@ -50,7 +50,7 @@ public class McpConfigurationDto
 }
 
 /// <summary>
-/// DTO конфигурации одного MCP сервера
+/// DTO for a single MCP server configuration.
 /// </summary>
 public class McpServerConfigDto
 {
@@ -64,12 +64,12 @@ public class McpServerConfigDto
 }
 
 /// <summary>
-/// Аргументы события изменения конфигурации
+/// Arguments for the configuration change event.
 /// </summary>
 public class McpConfigChangedEventArgs : EventArgs
 {
     public McpConfigurationDto NewConfiguration { get; }
-    
+
     public McpConfigChangedEventArgs(McpConfigurationDto newConfiguration)
     {
         NewConfiguration = newConfiguration;

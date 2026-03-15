@@ -16,8 +16,8 @@ public partial class App : Avalonia.Application
     
     public override void Initialize()
     {
-        // Загружаем словарь локализации до обработки App.axaml,
-        // чтобы все {DynamicResource} сразу получили актуальные строки.
+        // Load the localization dictionary before processing App.axaml
+        // so that all {DynamicResource} references immediately receive the correct strings.
         LocalizationManager.Instance.LoadLanguage(LocalizationManager.Instance.PendingLanguage);
         AvaloniaXamlLoader.Load(this);
     }
@@ -42,7 +42,7 @@ public partial class App : Avalonia.Application
                 DataContext = mainWindowViewModel,
             };
             
-            // Инициализируем MainWindow асинхронно
+            // Initialize MainWindow asynchronously
             _ = mainWindowViewModel.InitializeAsync();
         }
 

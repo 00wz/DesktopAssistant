@@ -29,7 +29,7 @@
         <Style Selector="Button.nav-btn:disabled /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
-        <!-- Expander с peek: показывать контент с ограниченной высотой в свёрнутом состоянии -->
+        <!-- Expander with peek: show content with limited height when collapsed -->
         <Style Selector="Expander.peek /template/ Border#ExpanderContent">
             <Setter Property="IsVisible" Value="True"/>
             <Setter Property="MaxHeight" Value="60"/>
@@ -62,7 +62,7 @@
                         <TextBlock Text="{Binding Content}"
                                    TextWrapping="Wrap"
                                    Foreground="White"/>
-						<!--Редактирование сообщения и смена ветки-->
+						<!--Edit message and switch branch-->
 						<StackPanel Orientation="Horizontal"
 		                            HorizontalAlignment="Right">
 							<StackPanel Orientation="Horizontal"
@@ -244,7 +244,7 @@
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-        <!-- Заголовок чата с кнопкой настроек -->
+        <!-- Chat header with settings button -->
         <Border Grid.Row="0"
                 Background="#F5F5F5"
                 Padding="10,6"
@@ -277,12 +277,12 @@
             </Grid>
         </Border>
 
-        <!-- Панель настроек диалога -->
+        <!-- Chat settings panel -->
         <Border Grid.Row="1" IsVisible="{Binding IsSettingsPanelVisible}">
             <views:ChatSettingsPanelView DataContext="{Binding Settings}"/>
         </Border>
 
-        <!-- Список сообщений -->
+        <!-- Message list -->
         <ScrollViewer Grid.Row="2"
                       Name="MessagesScrollViewer"
                       VerticalScrollBarVisibility="Auto"
@@ -290,7 +290,7 @@
             <ItemsControl ItemsSource="{Binding Messages}" Margin="10"/>
         </ScrollViewer>
 
-        <!-- Панель ввода -->
+        <!-- Input panel -->
         <views:MessageInputView Grid.Row="3"/>
 
     </Grid>

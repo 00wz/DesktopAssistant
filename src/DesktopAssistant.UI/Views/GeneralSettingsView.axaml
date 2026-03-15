@@ -10,12 +10,12 @@
 
     <StackPanel Spacing="20">
 
-        <!-- Заголовок -->
+        <!-- Header -->
         <TextBlock Text="{DynamicResource General.Title}"
                    FontSize="18"
                    FontWeight="SemiBold"/>
 
-        <!-- Язык интерфейса -->
+        <!-- Interface language -->
         <StackPanel Spacing="8">
             <TextBlock Text="{DynamicResource General.Language.Label}"
                        FontSize="13"

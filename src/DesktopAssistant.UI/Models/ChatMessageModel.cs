@@ -4,9 +4,9 @@ using DesktopAssistant.Domain.Enums;
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Абстрактная базовая модель сообщения для отображения в UI.
-/// Содержит общие свойства: идентификатор, тип, временная метка, родитель, навигация по siblings.
-/// Конкретные подтипы: UserChatMessageModel, AssistantChatMessageModel, ToolChatMessageModel, SummarizationChatMessageModel.
+/// Abstract base message model for display in the UI.
+/// Contains common properties: identifier, type, timestamp, parent, and sibling navigation.
+/// Concrete subtypes: UserChatMessageModel, AssistantChatMessageModel, ToolChatMessageModel, SummarizationChatMessageModel.
 /// </summary>
 public abstract partial class ChatMessageModel : ObservableObject
 {
@@ -19,12 +19,12 @@ public abstract partial class ChatMessageModel : ObservableObject
     [ObservableProperty]
     private DateTime _createdAt;
 
-    // Не observable — используется для логики навигации по ветвям
+    // Not observable — used for branch navigation logic
     public Guid? ParentId { get; set; }
     public Guid? PreviousSiblingId { get; set; }
     public Guid? NextSiblingId { get; set; }
 
-    // Навигация по siblings (1-based индекс для отображения)
+    // Sibling navigation (1-based index for display)
     [ObservableProperty]
     private bool _hasPreviousSibling;
 

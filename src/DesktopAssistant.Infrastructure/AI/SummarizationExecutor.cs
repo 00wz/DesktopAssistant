@@ -12,8 +12,8 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Реализует суммаризацию контекста диалога через ChatHistorySummarizationReducer.
-/// Использует профиль суммаризации из AppSettings, отдельный от профиля чата.
+/// Implements conversation context summarization via ChatHistorySummarizationReducer.
+/// Uses the summarization profile from AppSettings, separate from the chat profile.
 /// </summary>
 public class SummarizationExecutor(
     ConversationService conversationService,

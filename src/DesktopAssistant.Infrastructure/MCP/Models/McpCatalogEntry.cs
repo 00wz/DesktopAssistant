@@ -3,43 +3,43 @@ using System.Text.Json.Serialization;
 namespace DesktopAssistant.Infrastructure.MCP.Models;
 
 /// <summary>
-/// Запись в каталоге MCP серверов
+/// Entry in the MCP server catalog.
 /// </summary>
 public class McpCatalogEntry
 {
     /// <summary>
-    /// Уникальный идентификатор сервера
+    /// Unique server identifier.
     /// </summary>
     [JsonPropertyName("id")]
     public string Id { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// Отображаемое имя
+    /// Display name.
     /// </summary>
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// Описание возможностей сервера
+    /// Description of the server's capabilities.
     /// </summary>
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// URL репозитория на GitHub
+    /// GitHub repository URL.
     /// </summary>
     [JsonPropertyName("githubUrl")]
     public string GitHubUrl { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// Теги для поиска
+    /// Tags used for searching.
     /// </summary>
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = new();
 }
 
 /// <summary>
-/// Каталог MCP серверов
+/// Catalog of MCP servers.
 /// </summary>
 public class McpServersCatalog
 {

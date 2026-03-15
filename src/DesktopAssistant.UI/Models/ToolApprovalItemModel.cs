@@ -4,8 +4,8 @@ using DesktopAssistant.Application.Interfaces;
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Модель одного tool для отображения в настройках auto-approve.
-/// При изменении IsAutoApproved автоматически сохраняет настройку в БД.
+/// Model for a single tool displayed in the auto-approve settings.
+/// When IsAutoApproved changes, the setting is automatically persisted to the database.
 /// </summary>
 public partial class ToolApprovalItemModel : ObservableObject
 {
@@ -15,7 +15,7 @@ public partial class ToolApprovalItemModel : ObservableObject
     public string PluginName { get; }
     public string FunctionName { get; }
     public string? Description { get; }
-    /// <summary>Отображается внутри группы — только имя функции (плагин — заголовок группы).</summary>
+    /// <summary>Displayed inside the group — only the function name (the plugin name is the group header).</summary>
     public string DisplayName => FunctionName;
 
     [ObservableProperty]
@@ -34,7 +34,7 @@ public partial class ToolApprovalItemModel : ObservableObject
     }
 
     /// <summary>
-    /// Устанавливает начальное значение без записи в БД.
+    /// Sets the initial value without writing to the database.
     /// </summary>
     internal void InitializeValue(bool value)
     {

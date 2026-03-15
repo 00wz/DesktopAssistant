@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.Infrastructure.MCP.Search;
 
 /// <summary>
-/// Поиск MCP серверов по ключевым словам.
-/// Ищет вхождения в имя, описание и теги с весовым ранжированием.
+/// Searches MCP servers by keywords.
+/// Looks for matches in name, description, and tags with weighted ranking.
 /// </summary>
 public class KeywordMcpCatalogSearchService : IMcpCatalogSearchService
 {
@@ -72,7 +72,7 @@ public class KeywordMcpCatalogSearchService : IMcpCatalogSearchService
             if (nameLower.Contains(word)) score += 10;
             if (descLower.Contains(word)) score += 5;
             if (tagsLower.Any(t => t.Contains(word))) score += 8;
-            if (tagsLower.Contains(word)) score += 3; // Точное совпадение тега
+            if (tagsLower.Contains(word)) score += 3; // Exact tag match
         }
 
         return score;

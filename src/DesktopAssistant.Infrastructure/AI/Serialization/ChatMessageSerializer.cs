@@ -6,14 +6,14 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Serialization;
 
 /// <summary>
-/// Утилита для сериализации и десериализации ChatMessageContent
+/// Utility for serializing and deserializing ChatMessageContent.
 /// </summary>
 public static class ChatMessageSerializer
 {
     private static readonly JsonSerializerOptions _options = CreateOptions();
 
     /// <summary>
-    /// Сериализует ChatMessageContent в JSON строку
+    /// Serializes a ChatMessageContent to a JSON string.
     /// </summary>
     public static string Serialize(ChatMessageContent content)
     {
@@ -22,10 +22,10 @@ public static class ChatMessageSerializer
     }
 
     /// <summary>
-    /// Десериализует JSON строку в ChatMessageContent
+    /// Deserializes a JSON string into a ChatMessageContent.
     /// </summary>
-    /// <exception cref="JsonException">Если десериализация не удалась</exception>
-    /// <exception cref="ArgumentNullException">Если json равен null</exception>
+    /// <exception cref="JsonException">If deserialization fails.</exception>
+    /// <exception cref="ArgumentNullException">If json is null.</exception>
     public static ChatMessageContent Deserialize(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -34,7 +34,7 @@ public static class ChatMessageSerializer
     }
 
     /// <summary>
-    /// Пытается десериализовать JSON строку в ChatMessageContent
+    /// Tries to deserialize a JSON string into a ChatMessageContent.
     /// </summary>
     public static bool TryDeserialize(string? json, out ChatMessageContent? content)
     {
@@ -56,7 +56,7 @@ public static class ChatMessageSerializer
     }
 
     /// <summary>
-    /// Создаёт ChatMessageContent из текста с указанной ролью
+    /// Creates a ChatMessageContent from text with the specified role.
     /// </summary>
     public static ChatMessageContent CreateFromText(string text, AuthorRole role)
     {

@@ -1,36 +1,36 @@
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Singleton-пул сессий диалогов.
-/// Гарантирует, что для каждого диалога существует ровно одна активная сессия.
+/// Singleton pool of conversation sessions.
+/// Guarantees that exactly one active session exists per conversation.
 /// </summary>
 public interface IConversationSessionService : IDisposable
 {
     /// <summary>
-    /// Снимок идентификаторов всех активных сессий на момент вызова.
+    /// A snapshot of the identifiers of all active sessions at the time of the call.
     /// </summary>
     IReadOnlyCollection<Guid> ActiveSessionIds { get; }
 
     /// <summary>
-    /// Вызывается после добавления новой сессии в пул.
-    /// Аргумент — идентификатор диалога.
+    /// Raised after a new session is added to the pool.
+    /// The argument is the conversation identifier.
     /// </summary>
     event EventHandler<Guid> SessionCreated;
 
     /// <summary>
-    /// Вызывается после удаления сессии из пула.
-    /// Аргумент — идентификатор диалога.
+    /// Raised after a session is removed from the pool.
+    /// The argument is the conversation identifier.
     /// </summary>
     event EventHandler<Guid> SessionReleased;
 
     /// <summary>
-    /// Возвращает существующую сессию или создаёт и инициализирует новую.
+    /// Returns an existing session or creates and initializes a new one.
     /// </summary>
     Task<IConversationSession> GetOrCreate(Guid conversationId);
 
     /// <summary>
-    /// Освобождает сессию диалога и удаляет её из пула.
-    /// Вызывается при удалении диалога.
+    /// Releases a conversation session and removes it from the pool.
+    /// Called when a conversation is deleted.
     /// </summary>
     void Release(Guid conversationId);
 }

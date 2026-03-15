@@ -9,8 +9,8 @@ using System.Collections.ObjectModel;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel для секции управления профилями ассистента в панели настроек.
-/// Содержит список профилей и управляет inline-редактором.
+/// ViewModel for the assistant profile management section of the settings panel.
+/// Holds the list of profiles and manages the inline editor.
 /// </summary>
 public partial class ProfilesSettingsViewModel : ObservableObject
 {
@@ -56,7 +56,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading assistant profiles");
-            ErrorMessage = $"Ошибка загрузки профилей: {ex.Message}";
+            ErrorMessage = $"Error loading profiles: {ex.Message}";
         }
         finally
         {
@@ -105,7 +105,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting profile {ProfileId}", profile.Id);
-            ErrorMessage = $"Ошибка удаления профиля: {ex.Message}";
+            ErrorMessage = $"Error deleting profile: {ex.Message}";
         }
     }
 
@@ -121,7 +121,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error setting default profile {ProfileId}", profile.Id);
-            ErrorMessage = $"Ошибка установки профиля по умолчанию: {ex.Message}";
+            ErrorMessage = $"Error setting default profile: {ex.Message}";
         }
     }
 
@@ -137,7 +137,7 @@ public partial class ProfilesSettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error setting summarization profile {ProfileId}", profile.Id);
-            ErrorMessage = $"Ошибка установки профиля суммаризации: {ex.Message}";
+            ErrorMessage = $"Error setting summarization profile: {ex.Message}";
         }
     }
 }

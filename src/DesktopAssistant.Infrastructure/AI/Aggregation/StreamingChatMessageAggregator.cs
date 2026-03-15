@@ -5,17 +5,17 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Aggregation;
 
 /// <summary>
-/// Агрегирует потоковые фрагменты сообщений в полное ChatMessageContent
-/// с поддержкой function calls, файлов и других типов контента
+/// Aggregates streaming message fragments into a complete ChatMessageContent,
+/// with support for function calls, files, and other content types.
 /// </summary>
 public class StreamingChatMessageAggregator
 {
     private readonly StringBuilder _contentBuilder = new();
     private readonly FunctionCallContentBuilder _functionCallBuilder = new();
     private readonly Dictionary<string, object?> _metadata = new();
-#pragma warning disable SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning disable SKEXP0110 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
     private readonly List<FileReferenceContent> _fileReferences = new();
-#pragma warning restore SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning restore SKEXP0110 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
 
     private AuthorRole? _role;
     private string? _authorName;
@@ -24,24 +24,24 @@ public class StreamingChatMessageAggregator
 
     public void Append(StreamingChatMessageContent streamingContent)
     {
-        // 1. Аккумулируем базовые свойства
+        // 1. Accumulate basic properties
         _role ??= streamingContent.Role;
-#pragma warning disable SKEXP0001 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
         _authorName ??= streamingContent.AuthorName;
-#pragma warning restore SKEXP0001 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
         _modelId ??= streamingContent.ModelId;
         _encoding = streamingContent.Encoding;
 
-        // 2. Аккумулируем текст
+        // 2. Accumulate text
         if (streamingContent.Content is not null)
         {
             _contentBuilder.Append(streamingContent.Content);
         }
 
-        // 3. Аккумулируем function calls
+        // 3. Accumulate function calls
         _functionCallBuilder.Append(streamingContent);
 
-        // 4. Аккумулируем metadata
+        // 4. Accumulate metadata
         if (streamingContent.Metadata != null)
         {
             foreach (var kvp in streamingContent.Metadata)
@@ -50,31 +50,31 @@ public class StreamingChatMessageAggregator
             }
         }
 
-        // 5. Обрабатываем Items коллекцию для других типов контента
+        // 5. Process the Items collection for other content types
         foreach (var item in streamingContent.Items)
         {
-#pragma warning disable SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning disable SKEXP0110 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
             switch (item)
             {
-                // Текстовый контент уже обработан выше через Content property
+                // Text content already handled above via Content property
                 case StreamingTextContent:
                     break;
 
-                // Function call updates обработаны через FunctionCallContentBuilder
+                // Function call updates handled via FunctionCallContentBuilder
                 case StreamingFunctionCallUpdateContent:
                     break;
 
-                // ПРАВИЛЬНАЯ КОНВЕРТАЦИЯ: создаем новый FileReferenceContent из StreamingFileReferenceContent
+                // CORRECT CONVERSION: create a new FileReferenceContent from StreamingFileReferenceContent
                 case StreamingFileReferenceContent streamingFileRef:
                     _fileReferences.Add(new FileReferenceContent(streamingFileRef.FileId));
                     break;
 
-                    // Можно добавить обработку других streaming типов
+                    // Additional streaming types can be handled here
                     // case StreamingAnnotationContent streamingAnnotation:
                     //     _annotations.Add(new AnnotationContent(...));
                     //     break;
             }
-#pragma warning restore SKEXP0110 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning restore SKEXP0110 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
         }
     }
 
@@ -83,7 +83,7 @@ public class StreamingChatMessageAggregator
         var finalContent = _contentBuilder.ToString();
         var functionCalls = _functionCallBuilder.Build();
 
-#pragma warning disable SKEXP0001 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning disable SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
         var chatMessageContent = new ChatMessageContent(
             role: _role ?? AuthorRole.Assistant,
             content: finalContent,
@@ -94,15 +94,15 @@ public class StreamingChatMessageAggregator
         {
             AuthorName = _authorName
         };
-#pragma warning restore SKEXP0001 // Тип предназначен только для оценки и может быть изменен или удален в будущих обновлениях. Чтобы продолжить, скройте эту диагностику.
+#pragma warning restore SKEXP0001 // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to continue.
 
-        // Добавляем function calls
+        // Add function calls
         foreach (var functionCall in functionCalls)
         {
             chatMessageContent.Items.Add(functionCall);
         }
 
-        // Добавляем файловые ссылки
+        // Add file references
         foreach (var fileRef in _fileReferences)
         {
             chatMessageContent.Items.Add(fileRef);

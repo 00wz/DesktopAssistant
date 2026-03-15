@@ -12,7 +12,7 @@
             Padding="16">
         <StackPanel Spacing="10">
 
-            <!-- Заголовок -->
+            <!-- Header -->
             <Panel>
                 <TextBlock Text="{DynamicResource ProfileEditor.Title.New}"
                            FontSize="14"
@@ -24,7 +24,7 @@
                            IsVisible="{Binding IsEditMode}"/>
             </Panel>
 
-            <!-- Поля формы -->
+            <!-- Form fields -->
             <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <TextBlock Grid.Row="0" Grid.Column="0"
@@ -79,7 +79,7 @@
                          Margin="0,0,0,6"/>
             </Grid>
 
-            <!-- Ошибка -->
+            <!-- Error -->
             <Border Background="#FFE0E0"
                     Padding="10"
                     CornerRadius="4"
@@ -89,12 +89,12 @@
                            TextWrapping="Wrap"/>
             </Border>
 
-            <!-- Загрузка -->
+            <!-- Loading -->
             <ProgressBar IsIndeterminate="True"
                          IsVisible="{Binding IsLoading}"
                          Height="3"/>
 
-            <!-- Кнопки -->
+            <!-- Buttons -->
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Spacing="10">

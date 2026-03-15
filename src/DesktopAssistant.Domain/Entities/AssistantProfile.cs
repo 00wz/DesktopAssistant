@@ -1,24 +1,24 @@
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
-/// Профиль AI-ассистента с настройками подключения к LLM.
-/// API-ключ хранится отдельно в защищённом хранилище (DPAPI) и привязан к Id профиля.
-/// Системный промпт хранится в Conversation.SystemPrompt.
+/// AI assistant profile with LLM connection settings.
+/// The API key is stored separately in a secure store (DPAPI) and is bound to the profile Id.
+/// The system prompt is stored in Conversation.SystemPrompt.
 /// </summary>
 public class AssistantProfile : BaseEntity
 {
     public string Description { get; private set; } = string.Empty;
 
-    // LLM настройки (OpenAI-совместимый API)
+    // LLM settings (OpenAI-compatible API)
     public string BaseUrl { get; private set; } = string.Empty;
     public string ModelId { get; private set; } = string.Empty;
     public double Temperature { get; private set; } = 0.7;
     public int MaxTokens { get; private set; } = 4096;
 
-    // Навигационные свойства
+    // Navigation properties
     public ICollection<Conversation> Conversations { get; private set; } = new List<Conversation>();
 
-    private AssistantProfile() { } // Для EF Core
+    private AssistantProfile() { } // For EF Core
 
     public AssistantProfile(
         string description,

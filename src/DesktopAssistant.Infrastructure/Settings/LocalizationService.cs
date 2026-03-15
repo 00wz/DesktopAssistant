@@ -6,9 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DesktopAssistant.Infrastructure.Settings;
 
 /// <summary>
-/// Хранит выбранный язык интерфейса в таблице AppSettings.
-/// Ключ: <see cref="AppSettings.Keys.Language"/>.
-/// По умолчанию возвращает "en".
+/// Stores the selected UI language in the AppSettings table.
+/// Key: <see cref="AppSettings.Keys.Language"/>.
+/// Returns "en" by default.
 /// </summary>
 public class LocalizationService : ILocalizationService
 {

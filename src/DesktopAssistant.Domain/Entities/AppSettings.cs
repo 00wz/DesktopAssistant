@@ -3,7 +3,7 @@ using DesktopAssistant.Domain.Enums;
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
-/// Глобальные настройки приложения
+/// Global application settings.
 /// </summary>
 public class AppSettings : BaseEntity
 {
@@ -11,7 +11,7 @@ public class AppSettings : BaseEntity
     public string Value { get; private set; } = string.Empty;
     public string? Description { get; private set; }
 
-    private AppSettings() { } // Для EF Core
+    private AppSettings() { } // For EF Core
 
     public AppSettings(string key, string value, string? description = null)
     {
@@ -26,7 +26,7 @@ public class AppSettings : BaseEntity
         MarkAsUpdated();
     }
 
-    // Константы для ключей настроек
+    // Constants for settings keys
     public static class Keys
     {
         public const string DefaultProfileId = "App:DefaultProfileId";

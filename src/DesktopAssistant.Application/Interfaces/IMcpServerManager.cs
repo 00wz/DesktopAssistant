@@ -3,58 +3,58 @@ using System.Text.Json;
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Менеджер MCP серверов - управляет подключениями и вызовом tools
+/// MCP server manager — manages connections and tool invocations.
 /// </summary>
 public interface IMcpServerManager
 {
     /// <summary>
-    /// Инициализирует менеджер и подключается к серверам из конфигурации
+    /// Initializes the manager and connects to servers from the configuration.
     /// </summary>
     Task InitializeAsync(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Подключается к указанному серверу
+    /// Connects to the specified server.
     /// </summary>
     Task ConnectServerAsync(string serverId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Отключается от указанного сервера
+    /// Disconnects from the specified server.
     /// </summary>
     Task DisconnectServerAsync(string serverId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Перезапускает указанный сервер
+    /// Restarts the specified server.
     /// </summary>
     Task RestartServerAsync(string serverId, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Возвращает информацию о всех подключённых серверах
+    /// Returns information about all connected servers.
     /// </summary>
     IReadOnlyList<McpServerInfoDto> GetConnectedServers();
-    
+
     /// <summary>
-    /// Возвращает информацию о конкретном сервере (включая статус ошибки)
+    /// Returns information about a specific server (including error status).
     /// </summary>
     McpServerInfoDto? GetServerInfo(string serverId);
-    
+
     /// <summary>
-    /// Возвращает все tools со всех подключённых серверов
+    /// Returns all tools from all connected servers.
     /// </summary>
     IReadOnlyList<McpToolInfoDto> GetAllTools();
-    
+
     /// <summary>
-    /// Вызывает tool на указанном сервере
+    /// Invokes a tool on the specified server.
     /// </summary>
     Task<McpToolResultDto> InvokeToolAsync(string serverId, string toolName, JsonElement arguments, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
-    /// Событие изменения статуса сервера
+    /// Server status change event.
     /// </summary>
     event EventHandler<McpServerChangedEventArgs>? ServerChanged;
 }
 
 /// <summary>
-/// DTO информации о MCP сервере
+/// DTO for MCP server information.
 /// </summary>
 public class McpServerInfoDto
 {
@@ -65,7 +65,7 @@ public class McpServerInfoDto
 }
 
 /// <summary>
-/// Статус MCP сервера
+/// MCP server status.
 /// </summary>
 public enum McpServerStatusDto
 {
@@ -76,7 +76,7 @@ public enum McpServerStatusDto
 }
 
 /// <summary>
-/// DTO информации о tool MCP сервера
+/// DTO for MCP server tool information.
 /// </summary>
 public class McpToolInfoDto
 {
@@ -87,7 +87,7 @@ public class McpToolInfoDto
 }
 
 /// <summary>
-/// DTO результата вызова tool
+/// DTO for the result of a tool invocation.
 /// </summary>
 public class McpToolResultDto
 {
@@ -109,7 +109,7 @@ public class McpToolResultDto
 }
 
 /// <summary>
-/// Аргументы события изменения сервера
+/// Arguments for the server change event.
 /// </summary>
 public class McpServerChangedEventArgs : EventArgs
 {

@@ -1,36 +1,36 @@
 namespace DesktopAssistant.Domain.Enums;
 
 /// <summary>
-/// Тип узла сообщения в графе диалога
+/// Type of a message node in the conversation graph
 /// </summary>
 public enum MessageNodeType
 {
     /// <summary>
-    /// Системный промпт
+    /// System prompt
     /// </summary>
     Root = 0,
-    
+
     /// <summary>
-    /// Сообщение пользователя
+    /// User message
     /// </summary>
     User = 1,
-    
+
     /// <summary>
-    /// Ответ ассистента
+    /// Assistant response
     /// </summary>
     Assistant = 2,
-    
+
     /// <summary>
-    /// Узел суммаризации - содержит сводку предыдущего контекста.
-    /// При сборке контекста для LLM, алгоритм идёт назад по ветке
-    /// и останавливается на этом узле, используя его содержимое
-    /// как "точку отсчёта" вместо всей предыдущей истории.
+    /// Summarization node - contains a summary of previous context.
+    /// When building context for the LLM, the algorithm walks back along the branch
+    /// and stops at this node, using its content as a "starting point"
+    /// instead of the full previous history.
     /// </summary>
     Summary = 3,
 
     /// <summary>
-    /// Результат вызова функции (tool result).
-    /// Используется для хранения FunctionResultContent в ручном режиме вызова инструментов.
+    /// Function call result (tool result).
+    /// Used to store FunctionResultContent in manual tool invocation mode.
     /// </summary>
     Tool = 4
 }

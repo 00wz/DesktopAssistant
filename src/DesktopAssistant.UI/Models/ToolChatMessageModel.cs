@@ -5,17 +5,17 @@ namespace DesktopAssistant.UI.Models;
 
 public enum ToolCallStatus
 {
-    Pending,    // Ожидает подтверждения пользователя
-    Executing,  // Выполняется (ApproveToolCallAsync в процессе)
-    Completed,  // Успешно завершён
-    Failed,     // Завершился ошибкой
-    Denied      // Отклонён пользователем
+    Pending,    // Awaiting user confirmation
+    Executing,  // Running (ApproveToolCallAsync in progress)
+    Completed,  // Successfully completed
+    Failed,     // Finished with an error
+    Denied      // Rejected by the user
 }
 
 /// <summary>
-/// Модель tool-вызова. Отображает имя инструмента, аргументы, результат и статус.
-/// При Status == Pending ожидает нажатия кнопок Approve/Deny.
-/// Id == PendingNodeId из БД — передаётся в ApproveToolCallAsync / DenyToolCallAsync.
+/// Model for a tool call. Displays the tool name, arguments, result, and status.
+/// When Status == Pending, waits for the user to press Approve/Deny.
+/// Id == PendingNodeId from the DB — passed to ApproveToolCallAsync / DenyToolCallAsync.
 /// </summary>
 public partial class ToolChatMessageModel : ChatMessageModel
 {

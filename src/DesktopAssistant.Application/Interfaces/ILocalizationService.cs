@@ -1,13 +1,13 @@
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Отвечает за сохранение и загрузку выбранного языка интерфейса.
+/// Responsible for saving and loading the selected UI language.
 /// </summary>
 public interface ILocalizationService
 {
-    /// <summary>Возвращает сохранённый код языка или "ru", если настройка отсутствует.</summary>
+    /// <summary>Returns the saved language code, or "en" if no setting exists.</summary>
     Task<string> GetSavedLanguageAsync();
 
-    /// <summary>Сохраняет выбранный код языка в постоянном хранилище.</summary>
+    /// <summary>Saves the selected language code to persistent storage.</summary>
     Task SetLanguageAsync(string languageCode);
 }

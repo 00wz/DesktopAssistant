@@ -3,30 +3,30 @@ using DesktopAssistant.Application.Interfaces;
 namespace DesktopAssistant.Infrastructure.Settings;
 
 /// <summary>
-/// Предоставляет актуальный список всех инструментов агента:
-/// статических SK-плагинов (CoreTools, McpManagement) и
-/// динамически подключённых MCP-tools.
+/// Provides the current list of all agent tools:
+/// static SK plugins (CoreTools, McpManagement) and
+/// dynamically connected MCP tools.
 /// </summary>
 public class AvailableToolsService : IAvailableToolsProvider, IDisposable
 {
     private readonly IMcpServerManager _mcpServerManager;
 
     /// <summary>
-    /// Статические SK-плагины, зарегистрированные в AgentKernelFactory.
-    /// При добавлении нового плагина в AgentKernelFactory — обновить этот список.
+    /// Static SK plugins registered in AgentKernelFactory.
+    /// When adding a new plugin to AgentKernelFactory, update this list as well.
     /// </summary>
     private static readonly ToolDescriptor[] StaticTools =
     [
-        new("CoreTools", "execute_command",        "Выполняет команду в терминале"),
-        new("CoreTools", "read_file",              "Читает содержимое файла"),
-        new("CoreTools", "write_to_file",          "Записывает содержимое в файл"),
-        new("CoreTools", "path_exists",            "Проверяет существование файла или директории"),
-        new("CoreTools", "list_directory",         "Возвращает список файлов в директории"),
-        new("McpManagement", "search_mcp_servers",      "Поиск MCP серверов в каталоге"),
-        new("McpManagement", "fetch_mcp_server_readme", "Загружает README из репозитория MCP сервера"),
-        new("McpManagement", "get_mcp_config_path",     "Возвращает путь к файлу конфигурации MCP"),
-        new("McpManagement", "get_mcp_servers_directory","Возвращает путь для клонирования MCP серверов"),
-        new("McpManagement", "add_mcp_server",          "Добавляет MCP сервер в конфигурацию"),
+        new("CoreTools", "execute_command",        "Executes a command in the terminal"),
+        new("CoreTools", "read_file",              "Reads the contents of a file"),
+        new("CoreTools", "write_to_file",          "Writes content to a file"),
+        new("CoreTools", "path_exists",            "Checks whether a file or directory exists"),
+        new("CoreTools", "list_directory",         "Returns a list of files in a directory"),
+        new("McpManagement", "search_mcp_servers",      "Search for MCP servers in the catalog"),
+        new("McpManagement", "fetch_mcp_server_readme", "Fetches the README from an MCP server repository"),
+        new("McpManagement", "get_mcp_config_path",     "Returns the path to the MCP configuration file"),
+        new("McpManagement", "get_mcp_servers_directory","Returns the path for cloning MCP servers"),
+        new("McpManagement", "add_mcp_server",          "Adds an MCP server to the configuration"),
     ];
 
     public event EventHandler? ToolsChanged;

@@ -17,7 +17,7 @@ using Serilog;
 namespace DesktopAssistant.Infrastructure;
 
 /// <summary>
-/// Расширения для регистрации сервисов инфраструктурного слоя
+/// Extensions for registering infrastructure layer services
 /// </summary>
 public static class DependencyInjection
 {
@@ -38,7 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IAssistantProfileRepository, AssistantProfileRepository>();
         services.AddScoped<IAppSettingsRepository, AppSettingsRepository>();
 
-        // Security — DPAPI-хранилище API-ключей
+        // Security — DPAPI storage for API keys
         services.AddScoped<ISecureCredentialStore, DpapiCredentialStore>();
 
         // Application Services

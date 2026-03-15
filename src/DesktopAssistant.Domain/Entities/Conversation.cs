@@ -1,9 +1,9 @@
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
-/// Диалог (чат) с AI-ассистентом.
-/// Содержит дерево сообщений с возможностью ветвления.
-/// Системный промпт хранится здесь и инжектируется в начало ChatHistory при каждом LLM-тёрне.
+/// Conversation (chat) with an AI assistant.
+/// Contains a message tree with branching support.
+/// The system prompt is stored here and injected at the start of ChatHistory on each LLM turn.
 /// </summary>
 public class Conversation : BaseEntity
 {
@@ -12,15 +12,15 @@ public class Conversation : BaseEntity
     public Guid? ActiveLeafNodeId { get; private set; }
     public int TotalTokenCount { get; private set; }
 
-    /// <summary>Системный промпт диалога. Инжектируется первым в ChatHistory если не пустой.</summary>
+    /// <summary>Conversation system prompt. Injected first into ChatHistory if non-empty.</summary>
     public string SystemPrompt { get; private set; } = string.Empty;
 
-    // Навигационные свойства
+    // Navigation properties
     public AssistantProfile? AssistantProfile { get; private set; }
     public MessageNode? ActiveLeafNode { get; private set; }
     public ICollection<MessageNode> Messages { get; private set; } = new List<MessageNode>();
 
-    private Conversation() { } // Для EF Core
+    private Conversation() { } // For EF Core
 
     public Conversation(string title, Guid assistantProfileId, string systemPrompt = "")
     {
@@ -60,8 +60,8 @@ public class Conversation : BaseEntity
     }
 
     /// <summary>
-    /// Добавляет якорный корневой узел диалога (пустой, используется как точка входа в дерево).
-    /// Системный промпт хранится в Conversation.SystemPrompt и инжектируется через BuildChatHistory.
+    /// Adds an anchor root node to the conversation (empty, used as an entry point into the tree).
+    /// The system prompt is stored in Conversation.SystemPrompt and injected via BuildChatHistory.
     /// </summary>
     public MessageNode AddRootMessage()
     {

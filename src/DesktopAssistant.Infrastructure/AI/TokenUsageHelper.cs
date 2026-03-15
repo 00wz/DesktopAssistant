@@ -8,8 +8,8 @@ namespace DesktopAssistant.Infrastructure.AI;
 internal static class TokenUsageHelper
 {
     /// <summary>
-    /// Извлекает количество входящих и исходящих токенов из ChatMessageContent.
-    /// Поддерживает как живой объект ChatTokenUsage (от LLM), так и десериализованный JsonElement (из БД).
+    /// Extracts the input and output token counts from a ChatMessageContent.
+    /// Supports both a live ChatTokenUsage object (from the LLM) and a deserialized JsonElement (from the database).
     /// </summary>
     public static (int InputTokenCount, int OutputTokenCount, int TotalTokenCount) Extract(SKChatMessageContent message)
     {

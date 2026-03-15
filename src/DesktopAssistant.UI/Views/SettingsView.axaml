@@ -11,7 +11,7 @@
    <Border Background="White">
        <Grid RowDefinitions="Auto,*">
 
-           <!-- Шапка -->
+           <!-- Header -->
            <Border Grid.Row="0"
                    Background="#F0F0F0"
                    Padding="20,12"
@@ -23,10 +23,10 @@
                           VerticalAlignment="Center"/>
            </Border>
 
-           <!-- Двухколоночный layout -->
+           <!-- Two-column layout -->
            <Grid Grid.Row="1" ColumnDefinitions="200,*">
 
-               <!-- Левая навигация -->
+               <!-- Left navigation -->
                <Border Grid.Column="0"
                        Background="#F8F8F8"
                        BorderBrush="#E0E0E0"
@@ -40,7 +40,7 @@
                                   FontWeight="SemiBold"
                                   LetterSpacing="1"/>
 
-                       <!-- Общие — навигационный элемент -->
+                       <!-- General — navigation item -->
                        <Panel Margin="8,0,8,2">
                            <Border Background="#E8F0FE"
                                    CornerRadius="4"
@@ -56,7 +56,7 @@
                            </Button>
                        </Panel>
 
-                       <!-- Профили ассистентов — навигационный элемент -->
+                       <!-- Assistant profiles — navigation item -->
                        <Panel Margin="8,0,8,2">
                            <Border Background="#E8F0FE"
                                    CornerRadius="4"
@@ -72,7 +72,7 @@
                            </Button>
                        </Panel>
 
-                       <!-- Автоподтверждение tools — навигационный элемент -->
+                       <!-- Tool auto-approval — navigation item -->
                        <Panel Margin="8,0,8,2">
                            <Border Background="#E8F0FE"
                                    CornerRadius="4"
@@ -91,24 +91,24 @@
                    </StackPanel>
                </Border>
 
-               <!-- Правая область контента.
-                    Padding вынесен в Margin контента: Avalonia не учитывает ScrollViewer.Padding
-                    при вычислении Extent, и нижние N пикселей контента становятся недостижимы.
-                    HorizontalScrollBarVisibility=Disabled: предотвращает горизонтальный scrollbar,
-                    который при появлении/исчезновении дискретно изменяет ширину контента. -->
+               <!-- Right content area.
+                    Padding is moved to content Margin: Avalonia does not account for ScrollViewer.Padding
+                    when computing Extent, causing the bottom N pixels of content to become unreachable.
+                    HorizontalScrollBarVisibility=Disabled: prevents a horizontal scrollbar whose
+                    appearance/disappearance would discretely change content width. -->
                <ScrollViewer Grid.Column="1"
                              VerticalScrollBarVisibility="Auto"
                              HorizontalScrollBarVisibility="Disabled">
                    <Panel Margin="24,20,24,20">
-                       <!-- Секция общих настроек -->
+                       <!-- General settings section -->
                        <Panel IsVisible="{Binding IsGeneralActive}">
                            <views:GeneralSettingsView DataContext="{Binding GeneralSettings}"/>
                        </Panel>
-                       <!-- Секция профилей -->
+                       <!-- Profiles section -->
                        <Panel IsVisible="{Binding IsProfilesActive}">
                            <views:ProfilesSettingsView DataContext="{Binding ProfilesSettings}"/>
                        </Panel>
-                       <!-- Секция автоподтверждения tools -->
+                       <!-- Tool auto-approval section -->
                        <Panel IsVisible="{Binding IsToolApprovalActive}">
                            <views:ToolApprovalSettingsView DataContext="{Binding ToolApprovalSettings}"/>
                        </Panel>

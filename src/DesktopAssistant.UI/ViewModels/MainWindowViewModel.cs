@@ -8,10 +8,10 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// ViewModel главного окна.
-/// Оркестрирует жизненный цикл диалогов (кэш ChatViewModel, сессии) и
-/// управляет видимостью оверлейных панелей (настройки, создание чата).
-/// Логика списка диалогов вынесена в <see cref="SidebarViewModel"/>.
+/// ViewModel for the main window.
+/// Orchestrates the lifecycle of conversations (ChatViewModel cache, sessions) and
+/// manages the visibility of overlay panels (settings, create chat).
+/// Conversation list logic is extracted into <see cref="SidebarViewModel"/>.
 /// </summary>
 public partial class MainWindowViewModel : ObservableObject
 {
@@ -20,7 +20,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly ILogger<MainWindowViewModel> _logger;
     private readonly IConversationSessionService _conversationSessionService;
 
-    /// <summary>Кэш ChatViewModel по Id диалога — сохраняет состояние UI при переключении.</summary>
+    /// <summary>ChatViewModel cache keyed by conversation Id — preserves UI state when switching.</summary>
     private readonly Dictionary<Guid, ChatViewModel> _chatViewModels = new();
 
     [ObservableProperty]
@@ -30,24 +30,24 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSidebarVisible = true;
 
-    /// <summary>Панель создания нового диалога (null если скрыта).</summary>
+    /// <summary>New conversation creation panel (null when hidden).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNewConversationPanelVisible))]
     private NewConversationPanelViewModel? _newConversationPanel;
 
     public bool IsNewConversationPanelVisible => NewConversationPanel != null;
 
-    /// <summary>Панель настроек (null если скрыта).</summary>
+    /// <summary>Settings panel (null when hidden).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSettingsVisible))]
     private SettingsViewModel? _settingsView;
 
     public bool IsSettingsVisible => SettingsView != null;
 
-    /// <summary>True если в основной области отображается диалог.</summary>
+    /// <summary>True if a conversation is displayed in the main area.</summary>
     public bool HasActiveChat => SelectedChat != null;
 
-    /// <summary>ViewModel боковой панели диалогов.</summary>
+    /// <summary>ViewModel for the conversation sidebar.</summary>
     public SidebarViewModel Sidebar { get; }
 
     public MainWindowViewModel(
@@ -75,12 +75,12 @@ public partial class MainWindowViewModel : ObservableObject
         _logger.LogInformation("Main window initialized");
     }
 
-    // ── Навигация диалогов ────────────────────────────────────────────────────
+    // ── Conversation navigation ───────────────────────────────────────────────
 
     /// <summary>
-    /// Скрывает все оверлейные панели. Вызывается перед любым переходом к диалогу,
-    /// чтобы не нужно было перечислять каждую панель в каждой команде навигации.
-    /// При добавлении новых оверлеев достаточно дополнить только этот метод.
+    /// Hides all overlay panels. Called before any navigation to a conversation
+    /// so that each navigation command does not need to enumerate every panel.
+    /// When adding new overlays, only this method needs to be updated.
     /// </summary>
     private void CloseOverlays()
     {
@@ -89,8 +89,8 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Открывает диалог: создаёт/восстанавливает сессию и ChatViewModel, делает его активным.
-    /// Вызывается через <see cref="SidebarViewModel.OnConversationSelected"/>.
+    /// Opens a conversation: creates or restores a session and ChatViewModel, and makes it active.
+    /// Called via <see cref="SidebarViewModel.OnConversationSelected"/>.
     /// </summary>
     private async Task OpenSelectedConversationAsync(ConversationListItemViewModel item)
     {
@@ -131,7 +131,7 @@ public partial class MainWindowViewModel : ObservableObject
             SelectedChat = null;
     }
 
-    // ── Оверлейные панели ─────────────────────────────────────────────────────
+    // ── Overlay panels ────────────────────────────────────────────────────────
 
     [RelayCommand]
     public async Task OpenSettingsAsync()
@@ -200,9 +200,9 @@ public partial class MainWindowViewModel : ObservableObject
             await chatViewModel.InitializeAsync(session);
             _chatViewModels[conversation.Id] = chatViewModel;
 
-            // Перезагружаем список — новый диалог появится с уже присоединённой сессией.
-            // MarkSelected вызывается автоматически через OnSelectedChatChanged после
-            // установки SelectedChat.
+            // Reload the list — the new conversation will appear with the session already attached.
+            // MarkSelected is called automatically via OnSelectedChatChanged after
+            // SelectedChat is set.
             await Sidebar.LoadConversationsAsync();
 
             SelectedChat = chatViewModel;

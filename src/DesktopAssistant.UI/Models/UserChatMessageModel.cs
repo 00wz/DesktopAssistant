@@ -4,7 +4,7 @@ using DesktopAssistant.Domain.Enums;
 namespace DesktopAssistant.UI.Models;
 
 /// <summary>
-/// Модель сообщения пользователя. Поддерживает редактирование.
+/// User message model. Supports editing.
 /// </summary>
 public partial class UserChatMessageModel : ChatMessageModel
 {

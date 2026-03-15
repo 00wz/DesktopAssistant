@@ -17,7 +17,7 @@ public partial class NewConversationPanelView : UserControl
 
         if (e.KeyModifiers == KeyModifiers.Shift)
         {
-            // Shift+Enter — вставить перенос строки
+            // Shift+Enter — insert line break
             if (sender is TextBox textBox)
             {
                 var caret = textBox.CaretIndex;
@@ -29,7 +29,7 @@ public partial class NewConversationPanelView : UserControl
         }
         else if (e.KeyModifiers == KeyModifiers.None)
         {
-            // Enter — отправить сообщение
+            // Enter — send message
             if (DataContext is NewConversationPanelViewModel vm &&
                 vm.ConfirmCommand.CanExecute(null))
                 vm.ConfirmCommand.Execute(null);

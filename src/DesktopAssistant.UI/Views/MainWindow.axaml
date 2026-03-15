@@ -18,7 +18,7 @@
         ExtendClientAreaTitleBarHeightHint="-1">
 
     <Window.Styles>
-        <!-- Кнопки управления окном (светлый фон) -->
+        <!-- Window control buttons (light background) -->
         <Style Selector="Button.winBtn">
             <Setter Property="Width" Value="46"/>
             <Setter Property="Padding" Value="0"/>
@@ -54,13 +54,13 @@
 
     <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
 
-        <!-- ── Полноширокая шапка окна ── -->
-        <!-- PointerPressed на всём заголовке; кнопки помечают событие как Handled -->
+        <!-- ── Full-width window title bar ── -->
+        <!-- PointerPressed on the entire title bar; buttons mark the event as Handled -->
         <Border Grid.Row="0" Background="#F0F0F0" MinHeight="38"
                 PointerPressed="TitleBar_PointerPressed">
             <Grid ColumnDefinitions="*,Auto">
 
-                <!-- Название приложения у левого края; IsHitTestVisible=False — события проходят к Border -->
+                <!-- Application name at the left edge; IsHitTestVisible=False — events pass through to Border -->
                 <TextBlock Grid.Column="0"
                            Text="Desktop Assistant"
                            FontSize="13"
@@ -70,7 +70,7 @@
                            Margin="15,0,0,0"
                            IsHitTestVisible="False"/>
 
-                <!-- Кнопки управления окном -->
+                <!-- Window control buttons -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Classes="winBtn" Click="MinimizeButton_Click"
                             ToolTip.Tip="{DynamicResource MainWindow.TitleBar.Minimize}">
@@ -89,23 +89,23 @@
             </Grid>
         </Border>
 
-        <!-- ── Основной контент: сайдбар + рабочая область ── -->
+        <!-- ── Main content: sidebar + workspace ── -->
         <Grid Grid.Row="1" ColumnDefinitions="260,*">
 
-            <!-- Боковая панель (всегда открыта) -->
+            <!-- Sidebar (always visible) -->
             <Border Grid.Column="0" Background="#2D2D30">
                 <views:ConversationSidebarView DataContext="{Binding Sidebar}"/>
             </Border>
 
-            <!-- Рабочая область -->
+            <!-- Workspace -->
             <Grid Grid.Column="1">
 
-                <!-- Активный диалог -->
+                <!-- Active conversation -->
                 <Panel IsVisible="{Binding HasActiveChat}">
                     <views:ChatView DataContext="{Binding SelectedChat}"/>
                 </Panel>
 
-                <!-- Пустое состояние (нет выбранного диалога) -->
+                <!-- Empty state (no conversation selected) -->
                 <Border Background="#FAFAFA"
                         IsVisible="{Binding !HasActiveChat}">
                     <StackPanel VerticalAlignment="Center"
@@ -126,13 +126,13 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Inline-панель создания нового диалога (поверх остальных) -->
+                <!-- Inline panel for creating a new conversation (overlays the rest) -->
                 <Border IsVisible="{Binding IsNewConversationPanelVisible}"
                         Background="#FAFAFA">
                     <views:NewConversationPanelView DataContext="{Binding NewConversationPanel}"/>
                 </Border>
 
-                <!-- Панель настроек (поверх всего) -->
+                <!-- Settings panel (on top of everything) -->
                 <Border IsVisible="{Binding IsSettingsVisible}"
                         Background="White">
                     <views:SettingsView DataContext="{Binding SettingsView}"/>

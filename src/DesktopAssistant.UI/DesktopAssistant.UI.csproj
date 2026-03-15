@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- WinExe для Release (без консоли), Exe для Debug (с консолью для логов) -->
+    <!-- WinExe for Release (no console), Exe for Debug (with console for logs) -->
     <OutputType Condition="'$(Configuration)' == 'Debug'">Exe</OutputType>
     <OutputType Condition="'$(Configuration)' != 'Debug'">WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>

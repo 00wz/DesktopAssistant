@@ -5,9 +5,9 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Infrastructure.AI;
 
 /// <summary>
-/// Фабрика для создания Semantic Kernel.
-/// Использует единый OpenAI-совместимый коннектор для всех провайдеров
-/// (OpenAI, Azure OpenAI, Ollama, LM Studio, Together AI и др.)
+/// Factory for creating a Semantic Kernel instance.
+/// Uses a single OpenAI-compatible connector for all providers
+/// (OpenAI, Azure OpenAI, Ollama, LM Studio, Together AI, etc.)
 /// </summary>
 public class KernelFactory : IKernelFactory
 {

@@ -1,6 +1,6 @@
 namespace DesktopAssistant.UI.Localization;
 
 /// <summary>
-/// Представляет доступный язык интерфейса.
+/// Represents an available UI language.
 /// </summary>
 public sealed record LanguageOption(string Code, string NativeName);

@@ -3,15 +3,15 @@ using DesktopAssistant.Infrastructure.MCP.Models;
 namespace DesktopAssistant.Infrastructure.MCP.Search;
 
 /// <summary>
-/// Сервис поиска MCP серверов в каталоге.
-/// Позволяет менять стратегию поиска (keyword, vector и т.д.).
+/// Service for searching MCP servers in the catalog.
+/// Allows switching search strategy (keyword, vector, etc.).
 /// </summary>
 public interface IMcpCatalogSearchService
 {
     /// <summary>
-    /// Ищет MCP серверы по запросу, возвращает отсортированные по релевантности результаты.
+    /// Searches MCP servers by query and returns results sorted by relevance.
     /// </summary>
-    /// <param name="query">Поисковый запрос или ключевые слова</param>
-    /// <param name="maxResults">Максимальное количество результатов</param>
+    /// <param name="query">Search query or keywords.</param>
+    /// <param name="maxResults">Maximum number of results.</param>
     Task<IReadOnlyList<McpCatalogEntry>> SearchAsync(string query, int maxResults = 5);
 }

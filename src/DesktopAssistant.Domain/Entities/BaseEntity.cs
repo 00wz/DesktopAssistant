@@ -1,7 +1,7 @@
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
-/// Базовый класс для всех сущностей домена
+/// Base class for all domain entities.
 /// </summary>
 public abstract class BaseEntity
 {

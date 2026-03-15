@@ -1,15 +1,15 @@
 namespace DesktopAssistant.Application.Dtos;
 
 /// <summary>
-/// Базовый тип событий суммаризации — аналог StreamEvent для LLM-стрима.
+/// Base type for summarization events — analogous to StreamEvent for the LLM stream.
 /// </summary>
 public abstract record SummarizationEvent;
 
-/// <summary>Суммаризация начата.</summary>
+/// <summary>Summarization has started.</summary>
 public sealed record SummarizationStartedDto(
     Guid ParentNodeId) : SummarizationEvent;
 
-/// <summary>Суммаризация успешно завершена.</summary>
+/// <summary>Summarization has completed successfully.</summary>
 public sealed record SummarizationCompletedDto(
     Guid SummaryNodeId,
     Guid ParentNodeId,

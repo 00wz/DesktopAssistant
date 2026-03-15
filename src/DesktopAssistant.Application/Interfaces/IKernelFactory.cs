@@ -4,12 +4,12 @@ using Microsoft.SemanticKernel;
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Фабрика для создания Semantic Kernel.
+/// Factory for creating a Semantic Kernel instance.
 /// </summary>
 public interface IKernelFactory
 {
     /// <summary>
-    /// Создаёт Kernel для указанного профиля ассистента с API-ключом.
+    /// Creates a Kernel for the specified assistant profile using the given API key.
     /// </summary>
     Kernel Create(AssistantProfile profile, string apiKey);
 }

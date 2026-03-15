@@ -14,9 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Semantic Kernel (единый коннектор для всех OpenAI-совместимых провайдеров) -->
+    <!-- Semantic Kernel (unified connector for all OpenAI-compatible providers) -->
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.67.1" />
-    <!-- TODO: пакет ниже, возможно не нужен-->
+    <!-- TODO: the package below may not be needed-->
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.67.1" />
     
     <!-- MCP Integration -->

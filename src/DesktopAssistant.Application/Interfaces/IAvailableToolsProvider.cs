@@ -1,24 +1,24 @@
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Описание доступного tool (SK-плагин или MCP-инструмент).
+/// Descriptor of an available tool (SK plugin or MCP tool).
 /// </summary>
 public record ToolDescriptor(string PluginName, string FunctionName, string? Description);
 
 /// <summary>
-/// Предоставляет актуальный список всех инструментов, доступных агенту:
-/// статических SK-плагинов и динамически подключённых MCP-tools.
-/// Генерирует событие <see cref="ToolsChanged"/> при изменении состава tools.
+/// Provides the current list of all tools available to the agent:
+/// static SK plugins and dynamically connected MCP tools.
+/// Raises the <see cref="ToolsChanged"/> event when the set of tools changes.
 /// </summary>
 public interface IAvailableToolsProvider
 {
     /// <summary>
-    /// Возвращает текущий список всех доступных tools.
+    /// Returns the current list of all available tools.
     /// </summary>
     IReadOnlyList<ToolDescriptor> GetAvailableTools();
 
     /// <summary>
-    /// Вызывается при добавлении или удалении tools (подключение/отключение MCP-сервера).
+    /// Raised when tools are added or removed (e.g. an MCP server connects or disconnects).
     /// </summary>
     event EventHandler? ToolsChanged;
 }

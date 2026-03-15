@@ -7,8 +7,8 @@ using Microsoft.Extensions.Logging;
 namespace DesktopAssistant.UI.ViewModels;
 
 /// <summary>
-/// Переиспользуемый ViewModel для создания и редактирования профиля ассистента.
-/// Перед отображением вызовите InitCreate() или InitEdit(dto).
+/// Reusable ViewModel for creating and editing an assistant profile.
+/// Call InitCreate() or InitEdit(dto) before displaying.
 /// </summary>
 public partial class ProfileEditorViewModel : ObservableObject
 {
@@ -17,10 +17,10 @@ public partial class ProfileEditorViewModel : ObservableObject
 
     private Guid? _editingProfileId;
 
-    /// <summary>Вызывается после успешного сохранения. Получает сохранённый DTO.</summary>
+    /// <summary>Called after a successful save. Receives the saved DTO.</summary>
     public Func<AssistantProfileDto, Task>? OnSaved { get; set; }
 
-    /// <summary>Вызывается при отмене.</summary>
+    /// <summary>Called when the user cancels.</summary>
     public Action? OnCancelled { get; set; }
 
     [ObservableProperty]
@@ -56,9 +56,9 @@ public partial class ProfileEditorViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    /// <summary>Подсказка для поля API Key: зависит от режима.</summary>
+    /// <summary>Watermark text for the API Key field: depends on the current mode.</summary>
     public string ApiKeyWatermark => IsEditMode
-        ? "Оставьте пустым, чтобы сохранить текущий ключ"
+        ? "Leave empty to keep the current key"
         : "sk-...";
 
     public ProfileEditorViewModel(IAssistantProfileService profileService, ILogger<ProfileEditorViewModel> logger)
@@ -67,7 +67,7 @@ public partial class ProfileEditorViewModel : ObservableObject
         _logger = logger;
     }
 
-    /// <summary>Сбрасывает форму для создания нового профиля.</summary>
+    /// <summary>Resets the form for creating a new profile.</summary>
     public void InitCreate()
     {
         _editingProfileId = null;
@@ -82,7 +82,7 @@ public partial class ProfileEditorViewModel : ObservableObject
         IsLoading = false;
     }
 
-    /// <summary>Заполняет форму данными существующего профиля для редактирования.</summary>
+    /// <summary>Populates the form with data from an existing profile for editing.</summary>
     public void InitEdit(AssistantProfileDto profile)
     {
         _editingProfileId = profile.Id;
@@ -139,7 +139,7 @@ public partial class ProfileEditorViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving assistant profile");
-            ErrorMessage = $"Ошибка сохранения профиля: {ex.Message}";
+            ErrorMessage = $"Error saving profile: {ex.Message}";
         }
         finally
         {

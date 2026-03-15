@@ -7,14 +7,14 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Extensions;
 
 /// <summary>
-/// Extension методы для MessageNode для работы с ChatMessageContent и ChatHistory
+/// Extension methods for MessageNode for working with ChatMessageContent and ChatHistory
 /// </summary>
 public static class MessageNodeExtensions
 {
     /// <summary>
-    /// Извлекает ChatMessageContent из узла (десериализация Metadata).
+    /// Extracts ChatMessageContent from a node (deserializes Metadata).
     /// </summary>
-    /// <exception cref="InvalidOperationException">Если Metadata пустой или десериализация не удалась</exception>
+    /// <exception cref="InvalidOperationException">If Metadata is empty or deserialization failed</exception>
     public static ChatMessageContent GetChatMessageContent(this MessageNode node)
     {
         if (string.IsNullOrEmpty(node.Metadata))
@@ -33,11 +33,11 @@ public static class MessageNodeExtensions
     }
 
     /// <summary>
-    /// Извлекает ChatMessageContent из tool-узла.
-    /// Новый формат: берёт SerializedChatMessage из ToolNodeMetadata.
-    /// Возвращает null для pending-узлов (ResultJson == null).
+    /// Extracts ChatMessageContent from a tool node.
+    /// New format: reads SerializedChatMessage from ToolNodeMetadata.
+    /// Returns null for pending nodes (ResultJson == null).
     /// </summary>
-    /// <exception cref="InvalidOperationException">Если ToolNodeMetadata не удалось десериализовать</exception>
+    /// <exception cref="InvalidOperationException">If ToolNodeMetadata could not be deserialized</exception>
     public static ChatMessageContent? TryGetToolChatMessageContent(this MessageNode node)
     {
         var meta = ToolNodeMetadata.TryDeserialize(node.Metadata)
@@ -50,11 +50,11 @@ public static class MessageNodeExtensions
     }
 
     /// <summary>
-    /// Строит ChatHistory из узлов диалога.
-    /// Системный промпт инжектируется первым если не пустой.
-    /// System-узлы из дерева (пустые якорные узлы) пропускаются.
+    /// Builds ChatHistory from conversation nodes.
+    /// The system prompt is injected first if non-empty.
+    /// System nodes from the tree (empty anchor nodes) are skipped.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Если tool-узел не имеет результата (pending)</exception>
+    /// <exception cref="InvalidOperationException">If a tool node has no result (pending)</exception>
     public static ChatHistory ToChatHistory(this IEnumerable<MessageNode> messages, string? systemPrompt = null)
     {
         var chatHistory = new ChatHistory();
@@ -66,7 +66,7 @@ public static class MessageNodeExtensions
         {
             if (message.NodeType == MessageNodeType.Root)
             {
-                // Пустые якорные System-узлы пропускаются
+                // Empty anchor System nodes are skipped
                 continue;
             }
             else if (message.NodeType == MessageNodeType.Tool)
@@ -78,7 +78,7 @@ public static class MessageNodeExtensions
             }
             else if (message.NodeType == MessageNodeType.Summary)
             {
-                // Десериализуем сохранённые ChatMessageContent и добавляем в историю как есть
+                // Deserialize stored ChatMessageContent and add to history as-is
                 var meta = SummarizationMetadata.TryDeserialize(message.Metadata);
                 if (meta != null)
                 {

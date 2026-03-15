@@ -3,12 +3,12 @@ using System.Text.Json.Serialization;
 namespace DesktopAssistant.Infrastructure.MCP.Models;
 
 /// <summary>
-/// Корневая конфигурация MCP (содержимое mcp.json)
+/// Root MCP configuration (contents of mcp.json).
 /// </summary>
 public class McpConfiguration
 {
     /// <summary>
-    /// Словарь MCP серверов: ключ - имя сервера, значение - конфигурация
+    /// Dictionary of MCP servers: key is the server name, value is its configuration.
     /// </summary>
     [JsonPropertyName("mcpServers")]
     public Dictionary<string, McpServerConfig> McpServers { get; set; } = new();

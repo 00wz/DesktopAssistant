@@ -3,14 +3,14 @@ using DesktopAssistant.Application.Dtos;
 namespace DesktopAssistant.Application.Interfaces;
 
 /// <summary>
-/// Сервис для управления профилями ассистента (CRUD, API-ключи, профиль по умолчанию).
+/// Service for managing assistant profiles (CRUD, API keys, default profile).
 /// </summary>
 public interface IAssistantProfileService
 {
-    /// <summary>Возвращает все профили ассистента.</summary>
+    /// <summary>Returns all assistant profiles.</summary>
     Task<IEnumerable<AssistantProfileDto>> GetAssistantProfilesAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Создаёт новый профиль ассистента. API-ключ сохраняется в защищённом хранилище. Если дефолтный профиль ещё не задан, созданный профиль становится дефолтным.</summary>
+    /// <summary>Creates a new assistant profile. The API key is saved in the secure store. If no default profile is set yet, the created profile becomes the default.</summary>
     Task<AssistantProfileDto> CreateAssistantProfileAsync(
         string description,
         string baseUrl,
@@ -20,7 +20,7 @@ public interface IAssistantProfileService
         int maxTokens = 4096,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Обновляет настройки профиля (без API-ключа).</summary>
+    /// <summary>Updates the profile settings (without the API key).</summary>
     Task UpdateAssistantProfileAsync(
         Guid id,
         string description,
@@ -30,15 +30,15 @@ public interface IAssistantProfileService
         int maxTokens,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Обновляет API-ключ профиля в защищённом хранилище.</summary>
+    /// <summary>Updates the profile's API key in the secure store.</summary>
     Task SetAssistantProfileApiKeyAsync(Guid id, string apiKey, CancellationToken cancellationToken = default);
 
-    /// <summary>Удаляет профиль ассистента.</summary>
+    /// <summary>Deletes an assistant profile.</summary>
     Task DeleteAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
 
-    /// <summary>Устанавливает указанный профиль как профиль по умолчанию, снимая флаг с предыдущего.</summary>
+    /// <summary>Sets the specified profile as the default, clearing the flag from the previous default.</summary>
     Task SetDefaultAssistantProfileAsync(Guid id, CancellationToken cancellationToken = default);
 
-    /// <summary>Устанавливает указанный профиль как профиль для суммаризации контекста.</summary>
+    /// <summary>Sets the specified profile as the summarization context profile.</summary>
     Task SetSummarizationProfileAsync(Guid id, CancellationToken cancellationToken = default);
 }
