@@ -29,15 +29,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     
-    <!-- Speech Recognition (offline - Vosk) -->
-    <PackageReference Include="Vosk" Version="0.3.38" />
-    
-    <!-- Text-to-Speech (offline - Piper TTS via ONNX) -->
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.19.0" />
-    
-    <!-- Audio -->
-    <PackageReference Include="NAudio" Version="2.2.1" />
-    
     <!-- Configuration -->
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.0" />
