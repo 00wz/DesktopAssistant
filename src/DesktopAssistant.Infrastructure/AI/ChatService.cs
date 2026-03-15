@@ -151,24 +151,16 @@ public class ChatService : IChatService
         Guid lastNodeId,
         CancellationToken cancellationToken = default)
     {
-        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
-        if (conversation == null)
-        {
-            _logger.LogWarning("Conversation {ConversationId} not found", conversationId);
-            return Enumerable.Empty<MessageDto>();//TODO: выбасывать исключение
-        }
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
 
-        var lastNode = await _messageNodeRepository.GetByIdAsync(lastNodeId);
-        if (lastNode == null)
-        {
-            _logger.LogWarning("MessageNode {NodeId} not found", lastNodeId);
-            return Enumerable.Empty<MessageDto>();//TODO: выбасывать исключение
-        }
+        var lastNode = await _messageNodeRepository.GetByIdAsync(lastNodeId)
+            ?? throw new InvalidOperationException($"MessageNode {lastNodeId} not found");
 
         var nodes = (await _conversationService.GetBranchPathAsync(
             lastNodeId, cancellationToken)).ToList();
 
-        var visibleNodes = nodes.Where(n => n.NodeType != MessageNodeType.System).ToList();
+        var visibleNodes = nodes.Where(n => n.NodeType != MessageNodeType.Root).ToList();
 
         var parentIds = visibleNodes
             .Where(n => n.ParentId.HasValue)
@@ -296,7 +288,7 @@ public class ChatService : IChatService
             {
                 case MessageNodeType.User:
                     return ConversationState.LastMessageIsUser;
-                /// узлы типов <see cref="MessageNodeType.System"/> и <see cref="MessageNodeType.Summary"/> пока приравниваем к сообщениям ассистента.
+                /// узлы типов <see cref="MessageNodeType.Root"/> и <see cref="MessageNodeType.Summary"/> пока приравниваем к сообщениям ассистента.
                 default:
                     return ConversationState.LastMessageIsAssistant;
             }

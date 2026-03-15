@@ -64,7 +64,7 @@ public static class MessageNodeExtensions
 
         foreach (var message in messages)
         {
-            if (message.NodeType == MessageNodeType.System)
+            if (message.NodeType == MessageNodeType.Root)
             {
                 // Пустые якорные System-узлы пропускаются
                 continue;

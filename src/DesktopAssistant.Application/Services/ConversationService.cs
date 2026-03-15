@@ -95,32 +95,6 @@ public class ConversationService
     }
 
     /// <summary>
-    /// Добавляет узел суммаризации в диалог
-    /// TODO: нужен ли отдельный метод?
-    /// </summary>
-    public async Task<MessageNode> AddSummaryNodeAsync(
-        Guid conversationId,
-        Guid parentNodeId,
-        string summaryContent,
-        int tokenCount = 0,
-        CancellationToken cancellationToken = default)
-    {
-        var message = await AddNodeAsync(
-            conversationId,
-            parentNodeId,
-            MessageNodeType.Summary,
-            summaryContent,
-            metadata: null,
-            tokenCount,
-            cancellationToken);
-
-        _logger.LogInformation("Created summary node {NodeId} in conversation {ConversationId}",
-            message.Id, conversationId);
-
-        return message;
-    }
-
-    /// <summary>
     /// Возвращает полный упорядоченный путь от корня до указанного узла
     /// </summary>
     public async Task<IEnumerable<MessageNode>> GetBranchPathAsync(

@@ -11,7 +11,6 @@ public abstract record StreamEvent;
 /// </summary>
 public sealed record AssistantTurnDto : StreamEvent
 {
-    //TODO: зачем эти поля?:
     public Guid TempId { get; } = Guid.NewGuid();
     public DateTime StartedAt { get; } = DateTime.UtcNow;
 }

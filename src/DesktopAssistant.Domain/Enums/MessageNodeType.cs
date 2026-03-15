@@ -7,9 +7,8 @@ public enum MessageNodeType
 {
     /// <summary>
     /// Системный промпт
-    /// TODO: переименовать в Root
     /// </summary>
-    System = 0,
+    Root = 0,
     
     /// <summary>
     /// Сообщение пользователя

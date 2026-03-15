@@ -32,8 +32,6 @@ public sealed record ToolRequestedSessionEvent(
     string ArgumentsJson,
     bool IsAutoApproved) : SessionEvent;
 
-/// TODO: возможно, добавить ToolApprovedSessionEvent
-
 /// <summary>Tool-вызов выполнен (или отклонён) — узел обновлён в БД.</summary>
 public sealed record ToolResultSessionEvent(Guid PendingNodeId, string ResultJson, ToolNodeStatus Status) : SessionEvent;
 
