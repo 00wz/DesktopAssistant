@@ -4,6 +4,8 @@ using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Domain.Interfaces;
+using DesktopAssistant.Infrastructure.AI.Executors;
+using DesktopAssistant.Infrastructure.AI.Metadata;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;

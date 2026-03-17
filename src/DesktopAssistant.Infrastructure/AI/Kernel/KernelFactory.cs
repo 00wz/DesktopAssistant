@@ -1,8 +1,9 @@
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Entities;
 using Microsoft.SemanticKernel;
+using SKKernel = global::Microsoft.SemanticKernel.Kernel;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Kernel;
 
 /// <summary>
 /// Factory for creating a Semantic Kernel instance.
@@ -12,7 +13,7 @@ namespace DesktopAssistant.Infrastructure.AI;
 public class KernelFactory : IKernelFactory
 {
     /// <inheritdoc />
-    public Kernel Create(AssistantProfile profile, string apiKey)
+    public SKKernel Create(AssistantProfile profile, string apiKey)
     {
         ArgumentNullException.ThrowIfNull(profile);
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -21,7 +22,7 @@ public class KernelFactory : IKernelFactory
         return BuildKernel(profile.BaseUrl, profile.ModelId, apiKey);
     }
 
-    private static Kernel BuildKernel(string baseUrl, string modelId, string apiKey)
+    private static SKKernel BuildKernel(string baseUrl, string modelId, string apiKey)
     {
         var httpClient = new HttpClient
         {
@@ -29,7 +30,7 @@ public class KernelFactory : IKernelFactory
             Timeout = TimeSpan.FromMinutes(5)
         };
 
-        var builder = Kernel.CreateBuilder();
+        var builder = SKKernel.CreateBuilder();
 
         builder.AddOpenAIChatCompletion(
             modelId: modelId,

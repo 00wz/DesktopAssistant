@@ -1,12 +1,12 @@
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Entities;
-using DesktopAssistant.Infrastructure.AI.Filters;
 using DesktopAssistant.Infrastructure.MCP.Plugins;
 using DesktopAssistant.Infrastructure.MCP.Search;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using SKKernel = global::Microsoft.SemanticKernel.Kernel;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Kernel;
 
 /// <summary>
 /// Creates a fully configured kernel for executing agent turns:
@@ -19,7 +19,7 @@ public class AgentKernelFactory(
     IMcpCatalogSearchService mcpCatalogSearch,
     ILoggerFactory loggerFactory)
 {
-    public Kernel Create(AssistantProfile profile, string apiKey)
+    public SKKernel Create(AssistantProfile profile, string apiKey)
     {
         var kernel = kernelFactory.Create(profile, apiKey);
 

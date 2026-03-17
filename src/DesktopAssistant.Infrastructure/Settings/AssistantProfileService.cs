@@ -4,7 +4,7 @@ using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.Settings;
 
 /// <summary>
 /// IAssistantProfileService implementation — manages assistant profiles.

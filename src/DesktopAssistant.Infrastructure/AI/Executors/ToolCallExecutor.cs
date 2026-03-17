@@ -3,12 +3,14 @@ using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Interfaces;
+using DesktopAssistant.Infrastructure.AI.Kernel;
+using DesktopAssistant.Infrastructure.AI.Metadata;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Executors;
 
 /// <summary>
 /// Executes or rejects a pending tool call.

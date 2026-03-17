@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Session;
 
 internal class ConversationSessionService : IConversationSessionService
 {

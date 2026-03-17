@@ -2,7 +2,7 @@ using System.Text;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI.Aggregation;
+namespace DesktopAssistant.Infrastructure.AI.Streaming;
 
 /// <summary>
 /// Aggregates streaming message fragments into a complete ChatMessageContent,

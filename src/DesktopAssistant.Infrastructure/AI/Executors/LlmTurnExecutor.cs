@@ -3,15 +3,17 @@ using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Enums;
-using DesktopAssistant.Infrastructure.AI.Aggregation;
 using DesktopAssistant.Infrastructure.AI.Extensions;
+using DesktopAssistant.Infrastructure.AI.Kernel;
+using DesktopAssistant.Infrastructure.AI.Metadata;
 using DesktopAssistant.Infrastructure.AI.Serialization;
+using DesktopAssistant.Infrastructure.AI.Streaming;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Executors;
 
 /// <summary>
 /// Executes a single LLM turn: builds context, streams the response, saves nodes, and creates pending tool nodes.

@@ -1,5 +1,6 @@
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Enums;
+using DesktopAssistant.Infrastructure.AI.Metadata;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;

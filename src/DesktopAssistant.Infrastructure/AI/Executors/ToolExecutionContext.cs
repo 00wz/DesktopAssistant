@@ -1,4 +1,4 @@
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Executors;
 
 /// <summary>
 /// Ambient context injected into every tool-call invocation via <see cref="Microsoft.SemanticKernel.KernelArguments"/>.

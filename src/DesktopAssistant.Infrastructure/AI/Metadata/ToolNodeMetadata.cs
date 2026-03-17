@@ -2,7 +2,7 @@ using System.Text.Json;
 using DesktopAssistant.Application.Dtos;
 using Microsoft.SemanticKernel;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Metadata;
 
 /// <summary>
 /// Unified metadata structure for a tool node — stored in MessageNode.Metadata.

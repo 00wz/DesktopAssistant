@@ -5,11 +5,12 @@ using DesktopAssistant.Application.Services;
 using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Extensions;
+using DesktopAssistant.Infrastructure.AI.Metadata;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Executors;
 
 /// <summary>
 /// Implements conversation context summarization via ChatHistorySummarizationReducer.

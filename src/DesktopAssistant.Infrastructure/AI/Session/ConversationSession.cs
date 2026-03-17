@@ -4,7 +4,7 @@ using DesktopAssistant.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Session;
 
 internal class ConversationSession : IConversationSession
 {

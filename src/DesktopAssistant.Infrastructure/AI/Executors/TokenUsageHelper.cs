@@ -3,7 +3,7 @@ using Microsoft.SemanticKernel;
 using OpenAI.Chat;
 using SKChatMessageContent = Microsoft.SemanticKernel.ChatMessageContent;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Executors;
 
 internal static class TokenUsageHelper
 {

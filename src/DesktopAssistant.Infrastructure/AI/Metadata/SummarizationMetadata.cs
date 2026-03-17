@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using Microsoft.SemanticKernel;
 
-namespace DesktopAssistant.Infrastructure.AI;
+namespace DesktopAssistant.Infrastructure.AI.Metadata;
 
 /// <summary>
 /// Metadata for a summary node. Stores serialized ChatMessageContent received from ChatHistorySummarizationReducer.
