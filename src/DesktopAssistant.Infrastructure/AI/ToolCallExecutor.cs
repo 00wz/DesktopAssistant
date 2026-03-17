@@ -59,18 +59,24 @@ public class ToolCallExecutor(
         {
             _logger.LogDebug("[TOOL APPROVE] Invoking {PluginName}.{FunctionName}", meta.PluginName, meta.FunctionName);
 
-            KernelArguments? kernelArgs = null;
+            KernelArguments kernelArgs = [];
+
             if (!string.IsNullOrEmpty(meta.ArgumentsJson) && meta.ArgumentsJson != "{}")
             {
                 var argsDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
                     meta.ArgumentsJson, ToolNodeMetadata.JsonOptions);
                 if (argsDict != null)
                 {
-                    kernelArgs = [];
                     foreach (var kv in argsDict)
                         kernelArgs[kv.Key] = kv.Value;
                 }
             }
+
+            kernelArgs[ToolExecutionContext.ArgumentKey] = new ToolExecutionContext
+            {
+                ConversationId = pendingNode.ConversationId,
+                ToolNodeId = pendingNodeId
+            };
 
             var result = await kernel.InvokeAsync(meta.PluginName, meta.FunctionName, kernelArgs, cancellationToken);
             resultJson = result.ToString() ?? string.Empty;
