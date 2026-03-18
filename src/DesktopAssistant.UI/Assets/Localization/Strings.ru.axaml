@@ -64,7 +64,6 @@
 
     <!-- Message input -->
     <sys:String x:Key="MessageInput.Placeholder">Введите сообщение...</sys:String>
-    <sys:String x:Key="MessageInput.Send">Отправить</sys:String>
     <sys:String x:Key="MessageInput.Resume">Возобновить</sys:String>
 
     <!-- Main window -->
@@ -94,6 +93,5 @@
     <sys:String x:Key="NewConversation.FirstMessage.Label">Первое сообщение</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Напишите ваше первое сообщение...</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Отмена</sys:String>
-    <sys:String x:Key="NewConversation.Button.Send">Отправить</sys:String>
 
 </ResourceDictionary>

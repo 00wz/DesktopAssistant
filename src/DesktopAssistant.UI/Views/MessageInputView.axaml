@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
+             xmlns:views="using:DesktopAssistant.UI.Views"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="120"
              x:Class="DesktopAssistant.UI.Views.MessageInputView"
              x:DataType="vm:ChatViewModel">
@@ -20,29 +21,12 @@
             </Border>
 
             <!-- Message input -->
-            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowInputPanel}">
-                <TextBox Grid.Column="0"
-                         Text="{Binding InputMessage, Mode=TwoWay}"
-                         Watermark="{DynamicResource MessageInput.Placeholder}"
-                         AcceptsReturn="False"
-                         TextWrapping="Wrap"
-                         MinHeight="40"
-                         MaxHeight="120"
-                         VerticalContentAlignment="Center"
-                         Margin="0,0,10,0">
-                    <TextBox.KeyBindings>
-                        <KeyBinding Gesture="Enter" Command="{Binding SendMessageCommand}"/>
-                    </TextBox.KeyBindings>
-                </TextBox>
-                <Button Grid.Column="1"
-                        Content="{DynamicResource MessageInput.Send}"
-                        Command="{Binding SendMessageCommand}"
-                        IsEnabled="{Binding !IsLoading}"
-                        Height="40"
-                        Padding="15,0"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"/>
-            </Grid>
+            <views:TextInputWithButtonView IsVisible="{Binding ShowInputPanel}"
+                                          Text="{Binding InputMessage, Mode=TwoWay}"
+                                          Watermark="{DynamicResource MessageInput.Placeholder}"
+                                          SendCommand="{Binding SendMessageCommand}"
+                                          IsSendEnabled="{Binding !IsLoading}"
+                                          InputVerticalContentAlignment="Center"/>
 
             <!-- Resume button -->
             <Button Content="{DynamicResource MessageInput.Resume}"
