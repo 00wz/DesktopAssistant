@@ -253,6 +253,7 @@ public class ChatService : IChatService
         CancellationToken cancellationToken = default)
     {
         bool hasPending = false;
+        bool hasTerminal = false;
         var seenCallIds = new HashSet<string>();
 
         await foreach (var node in _messageNodeRepository.TraverseToRootAsync(lastNodeId, cancellationToken))
@@ -265,6 +266,8 @@ public class ChatService : IChatService
                     seenCallIds.Add(meta.CallId);
                     if (meta.ResultJson == null)
                         hasPending = true;
+                    else if (meta.IsTerminal)
+                        hasTerminal = true;
                 }
                 continue;
             }
@@ -296,7 +299,8 @@ public class ChatService : IChatService
             }
         }
 
-        return hasPending ? ConversationState.HasPendingToolCalls : ConversationState.AllToolCallsCompleted;
+        if (hasPending) return ConversationState.HasPendingToolCalls;
+        return hasTerminal ? ConversationState.AgentTaskCompleted : ConversationState.AllToolCallsCompleted;
     }
 
     /// <inheritdoc />

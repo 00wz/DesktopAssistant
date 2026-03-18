@@ -1,5 +1,7 @@
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Entities;
+using DesktopAssistant.Domain.Enums;
+using DesktopAssistant.Infrastructure.AI.Plugins;
 using DesktopAssistant.Infrastructure.MCP.Plugins;
 using DesktopAssistant.Infrastructure.MCP.Search;
 using Microsoft.Extensions.Logging;
@@ -19,7 +21,7 @@ public class AgentKernelFactory(
     IMcpCatalogSearchService mcpCatalogSearch,
     ILoggerFactory loggerFactory)
 {
-    public SKKernel Create(AssistantProfile profile, string apiKey)
+    public SKKernel Create(AssistantProfile profile, string apiKey, ConversationMode mode = ConversationMode.Chat)
     {
         var kernel = kernelFactory.Create(profile, apiKey);
 
@@ -43,6 +45,11 @@ public class AgentKernelFactory(
                 mcpServerManager,
                 loggerFactory.CreateLogger<McpToolsPlugin>());
             mcpToolsPlugin.RegisterToolsToKernel(kernel);
+        }
+
+        if (mode == ConversationMode.Agent)
+        {
+            kernel.ImportPluginFromObject(new AgentOutputPlugin(), AgentOutputPlugin.PluginName);
         }
 
         return kernel;

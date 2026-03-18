@@ -1,3 +1,5 @@
+using DesktopAssistant.Domain.Enums;
+
 namespace DesktopAssistant.Domain.Entities;
 
 /// <summary>
@@ -14,6 +16,9 @@ public class Conversation : BaseEntity
 
     /// <summary>Conversation system prompt. Injected first into ChatHistory if non-empty.</summary>
     public string SystemPrompt { get; private set; } = string.Empty;
+
+    /// <summary>Controls LLM tool-use behavior. Default is Chat (optional tool use).</summary>
+    public ConversationMode Mode { get; private set; } = ConversationMode.Chat;
 
     // Navigation properties
     public AssistantProfile? AssistantProfile { get; private set; }
@@ -56,6 +61,12 @@ public class Conversation : BaseEntity
     public void UpdateAssistantProfile(Guid assistantProfileId)
     {
         AssistantProfileId = assistantProfileId;
+        MarkAsUpdated();
+    }
+
+    public void SetMode(ConversationMode mode)
+    {
+        Mode = mode;
         MarkAsUpdated();
     }
 

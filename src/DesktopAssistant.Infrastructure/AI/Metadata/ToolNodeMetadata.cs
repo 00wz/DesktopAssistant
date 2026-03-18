@@ -17,7 +17,8 @@ internal sealed record ToolNodeMetadata(
     ToolNodeStatus Status,
     string? ResultJson = null,
     string? SerializedChatMessage = null,
-    Guid AssistantNodeId = default)
+    Guid AssistantNodeId = default,
+    bool IsTerminal = false)
 {
     internal static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 

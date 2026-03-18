@@ -22,4 +22,10 @@ public enum ConversationState
     /// For example: the result node was not created, or a non-latest result id was provided.
     /// </summary>
     ToolCallIdMismatch,
+
+    /// <summary>
+    /// All tool calls completed and at least one of them was a terminal AgentControl tool
+    /// (FinishTask or FailTask). The agent loop must NOT be resumed — the task is done.
+    /// </summary>
+    AgentTaskCompleted,
 }

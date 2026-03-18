@@ -6,6 +6,7 @@ using DesktopAssistant.Domain.Enums;
 using DesktopAssistant.Infrastructure.AI.Extensions;
 using DesktopAssistant.Infrastructure.AI.Kernel;
 using DesktopAssistant.Infrastructure.AI.Metadata;
+using DesktopAssistant.Infrastructure.AI.Plugins;
 using DesktopAssistant.Infrastructure.AI.Serialization;
 using DesktopAssistant.Infrastructure.AI.Streaming;
 using Microsoft.Extensions.Logging;
@@ -47,8 +48,11 @@ public class LlmTurnExecutor(
         Guid lastMessageId,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Load the system prompt and profile from the conversation
-        var systemPrompt = await _conversationService.GetSystemPromptAsync(conversationId, cancellationToken);
+        // Load the conversation (for mode), system prompt and profile
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found.");
+
+        var systemPrompt = conversation.SystemPrompt;
         var profile = await _conversationService.GetAssistantProfileAsync(conversationId, cancellationToken)
             ?? throw new InvalidOperationException($"AssistantProfile not found for conversation {conversationId}");
 
@@ -59,11 +63,14 @@ public class LlmTurnExecutor(
         var contextMessages = await _conversationService.BuildContextAsync(lastMessageId, cancellationToken);
         var chatHistory = contextMessages.ToChatHistory(systemPrompt);
 
-        var kernel = _agentKernelFactory.Create(profile, apiKey);
+        var isAgentMode = conversation.Mode == ConversationMode.Agent;
+        var kernel = _agentKernelFactory.Create(profile, apiKey, conversation.Mode);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var executionSettings = new OpenAIPromptExecutionSettings
         {
-            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(autoInvoke: false)
+            FunctionChoiceBehavior = isAgentMode
+                ? FunctionChoiceBehavior.Required(autoInvoke: false)
+                : FunctionChoiceBehavior.Auto(autoInvoke: false)
         };
 
         yield return new AssistantTurnDto();
@@ -105,13 +112,17 @@ public class LlmTurnExecutor(
             var callId = functionCall.Id ?? Guid.NewGuid().ToString();
             var argsJson = ToolNodeMetadata.SerializeFunctionArgs(functionCall);
 
+            var pluginName = functionCall.PluginName ?? string.Empty;
+            var isTerminal = pluginName == AgentOutputPlugin.PluginName;
+
             var toolMeta = new ToolNodeMetadata(
                 callId,
-                functionCall.PluginName ?? string.Empty,
+                pluginName,
                 functionCall.FunctionName,
                 argsJson,
                 ToolNodeStatus.Pending,
-                AssistantNodeId: assistantNode.Id);
+                AssistantNodeId: assistantNode.Id,
+                IsTerminal: isTerminal);
 
             var pendingNode = await _conversationService.AddNodeAsync(
                 conversationId,
