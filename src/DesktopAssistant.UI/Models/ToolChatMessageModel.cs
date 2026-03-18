@@ -41,6 +41,9 @@ public partial class ToolChatMessageModel : ChatMessageModel
     [NotifyPropertyChangedFor(nameof(IsExecuting))]
     private ToolCallStatus _status = ToolCallStatus.Pending;
 
+    [ObservableProperty]
+    private bool _isTerminal;
+
     public bool HasResult => !string.IsNullOrEmpty(ResultJson);
     public bool IsPending => Status == ToolCallStatus.Pending;
     public bool IsExecuting => Status == ToolCallStatus.Executing;

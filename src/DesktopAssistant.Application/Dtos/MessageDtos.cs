@@ -49,7 +49,8 @@ public record ToolResultDto(
     string FunctionName,
     string ResultJson,
     ToolNodeStatus Status,
-    string ArgumentsJson = ""
+    string ArgumentsJson = "",
+    bool IsTerminal = false
 ) : MessageDto(Id, ParentId, CreatedAt);
 
 /// <summary>Summary node — a condensed context of the previous conversation.</summary>

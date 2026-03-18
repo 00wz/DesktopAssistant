@@ -424,6 +424,7 @@ public class ChatService : IChatService
             meta.CallId, meta.PluginName, meta.FunctionName,
             meta.ResultJson ?? string.Empty,
             Status: meta.Status,
-            meta.ArgumentsJson);
+            meta.ArgumentsJson,
+            IsTerminal: meta.IsTerminal);
     }
 }

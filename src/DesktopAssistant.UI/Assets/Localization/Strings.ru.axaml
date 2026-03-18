@@ -51,6 +51,7 @@
     <sys:String x:Key="Chat.Tooltip.ChatSettings">Настройки диалога</sys:String>
     <sys:String x:Key="Chat.Tool.Approve">Подтвердить</sys:String>
     <sys:String x:Key="Chat.Tool.Deny">Отклонить</sys:String>
+    <sys:String x:Key="Chat.AgentResult.Title">Вывод агента</sys:String>
 
     <!-- Chat settings panel -->
     <sys:String x:Key="ChatSettings.Title">Настройки диалога</sys:String>

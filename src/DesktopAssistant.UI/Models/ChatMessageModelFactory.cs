@@ -43,6 +43,7 @@ public static class ChatMessageModelFactory
             FunctionName = t.FunctionName,
             ArgumentsJson = t.ArgumentsJson,
             ResultJson = t.ResultJson,
+            IsTerminal = t.IsTerminal,
             Status = t.Status switch
             {
                 ToolNodeStatus.Completed => ToolCallStatus.Completed,

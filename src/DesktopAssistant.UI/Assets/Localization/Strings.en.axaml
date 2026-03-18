@@ -51,6 +51,7 @@
     <sys:String x:Key="Chat.Tooltip.ChatSettings">Chat settings</sys:String>
     <sys:String x:Key="Chat.Tool.Approve">Approve</sys:String>
     <sys:String x:Key="Chat.Tool.Deny">Deny</sys:String>
+    <sys:String x:Key="Chat.AgentResult.Title">Agent output</sys:String>
 
     <!-- Chat settings panel -->
     <sys:String x:Key="ChatSettings.Title">Chat Settings</sys:String>
