@@ -1,151 +1,153 @@
 # DesktopAssistant
 
-Кроссплатформенный десктопный AI-агент на .NET с поддержкой голосового ввода/вывода.
+A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any OpenAI-compatible LLM provider, real-time MCP server installation, conversation branching, and multiple simultaneous chats.
 
-## 🎯 Возможности
+---
 
-- **Множественные диалоги** — работа с несколькими AI-ассистентами одновременно через вкладки
-- **Ветвящаяся история** — граф диалога с возможностью создания альтернативных веток (как в ChatGPT)
-- **Голосовой ввод** — стриминговое распознавание речи с помощью Vosk (офлайн)
-- **Wake Word** — активация ассистента голосовой командой
-- **Голосовой вывод** — стриминговое преобразование ответов AI в речь
-- **MCP-серверы** — поддержка Model Context Protocol для расширения возможностей
-- **Работа в трее** — фоновый режим с ожиданием wake word
-- **Автоматическая суммаризация** — при достижении лимита контекста
+## Features
 
-## 🛠 Технологический стек
+### Conversations
+- **Multiple simultaneous chats** — open as many conversations as needed, each running independently
+- **Conversation branching** — fork any message to explore alternative responses, similar to ChatGPT's branching model
+- **Manual summarization** — right-click any message and summarize the preceding context; a `SummaryNode` is inserted into the message tree, keeping the context window lean without losing history
 
-| Компонент | Технология |
-|-----------|------------|
-| UI Framework | [Avalonia UI](https://avaloniaui.net/) 11.3 |
-| MVVM | [CommunityToolkit.Mvvm](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/mvvm/) 8.4 |
-| AI Orchestration | [Semantic Kernel](https://learn.microsoft.com/semantic-kernel) 1.32 |
-| Speech Recognition | [Vosk](https://alphacephei.com/vosk/) 0.3 |
-| Text-to-Speech | Azure Speech / OpenAI TTS |
-| Database | SQLite + EF Core 9 |
-| Audio | NAudio 2.2 |
+### AI & LLM
+- **OpenAI-compatible providers** — works with OpenAI, Azure OpenAI, local models via Ollama, LM Studio, or any OpenAI-compatible endpoint
+- **Configurable profiles** — multiple assistant profiles with independent model, endpoint, temperature, and token settings
+- **Per-conversation system prompt** — set a custom system prompt for each conversation
+- **Semantic Kernel** — powered by [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel) for LLM orchestration
+- **Streaming responses** — real-time token streaming
 
-## 📋 Требования
+### MCP (Model Context Protocol)
+- **Install any MCP server at runtime** — without restarting the application
+- **Built-in server catalog** — curated list of popular MCP servers:
+  - Tavily Search, Exa Search
+  - Filesystem, Git, Fetch
+  - Memory (knowledge graph)
+  - Playwright Browser automation
+  - Qdrant vector database
+  - MySQL, PostgreSQL, SQLite
+  - Kubernetes, Docker
+  - Sequential Thinking, and more
+- **Per-tool auto-approval** — configure which tools run automatically without confirmation prompts
 
-- .NET 9.0 SDK
-- Windows 10/11, macOS 12+, или Linux
+### Security & Storage
+- **API keys via Windows DPAPI** — credentials encrypted at rest, never stored in plain text
+- **SQLite database** — local storage for conversations, messages, settings
+- **No telemetry** — all data stays on your machine
 
-## 🚀 Быстрый старт
+### UI
+- **Avalonia UI** — cross-platform desktop framework with Fluent theme
+- **System theme detection** — follows Windows dark/light mode
+- **Markdown rendering** — assistant responses rendered as rich markdown
 
-### Клонирование репозитория
+---
+
+## Planned Features
+
+- **Recursive sub-agents** — agents that spawn and coordinate child agents to solve complex tasks
+- **File support** — work with images, documents, and other file types as conversation context
+- **Extended thinking** — support for models with explicit reasoning/thinking steps
+- **Agent isolation** — sandboxed execution environments per agent
+- **Daemon agents** — long-running background agents and sub-agents
+- **Scheduled tasks** — deferred and periodic task execution
+
+---
+
+## Architecture
+
+Clean Architecture with four layers:
+
+```
+Domain          — entities, value objects, domain interfaces (no external dependencies)
+Application     — use cases, application services, DTOs, interface definitions
+Infrastructure  — LLM/SK integration, MCP, SQLite persistence, DPAPI security
+UI              — Avalonia MVVM presentation layer (CommunityToolkit.Mvvm)
+```
+
+Key infrastructure components:
+- `KernelFactory` — creates Semantic Kernel instances per assistant profile
+- `ConversationSession` — encapsulates the LLM turn loop, tool approval, and streaming for a single conversation
+- `ConversationSessionService` — singleton session pool keyed by conversation ID
+- `DpapiCredentialStore` — Windows DPAPI credential store
+- `AvailableToolsService` — aggregates static SK plugins and dynamic MCP tools
+- `SummarizationExecutor` — uses SK's `ChatHistorySummarizationReducer`
+
+---
+
+## Requirements
+
+- **OS:** Windows 10/11 (DPAPI credential storage is Windows-only)
+- **Runtime:** [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9)
+- **Node.js:** Required for NPX-based MCP servers (most servers in the catalog)
+- **LLM provider:** An API key for OpenAI or any compatible provider, or a locally running model
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/DesktopAssistant.git
+git clone https://github.com/00wz/DesktopAssistant.git
 cd DesktopAssistant
 ```
 
-### Сборка и запуск
+### 2. Build and run
 
 ```bash
-dotnet restore
-dotnet build
 dotnet run --project src/DesktopAssistant.UI
 ```
 
-### Первоначальная настройка
+Or open `DesktopAssistant.sln` in Visual Studio 2022 / JetBrains Rider and run the `DesktopAssistant.UI` project.
 
-При первом запуске приложение предложит:
-1. Выбрать LLM провайдера (OpenAI, Azure OpenAI, и др.)
-2. Выбрать модель
-3. Ввести API-ключ
+### 3. First-time setup
 
-## 📁 Структура проекта
+1. Open **Settings → Profiles**
+2. Create an assistant profile — enter your LLM provider base URL and model ID
+3. Your API key is stored securely via Windows DPAPI
+4. Start a new conversation
 
-```
-DesktopAssistant/
-├── src/
-│   ├── DesktopAssistant.Domain/        # Доменный слой (сущности, интерфейсы)
-│   ├── DesktopAssistant.Application/   # Слой приложения (сервисы, use cases)
-│   ├── DesktopAssistant.Infrastructure/# Инфраструктура (БД, AI, Speech)
-│   └── DesktopAssistant.UI/            # Презентационный слой (Avalonia)
-├── tests/                              # Тесты
-├── docs/                               # Документация
-└── memory-bank/                        # Документация проекта для AI
-```
+### 4. Adding MCP servers
 
-## 🔧 Конфигурация
+1. Open **Settings → Tools**
+2. Browse the built-in catalog or enter a custom server command
+3. The server connects immediately — no restart required
+4. Configure per-tool auto-approval as needed
 
-### appsettings.json
+---
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=desktopassistant.db"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information"
-    }
-  }
-}
-```
+## Configuration
 
-### User Secrets (API ключи)
+All settings are stored locally in a SQLite database (`desktop_assistant.db`) in the application directory.
 
-```bash
-cd src/DesktopAssistant.UI
-dotnet user-secrets set "OpenAI:ApiKey" "sk-..."
-dotnet user-secrets set "Azure:SpeechKey" "..."
-dotnet user-secrets set "Azure:SpeechRegion" "eastus"
-```
+| Setting | Storage |
+|---|---|
+| API keys | Windows DPAPI (encrypted) |
+| Assistant profiles | SQLite |
+| Conversations & messages | SQLite |
+| Tool auto-approval | SQLite |
+| MCP server configs | SQLite |
 
-## 🗣 Голосовые функции
+Logging is configured in `appsettings.json` via Serilog. Log files are written to the `logs/` directory.
 
-### Vosk (Speech-to-Text)
+---
 
-Для работы распознавания речи необходимо скачать языковую модель:
+## Tech Stack
 
-1. Скачайте модель с https://alphacephei.com/vosk/models
-2. Распакуйте в папку `models/vosk/`
-3. Укажите путь в настройках приложения
+| Component | Library / Version |
+|---|---|
+| UI Framework | [Avalonia UI](https://avaloniaui.net/) 11.3 |
+| MVVM | [CommunityToolkit.Mvvm](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/mvvm/) 8.4 |
+| LLM Orchestration | [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel) 1.67 |
+| MCP Client | [ModelContextProtocol](https://github.com/modelcontextprotocol/csharp-sdk) 0.2 |
+| ORM | Entity Framework Core + SQLite 9.0 |
+| Logging | Serilog 4.1 |
+| Markdown | LiveMarkdown.Avalonia |
+| Target Framework | .NET 9 |
 
-### TTS (Text-to-Speech)
+---
 
-Поддерживаются провайдеры:
-- Azure Cognitive Services Speech
-- OpenAI TTS API
+## License
 
-## 🔌 MCP-серверы
-
-Приложение поддерживает подключение MCP-серверов для расширения возможностей AI.
-
-Пример конфигурации `mcp-servers.json`:
-
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-filesystem-server", "/path/to/allowed/dir"]
-    }
-  }
-}
-```
-
-## 📝 Roadmap
-
-- [x] Базовая архитектура Clean Architecture
-- [x] Структура проекта и зависимости
-- [ ] UI с вкладками диалогов
-- [ ] Интеграция с LLM провайдерами
-- [ ] Сохранение диалогов в SQLite
-- [ ] Ветвящаяся история диалогов
-- [ ] Голосовой ввод (Vosk)
-- [ ] Голосовой вывод (TTS)
-- [ ] Wake word детекция
-- [ ] MCP интеграция
-- [ ] Работа в системном трее
-- [ ] Автоматическая суммаризация
-
-## 📄 Лицензия
-
-MIT License
-
-## 🤝 Вклад в проект
-
-Приветствуются pull requests и issues!
+[MIT](LICENSE)
