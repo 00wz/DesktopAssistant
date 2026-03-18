@@ -1,4 +1,5 @@
 using DesktopAssistant.Application.Dtos;
+using DesktopAssistant.Domain.Enums;
 
 namespace DesktopAssistant.Application.Interfaces;
 
@@ -41,6 +42,9 @@ public interface IConversationSession : IDisposable
 
     /// <summary>Changes the assistant profile for the conversation.</summary>
     Task ChangeProfileAsync(Guid profileId, CancellationToken ct = default);
+
+    /// <summary>Changes the conversation mode (Chat / Agent).</summary>
+    Task ChangeModeAsync(ConversationMode mode, CancellationToken ct = default);
 
     /// <summary>
     /// Summarizes the context starting from the selected node.

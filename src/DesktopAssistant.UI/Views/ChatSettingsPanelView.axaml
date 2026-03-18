@@ -43,6 +43,19 @@
                </ComboBox>
            </Grid>
 
+           <!-- Mode -->
+           <Grid ColumnDefinitions="120,*">
+               <TextBlock Grid.Column="0"
+                          Text="{DynamicResource ChatSettings.Mode.Label}"
+                          FontSize="12"
+                          Foreground="#555"
+                          VerticalAlignment="Center"/>
+               <ComboBox Grid.Column="1"
+                         ItemsSource="{Binding AvailableModes}"
+                         SelectedItem="{Binding SelectedModeOption, Mode=TwoWay}"
+                         HorizontalAlignment="Stretch"/>
+           </Grid>
+
            <!-- System prompt -->
            <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
            <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"

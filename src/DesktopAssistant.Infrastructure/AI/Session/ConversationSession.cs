@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Domain.Enums;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -471,6 +472,13 @@ internal class ConversationSession : IConversationSession
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
         await chatService.ChangeConversationProfileAsync(ConversationId, profileId, ct);
+    }
+
+    public async Task ChangeModeAsync(ConversationMode mode, CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        await chatService.ChangeConversationModeAsync(ConversationId, mode, ct);
     }
 
     // ── Helper methods ───────────────────────────────────────────────────────

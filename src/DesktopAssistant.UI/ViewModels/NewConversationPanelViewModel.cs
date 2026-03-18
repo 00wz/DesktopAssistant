@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Domain.Enums;
+using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
@@ -38,6 +40,15 @@ public partial class NewConversationPanelViewModel : ObservableObject
     [ObservableProperty]
     private string _systemPrompt = string.Empty;
 
+    public IReadOnlyList<ConversationModeOption> AvailableModes { get; } =
+    [
+        new(ConversationMode.Chat, "Chat"),
+        new(ConversationMode.Agent, "Agent"),
+    ];
+
+    [ObservableProperty]
+    private ConversationModeOption _selectedMode;
+
     /// <summary>Inline profile editor (null when the form is hidden).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCreateProfileMode))]
@@ -61,6 +72,7 @@ public partial class NewConversationPanelViewModel : ObservableObject
         _profileService = profileService;
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _selectedMode = AvailableModes[0]; // Chat by default
     }
 
     public async Task LoadProfilesAsync(CancellationToken cancellationToken = default)
@@ -130,7 +142,8 @@ public partial class NewConversationPanelViewModel : ObservableObject
             title,
             SelectedProfile.Id,
             SystemPrompt.Trim(),
-            trimmedMessage);
+            trimmedMessage,
+            SelectedMode.Mode);
 
         await OnConfirm(parameters);
     }
@@ -143,4 +156,9 @@ public partial class NewConversationPanelViewModel : ObservableObject
 }
 
 /// <summary>Parameters for creating a new conversation, returned from the panel.</summary>
-public record NewConversationParams(string Title, Guid AssistantProfileId, string SystemPrompt, string FirstMessage);
+public record NewConversationParams(
+    string Title,
+    Guid AssistantProfileId,
+    string SystemPrompt,
+    string FirstMessage,
+    ConversationMode Mode = ConversationMode.Chat);

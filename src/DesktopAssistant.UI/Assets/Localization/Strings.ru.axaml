@@ -55,6 +55,7 @@
     <!-- Chat settings panel -->
     <sys:String x:Key="ChatSettings.Title">Настройки диалога</sys:String>
     <sys:String x:Key="ChatSettings.Profile.Label">Профиль:</sys:String>
+    <sys:String x:Key="ChatSettings.Mode.Label">Режим:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Label">Системный промпт:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">Системный промпт пуст...</sys:String>
     <sys:String x:Key="ChatSettings.Save">Сохранить</sys:String>
@@ -86,6 +87,7 @@
     <sys:String x:Key="NewConversation.Profile.New">+ Новый профиль</sys:String>
     <sys:String x:Key="NewConversation.Profile.CancelNew">Отмена</sys:String>
     <sys:String x:Key="NewConversation.Profile.Empty">Нет доступных профилей. Создайте первый профиль.</sys:String>
+    <sys:String x:Key="NewConversation.Mode.Label">Режим</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Label">Системный промпт (необязательно)</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">Вы — полезный ИИ-ассистент...</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Label">Первое сообщение</sys:String>

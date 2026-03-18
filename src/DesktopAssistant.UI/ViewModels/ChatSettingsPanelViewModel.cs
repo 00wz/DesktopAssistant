@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
+using DesktopAssistant.Domain.Enums;
+using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 
@@ -21,6 +23,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     // Snapshot of values at load time — used to determine HasChanges
     private string _originalSystemPrompt = string.Empty;
     private Guid? _originalProfileId;
+    private ConversationMode _originalMode = ConversationMode.Chat;
 
     /// <summary>Called after a successful save; passes the new profile name.</summary>
     public Action<string>? OnProfileApplied { get; set; }
@@ -36,6 +39,16 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     private AssistantProfileDto? _selectedProfile;
 
+    public IReadOnlyList<ConversationModeOption> AvailableModes { get; } =
+    [
+        new(ConversationMode.Chat, "Chat"),
+        new(ConversationMode.Agent, "Agent"),
+    ];
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private ConversationModeOption _selectedModeOption;
+
     [ObservableProperty]
     private bool _isLoading;
 
@@ -48,7 +61,8 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
 
     public bool HasChanges =>
         SystemPrompt != _originalSystemPrompt ||
-        SelectedProfile?.Id != _originalProfileId;
+        SelectedProfile?.Id != _originalProfileId ||
+        SelectedModeOption.Mode != _originalMode;
 
     public ChatSettingsPanelViewModel(
         IAssistantProfileService profileService,
@@ -56,6 +70,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     {
         _profileService = profileService;
         _logger = logger;
+        _selectedModeOption = AvailableModes[0]; // Chat by default
     }
 
     public async Task LoadAsync(IConversationSession session, CancellationToken ct = default)
@@ -77,6 +92,8 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
             SelectedProfile = settings.AssistantProfileId.HasValue
                 ? AvailableProfiles.FirstOrDefault(p => p.Id == settings.AssistantProfileId.Value)
                 : null;
+            SelectedModeOption = AvailableModes.FirstOrDefault(m => m.Mode == settings.Mode)
+                ?? AvailableModes[0];
 
             TakeSnapshot();
         }
@@ -113,6 +130,8 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
                 OnProfileApplied?.Invoke(SelectedProfile.ModelId);
             }
 
+            await _session.ChangeModeAsync(SelectedModeOption.Mode);
+
             TakeSnapshot();
             IsSaved = true;
             _ = ResetSavedFeedbackAsync();
@@ -132,6 +151,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     {
         _originalSystemPrompt = SystemPrompt;
         _originalProfileId = SelectedProfile?.Id;
+        _originalMode = SelectedModeOption.Mode;
         SaveCommand.NotifyCanExecuteChanged();
     }
 

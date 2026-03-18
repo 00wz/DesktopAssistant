@@ -49,7 +49,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DesktopAssistant.Domain\DesktopAssistant.Domain.csproj" />
     <ProjectReference Include="..\DesktopAssistant.Application\DesktopAssistant.Application.csproj" />
     <ProjectReference Include="..\DesktopAssistant.Infrastructure\DesktopAssistant.Infrastructure.csproj" />
   </ItemGroup>

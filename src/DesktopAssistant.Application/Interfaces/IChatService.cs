@@ -1,4 +1,5 @@
 using DesktopAssistant.Application.Dtos;
+using DesktopAssistant.Domain.Enums;
 
 namespace DesktopAssistant.Application.Interfaces;
 
@@ -17,6 +18,7 @@ public interface IChatService
         string title,
         Guid? assistantProfileId = null,
         string systemPrompt = "",
+        ConversationMode mode = ConversationMode.Chat,
         CancellationToken cancellationToken = default);
 
     /// <summary>Returns all active conversations.</summary>
@@ -33,6 +35,9 @@ public interface IChatService
 
     /// <summary>Changes the assistant profile for the conversation.</summary>
     Task ChangeConversationProfileAsync(Guid conversationId, Guid newProfileId, CancellationToken cancellationToken = default);
+
+    /// <summary>Changes the conversation mode (Chat / Agent).</summary>
+    Task ChangeConversationModeAsync(Guid conversationId, ConversationMode mode, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the message history of the current active branch of a conversation as DTOs.

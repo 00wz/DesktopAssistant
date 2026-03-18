@@ -55,6 +55,7 @@
     <!-- Chat settings panel -->
     <sys:String x:Key="ChatSettings.Title">Chat Settings</sys:String>
     <sys:String x:Key="ChatSettings.Profile.Label">Profile:</sys:String>
+    <sys:String x:Key="ChatSettings.Mode.Label">Mode:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Label">System prompt:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">System prompt is empty...</sys:String>
     <sys:String x:Key="ChatSettings.Save">Save</sys:String>
@@ -86,6 +87,7 @@
     <sys:String x:Key="NewConversation.Profile.New">+ New Profile</sys:String>
     <sys:String x:Key="NewConversation.Profile.CancelNew">Cancel</sys:String>
     <sys:String x:Key="NewConversation.Profile.Empty">No profiles available. Create your first profile.</sys:String>
+    <sys:String x:Key="NewConversation.Mode.Label">Mode</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Label">System Prompt (optional)</sys:String>
     <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">You are a helpful AI assistant...</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Label">First Message</sys:String>

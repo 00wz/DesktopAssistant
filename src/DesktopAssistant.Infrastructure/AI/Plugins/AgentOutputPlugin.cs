@@ -24,5 +24,5 @@ public sealed class AgentOutputPlugin
         "The agent loop will stop after this call.")]
     public string CompleteTask(
         [Description("Message to the host: final result, failure reason, or question.")] string message)
-        => message;
+        => message; //TODO: simplify result
 }

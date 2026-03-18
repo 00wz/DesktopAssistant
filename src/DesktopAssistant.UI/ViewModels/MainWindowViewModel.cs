@@ -192,7 +192,8 @@ public partial class MainWindowViewModel : ObservableObject
             var conversation = await chatService.CreateConversationAsync(
                 parameters.Title,
                 parameters.AssistantProfileId,
-                parameters.SystemPrompt);
+                parameters.SystemPrompt,
+                parameters.Mode);
 
             var session = await _conversationSessionService.GetOrCreate(conversation.Id);
 

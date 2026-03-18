@@ -36,12 +36,15 @@ public class ConversationService
         string title,
         Guid assistantProfileId,
         string systemPrompt = "",
+        ConversationMode mode = ConversationMode.Chat,
         CancellationToken cancellationToken = default)
     {
         _ = await _assistantRepository.GetByIdAsync(assistantProfileId, cancellationToken)
             ?? throw new InvalidOperationException($"Assistant profile {assistantProfileId} not found");
 
         var conversation = new Conversation(title, assistantProfileId, systemPrompt);
+        if (mode != ConversationMode.Chat)
+            conversation.SetMode(mode);
 
         // Add anchor root node (empty System node as an entry point into the tree)
         var rootMessage = conversation.AddRootMessage();
@@ -135,6 +138,23 @@ public class ConversationService
     {
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
         return conversation?.SystemPrompt ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Changes the conversation mode
+    /// </summary>
+    public async Task UpdateModeAsync(
+        Guid conversationId,
+        ConversationMode mode,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        conversation.SetMode(mode);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogInformation("Changed mode for conversation {ConversationId} to {Mode}", conversationId, mode);
     }
 
     /// <summary>

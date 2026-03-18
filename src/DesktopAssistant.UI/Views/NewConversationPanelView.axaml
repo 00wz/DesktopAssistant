@@ -21,7 +21,7 @@
             <TextBlock Text="&#x2715;" FontSize="14"/>
         </Button>
 
-        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto"
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto,Auto"
               Margin="20,30,20,20"
               MaxWidth="620"
               HorizontalAlignment="Stretch">
@@ -86,8 +86,21 @@
                 </Panel>
             </StackPanel>
 
+            <!-- Conversation mode -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                <TextBlock Grid.Column="0"
+                           Text="{DynamicResource NewConversation.Mode.Label}"
+                           FontSize="13"
+                           Foreground="#555"
+                           VerticalAlignment="Center"/>
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding AvailableModes}"
+                          SelectedItem="{Binding SelectedMode, Mode=TwoWay}"
+                          MinWidth="120"/>
+            </Grid>
+
             <!-- System prompt — stretches vertically -->
-            <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="0,0,0,16">
+            <Grid Grid.Row="3" RowDefinitions="Auto,*" Margin="0,0,0,16">
                 <TextBlock Grid.Row="0"
                            Text="{DynamicResource NewConversation.SystemPrompt.Label}"
                            FontSize="13"
@@ -105,7 +118,7 @@
             </Grid>
 
             <!-- Error -->
-            <Border Grid.Row="3"
+            <Border Grid.Row="4"
                     Background="#FFE0E0"
                     Padding="10"
                     CornerRadius="4"
@@ -117,7 +130,7 @@
             </Border>
 
             <!-- First message + Send button -->
-            <Grid Grid.Row="4" RowDefinitions="Auto,Auto">
+            <Grid Grid.Row="5" RowDefinitions="Auto,Auto">
                 <TextBlock Grid.Row="0"
                            Text="{DynamicResource NewConversation.FirstMessage.Label}"
                            FontSize="13"

@@ -57,6 +57,7 @@ public class ChatService : IChatService
         string title,
         Guid? assistantProfileId = null,
         string systemPrompt = "",
+        ConversationMode mode = ConversationMode.Chat,
         CancellationToken cancellationToken = default)
     {
         AssistantProfile profile;
@@ -79,7 +80,7 @@ public class ChatService : IChatService
         }
 
         var conversation = await _conversationService.CreateConversationAsync(
-            title, profile.Id, systemPrompt, cancellationToken);
+            title, profile.Id, systemPrompt, mode, cancellationToken);
 
         _logger.LogInformation("Created conversation {ConversationId}: {Title}", conversation.Id, title);
         return MapToConversationDto(conversation);
@@ -122,7 +123,8 @@ public class ChatService : IChatService
             conversationId,
             conversation.SystemPrompt,
             conversation.AssistantProfileId,
-            profileDto);
+            profileDto,
+            conversation.Mode);
     }
 
     /// <inheritdoc />
@@ -145,6 +147,18 @@ public class ChatService : IChatService
 
         _logger.LogInformation("Changed profile for conversation {ConversationId} to {ProfileId}",
             conversationId, newProfileId);
+    }
+
+    /// <inheritdoc />
+    public async Task ChangeConversationModeAsync(
+        Guid conversationId,
+        ConversationMode mode,
+        CancellationToken cancellationToken = default)
+    {
+        await _conversationService.UpdateModeAsync(conversationId, mode, cancellationToken);
+
+        _logger.LogInformation("Changed mode for conversation {ConversationId} to {Mode}",
+            conversationId, mode);
     }
 
     /// <inheritdoc />
