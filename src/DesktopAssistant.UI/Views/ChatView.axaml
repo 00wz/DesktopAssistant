@@ -305,7 +305,7 @@
 
     </UserControl.DataTemplates>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*">
 
         <!-- Chat header with settings button -->
         <Border Grid.Row="0"
@@ -345,16 +345,21 @@
             <views:ChatSettingsPanelView DataContext="{Binding Settings}"/>
         </Border>
 
-        <!-- Message list -->
-        <ScrollViewer Grid.Row="2"
-                      Name="MessagesScrollViewer"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <ItemsControl ItemsSource="{Binding Messages}" Margin="10"/>
-        </ScrollViewer>
+        <!-- Message list + floating input panel -->
+        <Panel Grid.Row="2">
+            <ScrollViewer Name="MessagesScrollViewer"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Messages}" Margin="10,10,10,0"/>
+                    <!-- Spacer so last message is not hidden behind the input panel -->
+                    <Border Height="{Binding #MessageInput.Bounds.Height}"/>
+                </StackPanel>
+            </ScrollViewer>
 
-        <!-- Input panel -->
-        <views:MessageInputView Grid.Row="3"/>
+            <views:MessageInputView x:Name="MessageInput"
+                                    VerticalAlignment="Bottom"/>
+        </Panel>
 
     </Grid>
 </UserControl>

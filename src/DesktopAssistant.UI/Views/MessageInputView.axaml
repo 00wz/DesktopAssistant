@@ -8,7 +8,7 @@
              x:Class="DesktopAssistant.UI.Views.MessageInputView"
              x:DataType="vm:ChatViewModel">
 
-    <Border Background="#F5F5F5" Padding="10">
+    <Border Padding="10">
         <StackPanel Spacing="6">
 
             <!-- Error -->
