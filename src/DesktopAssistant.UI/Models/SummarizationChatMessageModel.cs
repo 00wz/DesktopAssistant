@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using DesktopAssistant.Domain.Enums;
 
 namespace DesktopAssistant.UI.Models;
 
@@ -38,7 +37,6 @@ public partial class SummarizationChatMessageModel : ChatMessageModel
 
     public SummarizationChatMessageModel()
     {
-        NodeType = MessageNodeType.Summary;
         CreatedAt = DateTime.UtcNow;
     }
 }

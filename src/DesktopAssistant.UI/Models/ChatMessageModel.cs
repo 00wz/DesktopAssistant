@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using DesktopAssistant.Domain.Enums;
 
 namespace DesktopAssistant.UI.Models;
 
@@ -12,9 +11,6 @@ public abstract partial class ChatMessageModel : ObservableObject
 {
     [ObservableProperty]
     private Guid _id;
-
-    [ObservableProperty]
-    private MessageNodeType _nodeType;
 
     [ObservableProperty]
     private DateTime _createdAt;

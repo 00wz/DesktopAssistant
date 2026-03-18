@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using DesktopAssistant.Application.Dtos;
 using Microsoft.SemanticKernel;
@@ -20,7 +21,11 @@ internal sealed record ToolNodeMetadata(
     Guid AssistantNodeId = default,
     bool IsTerminal = false)
 {
-    internal static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+    internal static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = false,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     /// <summary>
     /// Serializes to JSON for storage in MessageNode.Metadata.

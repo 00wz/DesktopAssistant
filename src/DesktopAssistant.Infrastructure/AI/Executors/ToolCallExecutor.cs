@@ -45,6 +45,9 @@ public class ToolCallExecutor(
         if (meta.ResultJson != null)
             throw new InvalidOperationException($"Node {pendingNodeId} is not pending (already has result)");
 
+        var conversation = await _conversationService.GetConversationAsync(pendingNode.ConversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {pendingNode.ConversationId} not found");
+
         var profile = await _conversationService.GetAssistantProfileAsync(pendingNode.ConversationId, cancellationToken)
             ?? throw new InvalidOperationException($"AssistantProfile not found for conversation {pendingNode.ConversationId}");
 
@@ -52,7 +55,7 @@ public class ToolCallExecutor(
             ?? throw new InvalidOperationException(
                 $"API key not found for profile '{profile.ModelId}' ({profile.Id}). Please set the API key in profile settings.");
 
-        var kernel = _agentKernelFactory.Create(profile, apiKey); // TODO: why does this kernel need profile and apiKey?
+        var kernel = _agentKernelFactory.Create(profile, apiKey, conversation.Mode);
 
         string resultJson;
         var status = ToolNodeStatus.Completed;

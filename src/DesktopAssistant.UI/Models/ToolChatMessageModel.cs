@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using DesktopAssistant.Domain.Enums;
 
 namespace DesktopAssistant.UI.Models;
 
@@ -50,7 +49,6 @@ public partial class ToolChatMessageModel : ChatMessageModel
 
     public ToolChatMessageModel()
     {
-        NodeType = MessageNodeType.Tool;
         CreatedAt = DateTime.UtcNow;
     }
 }
