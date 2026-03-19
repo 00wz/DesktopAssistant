@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DesktopAssistant.Application.Interfaces;
@@ -22,7 +23,7 @@ namespace DesktopAssistant.UI.ViewModels;
 /// The flat <see cref="_index"/> dictionary provides O(1) lookup by id.
 /// </para>
 /// </summary>
-public partial class SidebarViewModel : ObservableObject
+public partial class SidebarViewModel : ObservableObject, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConversationSessionService _sessionService;
@@ -30,6 +31,9 @@ public partial class SidebarViewModel : ObservableObject
 
     /// <summary>O(1) lookup map; contains every item regardless of depth.</summary>
     private readonly Dictionary<Guid, ConversationListItemViewModel> _index = new();
+
+    /// <summary>Tracks the currently selected conversation so selection survives list reloads.</summary>
+    private Guid? _selectedId;
 
     /// <summary>Called when the user selects a conversation from the list.</summary>
     public Func<ConversationListItemViewModel, Task>? OnConversationSelected { get; set; }
@@ -54,6 +58,9 @@ public partial class SidebarViewModel : ObservableObject
         _scopeFactory = scopeFactory;
         _sessionService = sessionService;
         _logger = logger;
+
+        _sessionService.SessionCreated += OnSessionCreated;
+        _sessionService.SessionReleased += OnSessionReleased;
     }
 
     // ── Data loading ─────────────────────────────────────────────────────────
@@ -61,6 +68,7 @@ public partial class SidebarViewModel : ObservableObject
     /// <summary>
     /// Loads conversations from the database, builds a tree by ParentId,
     /// and synchronizes the state of active sessions.
+    /// Re-applies the current selection after the list is rebuilt.
     /// </summary>
     public async Task LoadConversationsAsync()
     {
@@ -116,6 +124,10 @@ public partial class SidebarViewModel : ObservableObject
                 }
             }
 
+            // ── Pass 4: restore selection ─────────────────────────────────────
+            if (_selectedId.HasValue && _index.TryGetValue(_selectedId.Value, out var selected))
+                selected.IsSelected = true;
+
             _logger.LogDebug("Loaded {Count} conversations ({Roots} roots)", _index.Count, Conversations.Count);
         }
         catch (Exception ex)
@@ -126,19 +138,18 @@ public partial class SidebarViewModel : ObservableObject
 
     // ── State management (called from MainWindowViewModel) ───────────────────
 
-    /// <summary>Attaches a session to the corresponding list item.</summary>
-    public void AttachSession(Guid conversationId, IConversationSession session)
-        => FindItem(conversationId)?.AttachSession(session);
-
-    /// <summary>Detaches the session from the corresponding list item.</summary>
-    public void DetachSession(Guid conversationId)
-        => FindItem(conversationId)?.DetachSession();
-
     /// <summary>Updates the <see cref="ConversationListItemViewModel.IsSelected"/> flag for all items.</summary>
     public void MarkSelected(Guid? conversationId)
     {
+        _selectedId = conversationId;
         foreach (var item in _index.Values)
             item.IsSelected = item.Id == conversationId;
+    }
+
+    public void Dispose()
+    {
+        _sessionService.SessionCreated -= OnSessionCreated;
+        _sessionService.SessionReleased -= OnSessionReleased;
     }
 
     // ── Commands ─────────────────────────────────────────────────────────────
@@ -162,4 +173,21 @@ public partial class SidebarViewModel : ObservableObject
 
     private ConversationListItemViewModel? FindItem(Guid id)
         => _index.GetValueOrDefault(id);
+
+    private async void OnSessionCreated(object? sender, Guid conversationId)
+    {
+        if (_index.ContainsKey(conversationId)) return;
+
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(LoadConversationsAsync);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reloading sidebar after session created for {Id}", conversationId);
+        }
+    }
+
+    private void OnSessionReleased(object? sender, Guid conversationId)
+        => FindItem(conversationId)?.DetachSession();
 }

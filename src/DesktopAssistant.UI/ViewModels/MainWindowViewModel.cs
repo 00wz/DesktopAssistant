@@ -13,7 +13,7 @@ namespace DesktopAssistant.UI.ViewModels;
 /// manages the visibility of overlay panels (settings, create chat).
 /// Conversation list logic is extracted into <see cref="SidebarViewModel"/>.
 /// </summary>
-public partial class MainWindowViewModel : ObservableObject
+public partial class MainWindowViewModel : ObservableObject, IDisposable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -124,11 +124,16 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void OnSessionReleased(object? sender, Guid conversationId)
     {
-        Sidebar.DetachSession(conversationId);
         _chatViewModels.Remove(conversationId);
 
         if (SelectedChat?.ConversationId == conversationId)
             SelectedChat = null;
+    }
+
+    public void Dispose()
+    {
+        _conversationSessionService.SessionReleased -= OnSessionReleased;
+        Sidebar.Dispose();
     }
 
     // ── Overlay panels ────────────────────────────────────────────────────────
@@ -200,11 +205,6 @@ public partial class MainWindowViewModel : ObservableObject
             var chatViewModel = _serviceProvider.GetRequiredService<ChatViewModel>();
             await chatViewModel.InitializeAsync(session);
             _chatViewModels[conversation.Id] = chatViewModel;
-
-            // Reload the list — the new conversation will appear with the session already attached.
-            // MarkSelected is called automatically via OnSelectedChatChanged after
-            // SelectedChat is set.
-            await Sidebar.LoadConversationsAsync();
 
             SelectedChat = chatViewModel;
 
