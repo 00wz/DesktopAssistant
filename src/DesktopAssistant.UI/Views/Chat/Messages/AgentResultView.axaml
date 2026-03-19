@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             mc:Ignorable="d"
+             x:Class="DesktopAssistant.UI.Views.AgentResultView"
+             x:DataType="models:AgentResultModel">
+
+    <Border Background="{DynamicResource TerminalToolCallBg}"
+            CornerRadius="8"
+            Margin="5,3"
+            Padding="12"
+            BorderBrush="{DynamicResource TerminalToolCallBorderBrush}"
+            BorderThickness="1"
+            HorizontalAlignment="Stretch">
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
+                          Command="{Binding $parent[views:AgentResultView].SummarizeCommand}"
+                          CommandParameter="{Binding}"/>
+            </ContextMenu>
+        </Border.ContextMenu>
+        <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="✓"
+                           FontSize="14"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource AgentSuccessFg}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{DynamicResource Chat.AgentResult.Title}"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           Foreground="{DynamicResource AgentSuccessFg}"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Status}"
+                           Foreground="{DynamicResource SidebarIconFg}"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           Margin="6,0,0,0"
+                           />
+            </StackPanel>
+            <views:ToolApprovalButtonsView
+                ApproveCommand="{Binding $parent[views:AgentResultView].ApproveToolCommand}"
+                DenyCommand="{Binding $parent[views:AgentResultView].DenyToolCommand}"/>
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
+            <TextBlock Text="{Binding Message}"
+                       IsVisible="{Binding HasMessage}"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource ToolMonoFg}"/>
+        </StackPanel>
+    </Border>
+
+</UserControl>

@@ -12,11 +12,18 @@ public enum ToolCallStatus
 }
 
 /// <summary>
-/// Model for a tool call. Displays the tool name, arguments, result, and status.
-/// When Status == Pending, waits for the user to press Approve/Deny.
-/// Id == PendingNodeId from the DB — passed to ApproveToolCallAsync / DenyToolCallAsync.
+/// Abstract base for all tool-call message models.
+/// Holds properties common to both a regular tool call and an agent result:
+/// identifiers, status, and the final result JSON.
+/// <para>
+/// Concrete subtypes:
+/// <list type="bullet">
+///   <item><see cref="RegularToolCallModel"/> — a tool call that can be approved/denied.</item>
+///   <item><see cref="AgentResultModel"/> — the terminal output node of an agent sub-task.</item>
+/// </list>
+/// </para>
 /// </summary>
-public partial class ToolChatMessageModel : ChatMessageModel
+public abstract partial class ToolChatMessageModel : ChatMessageModel
 {
     [ObservableProperty]
     private string _callId = string.Empty;
@@ -26,9 +33,6 @@ public partial class ToolChatMessageModel : ChatMessageModel
 
     [ObservableProperty]
     private string _functionName = string.Empty;
-
-    [ObservableProperty]
-    private string _argumentsJson = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasResult))]
@@ -41,16 +45,13 @@ public partial class ToolChatMessageModel : ChatMessageModel
     [NotifyPropertyChangedFor(nameof(IsExecuting))]
     private ToolCallStatus _status = ToolCallStatus.Pending;
 
-    [ObservableProperty]
-    private bool _isTerminal;
-
-    public bool HasResult => !string.IsNullOrEmpty(ResultJson);
-    public bool IsPending => Status == ToolCallStatus.Pending;
+    public bool HasResult   => !string.IsNullOrEmpty(ResultJson);
+    public bool IsPending   => Status == ToolCallStatus.Pending;
     public bool IsExecuting => Status == ToolCallStatus.Executing;
     public bool IsCompleted => Status == ToolCallStatus.Completed;
-    public bool IsFailed => Status is ToolCallStatus.Failed or ToolCallStatus.Denied;
+    public bool IsFailed    => Status is ToolCallStatus.Failed or ToolCallStatus.Denied;
 
-    public ToolChatMessageModel()
+    protected ToolChatMessageModel()
     {
         CreatedAt = DateTime.UtcNow;
     }

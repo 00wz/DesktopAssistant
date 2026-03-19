@@ -5,6 +5,7 @@ using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.UI.Models;
 using Microsoft.Extensions.Logging;
+using OpenAI.Realtime;
 using System.Collections.ObjectModel;
 
 namespace DesktopAssistant.UI.ViewModels;
@@ -197,15 +198,27 @@ public partial class ChatViewModel : ObservableObject
                     break;
 
                 case ToolRequestedSessionEvent toolReq:
-                    Messages.Add(new ToolChatMessageModel
-                    {
-                        Id = toolReq.PendingNodeId,
-                        CallId = toolReq.CallId,
-                        PluginName = toolReq.PluginName,
-                        FunctionName = toolReq.FunctionName,
-                        ArgumentsJson = toolReq.ArgumentsJson,
-                        Status = toolReq.IsAutoApproved ? ToolCallStatus.Executing : ToolCallStatus.Pending
-                    });
+                    var toolStatus = toolReq.IsAutoApproved ? ToolCallStatus.Executing : ToolCallStatus.Pending;
+                    ToolChatMessageModel toolCallModel = toolReq.IsTerminal
+                        ? new AgentResultModel
+                        {
+                            Id = toolReq.PendingNodeId,
+                            CallId = toolReq.CallId,
+                            PluginName = toolReq.PluginName,
+                            FunctionName = toolReq.FunctionName,
+                            Status = toolStatus,
+                            Message = AgentResultModel.ExtractMessage(toolReq.ArgumentsJson)
+                        }
+                        : new RegularToolCallModel
+                        {
+                            Id = toolReq.PendingNodeId,
+                            CallId = toolReq.CallId,
+                            PluginName = toolReq.PluginName,
+                            FunctionName = toolReq.FunctionName,
+                            ArgumentsJson = toolReq.ArgumentsJson,
+                            Status = toolStatus
+                        };
+                    Messages.Add(toolCallModel);
                     break;
 
                 case ToolResultSessionEvent toolRes:
@@ -321,7 +334,8 @@ public partial class ChatViewModel : ObservableObject
         !IsLoading &&
         _conversationSession != null &&
         !string.IsNullOrWhiteSpace(InputMessage) &&
-        ConversationStatus == ConversationState.LastMessageIsAssistant;
+        (ConversationStatus == ConversationState.LastMessageIsAssistant ||
+         ConversationStatus == ConversationState.AgentTaskCompleted);
 
     private bool CanResume() =>
         !IsLoading &&

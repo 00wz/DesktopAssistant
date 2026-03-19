@@ -4,16 +4,16 @@ using System.Windows.Input;
 
 namespace DesktopAssistant.UI.Views;
 
-public partial class ToolCallView : UserControl
+public partial class AgentResultView : UserControl
 {
     public static readonly StyledProperty<ICommand?> SummarizeCommandProperty =
-        AvaloniaProperty.Register<ToolCallView, ICommand?>(nameof(SummarizeCommand));
+        AvaloniaProperty.Register<AgentResultView, ICommand?>(nameof(SummarizeCommand));
 
     public static readonly StyledProperty<ICommand?> ApproveToolCommandProperty =
-        AvaloniaProperty.Register<ToolCallView, ICommand?>(nameof(ApproveToolCommand));
+        AvaloniaProperty.Register<AgentResultView, ICommand?>(nameof(ApproveToolCommand));
 
     public static readonly StyledProperty<ICommand?> DenyToolCommandProperty =
-        AvaloniaProperty.Register<ToolCallView, ICommand?>(nameof(DenyToolCommand));
+        AvaloniaProperty.Register<AgentResultView, ICommand?>(nameof(DenyToolCommand));
 
     public ICommand? SummarizeCommand
     {
@@ -33,7 +33,7 @@ public partial class ToolCallView : UserControl
         set => SetValue(DenyToolCommandProperty, value);
     }
 
-    public ToolCallView()
+    public AgentResultView()
     {
         InitializeComponent();
     }

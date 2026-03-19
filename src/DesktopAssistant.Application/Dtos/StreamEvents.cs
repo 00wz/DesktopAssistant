@@ -31,7 +31,8 @@ public sealed record ToolCallRequestedDto(
     string PluginName,
     string FunctionName,
     string ArgumentsJson,
-    Guid PendingNodeId) : StreamEvent;
+    Guid PendingNodeId,
+    bool IsTerminal = false) : StreamEvent;
 
 /// <summary>
 /// Last element of the turn — the assistant message has been saved to the DB.

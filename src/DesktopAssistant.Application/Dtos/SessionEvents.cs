@@ -30,7 +30,8 @@ public sealed record ToolRequestedSessionEvent(
     string PluginName,
     string FunctionName,
     string ArgumentsJson,
-    bool IsAutoApproved) : SessionEvent;
+    bool IsAutoApproved,
+    bool IsTerminal = false) : SessionEvent;
 
 /// <summary>A tool call completed (or was denied) — node updated in DB.</summary>
 public sealed record ToolResultSessionEvent(Guid PendingNodeId, string ResultJson, ToolNodeStatus Status) : SessionEvent;

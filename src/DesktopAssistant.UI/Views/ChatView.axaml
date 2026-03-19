@@ -35,8 +35,15 @@
                 SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"/>
         </DataTemplate>
 
-        <DataTemplate DataType="models:ToolChatMessageModel">
-            <views:ToolCallView
+        <DataTemplate DataType="models:RegularToolCallModel">
+            <views:RegularToolCallView
+                SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                ApproveToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
+                DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"/>
+        </DataTemplate>
+
+        <DataTemplate DataType="models:AgentResultModel">
+            <views:AgentResultView
                 SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
                 ApproveToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
                 DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"/>

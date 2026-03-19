@@ -33,25 +33,31 @@ public static class ChatMessageModelFactory
             NextSiblingId = a.NextSiblingId
         },
 
-        ToolResultDto t => new ToolChatMessageModel
-        {
-            Id = t.Id,
-            CreatedAt = t.CreatedAt,
-            ParentId = t.ParentId,
-            CallId = t.CallId,
-            PluginName = t.PluginName,
-            FunctionName = t.FunctionName,
-            ArgumentsJson = t.ArgumentsJson,
-            ResultJson = t.ResultJson,
-            IsTerminal = t.IsTerminal,
-            Status = t.Status switch
+        ToolResultDto t => t.IsTerminal
+            ? new AgentResultModel
             {
-                ToolNodeStatus.Completed => ToolCallStatus.Completed,
-                ToolNodeStatus.Failed    => ToolCallStatus.Failed,
-                ToolNodeStatus.Denied    => ToolCallStatus.Denied,
-                _                       => ToolCallStatus.Pending
+                Id = t.Id,
+                CreatedAt = t.CreatedAt,
+                ParentId = t.ParentId,
+                CallId = t.CallId,
+                PluginName = t.PluginName,
+                FunctionName = t.FunctionName,
+                ResultJson = t.ResultJson,
+                Status = MapStatus(t.Status),
+                Message = AgentResultModel.ExtractMessage(t.ArgumentsJson)
             }
-        },
+            : new RegularToolCallModel
+            {
+                Id = t.Id,
+                CreatedAt = t.CreatedAt,
+                ParentId = t.ParentId,
+                CallId = t.CallId,
+                PluginName = t.PluginName,
+                FunctionName = t.FunctionName,
+                ArgumentsJson = t.ArgumentsJson,
+                ResultJson = t.ResultJson,
+                Status = MapStatus(t.Status)
+            },
 
         SummaryMessageDto s => new SummarizationChatMessageModel
         {
@@ -63,5 +69,13 @@ public static class ChatMessageModelFactory
         },
 
         _ => throw new ArgumentOutOfRangeException(nameof(dto), $"Unknown DTO type: {dto.GetType().Name}")
+    };
+
+    private static ToolCallStatus MapStatus(ToolNodeStatus s) => s switch
+    {
+        ToolNodeStatus.Completed => ToolCallStatus.Completed,
+        ToolNodeStatus.Failed    => ToolCallStatus.Failed,
+        ToolNodeStatus.Denied    => ToolCallStatus.Denied,
+        _                       => ToolCallStatus.Pending
     };
 }

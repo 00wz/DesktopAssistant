@@ -280,7 +280,7 @@ public class ChatService : IChatService
                     seenCallIds.Add(meta.CallId);
                     if (meta.ResultJson == null)
                         hasPending = true;
-                    else if (meta.IsTerminal)
+                    else if (meta.IsTerminal && meta.Status == ToolNodeStatus.Completed)
                         hasTerminal = true;
                 }
                 continue;

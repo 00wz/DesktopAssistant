@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             mc:Ignorable="d"
+             x:Class="DesktopAssistant.UI.Views.RegularToolCallView"
+             x:DataType="models:RegularToolCallModel">
+
+    <UserControl.Styles>
+        <!-- Expander peek: content partially visible when collapsed -->
+        <Style Selector="Expander.peek /template/ Border#ExpanderContent">
+            <Setter Property="IsVisible"    Value="True"/>
+            <Setter Property="MaxHeight"    Value="60"/>
+            <Setter Property="ClipToBounds" Value="True"/>
+        </Style>
+        <Style Selector="Expander.peek:expanded /template/ Border#ExpanderContent">
+            <Setter Property="MaxHeight" Value="9999"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource ToolCallBg}"
+            CornerRadius="8"
+            Margin="5,3"
+            Padding="2"
+            MaxWidth="500"
+            HorizontalAlignment="Left">
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
+                          Command="{Binding $parent[views:RegularToolCallView].SummarizeCommand}"
+                          CommandParameter="{Binding}"/>
+            </ContextMenu>
+        </Border.ContextMenu>
+        <Expander Classes="peek">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <TextBlock Classes="icon" Text="⚒" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding PluginName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="." VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding FunctionName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Status}"
+                               Foreground="{DynamicResource SidebarSecondaryFg}"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               Margin="6,0,0,0"/>
+                </StackPanel>
+            </Expander.Header>
+            <StackPanel Margin="4" Spacing="6">
+                <views:ToolApprovalButtonsView
+                    ApproveCommand="{Binding $parent[views:RegularToolCallView].ApproveToolCommand}"
+                    DenyCommand="{Binding $parent[views:RegularToolCallView].DenyToolCommand}"/>
+                <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
+                <TextBlock Text="{Binding ArgumentsJson}"
+                           FontFamily="Courier New,Monospace"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource ToolMonoFg}"/>
+                <TextBlock Text="{Binding ResultJson}"
+                           IsVisible="{Binding HasResult}"
+                           FontFamily="Courier New,Monospace"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource ToolResultFg}"/>
+            </StackPanel>
+        </Expander>
+    </Border>
+
+</UserControl>

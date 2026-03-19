@@ -137,7 +137,7 @@ public class LlmTurnExecutor(
             _logger.LogDebug("[PENDING TOOL] Created node {NodeId} for {PluginName}.{FunctionName}",
                 pendingNode.Id, toolMeta.PluginName, toolMeta.FunctionName);
 
-            yield return new ToolCallRequestedDto(callId, toolMeta.PluginName, toolMeta.FunctionName, argsJson, pendingNode.Id);
+            yield return new ToolCallRequestedDto(callId, toolMeta.PluginName, toolMeta.FunctionName, argsJson, pendingNode.Id, toolMeta.IsTerminal);
         }
     }
 

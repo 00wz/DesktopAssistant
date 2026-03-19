@@ -125,7 +125,7 @@ internal class ConversationSession : IConversationSession
                 parentState = await stateChatService.GetConversationStateAsync(targetParentId, ct);
             }
 
-            if (parentState != ConversationState.LastMessageIsAssistant)
+            if (parentState != ConversationState.LastMessageIsAssistant && parentState != ConversationState.AgentTaskCompleted) //&& parentState != ConversationState.AllToolCallsCompleted
                 throw new InvalidOperationException(
                     $"Cannot send message: the target node must be in state {ConversationState.LastMessageIsAssistant}, " +
                     $"but got {parentState}.");
@@ -266,7 +266,8 @@ internal class ConversationSession : IConversationSession
                 PluginName: toolReq.PluginName,
                 FunctionName: toolReq.FunctionName,
                 ArgumentsJson: toolReq.ArgumentsJson,
-                IsAutoApproved: isAutoApproved));
+                IsAutoApproved: isAutoApproved,
+                IsTerminal: toolReq.IsTerminal));
 
             if (isAutoApproved)
                 await ApproveToolAsync(toolReq.PendingNodeId, ct);
