@@ -4,4 +4,4 @@ namespace DesktopAssistant.Application.Dtos;
 /// Result of executing or denying a tool call.
 /// Returned from ApproveToolCallAsync / DenyToolCallAsync.
 /// </summary>
-public record ToolCallResult(string ResultJson, ToolNodeStatus Status, Guid AssistantNodeId = default);
+public record ToolCallResult(string ResultJson, ToolNodeStatus Status);

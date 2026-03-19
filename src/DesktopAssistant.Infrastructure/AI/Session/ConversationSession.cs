@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using DesktopAssistant.Application.Dtos;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Domain.Enums;
@@ -21,12 +20,6 @@ internal class ConversationSession : IConversationSession
     /// Access only via <see cref="Interlocked"/> — tool calls execute concurrently.
     /// </summary>
     private int _activeToolCount;
-
-    /// <summary>
-    /// IDs of assistant nodes for which the next turn has already been started.
-    /// Access only under <see cref="_runLock"/>.
-    /// </summary>
-    private readonly HashSet<Guid> _startedTurns = [];
 
     /// <summary>
     /// Cancels all active Approve/Deny operations on session re-initialization
@@ -76,7 +69,6 @@ internal class ConversationSession : IConversationSession
         _toolsCancellationTokenSource.Cancel();
         _toolsCancellationTokenSource.Dispose();
         _toolsCancellationTokenSource = new CancellationTokenSource();
-        _startedTurns.Clear();
 
         // Reset the active tool call counter.
         // Cancelled tasks may still reach their finally blocks and call DecrementActiveTools —
@@ -125,7 +117,7 @@ internal class ConversationSession : IConversationSession
                 parentState = await stateChatService.GetConversationStateAsync(targetParentId, ct);
             }
 
-            if (parentState != ConversationState.LastMessageIsAssistant && parentState != ConversationState.AgentTaskCompleted) //&& parentState != ConversationState.AllToolCallsCompleted
+            if (parentState != ConversationState.LastMessageIsAssistant && parentState != ConversationState.AgentTaskCompleted)
                 throw new InvalidOperationException(
                     $"Cannot send message: the target node must be in state {ConversationState.LastMessageIsAssistant}, " +
                     $"but got {parentState}.");
@@ -289,6 +281,10 @@ internal class ConversationSession : IConversationSession
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             ct, _toolsCancellationTokenSource.Token);
 
+        // Capture before the async execution so we can detect if a Resume/SwitchBranch
+        // changed CurrentLeafNodeId while we were waiting for the tool to complete.
+        var leafNodeIdAtStart = CurrentLeafNodeId;
+
         ToolCallResult result;
         IncrementActiveTools();
         try
@@ -302,13 +298,16 @@ internal class ConversationSession : IConversationSession
             DecrementActiveTools();
         }
 
-        await HandleToolCallResultAsync(pendingNodeId, result, linkedCts.Token);
+        await HandleToolCallResultAsync(pendingNodeId, result, leafNodeIdAtStart, linkedCts.Token);
     }
 
     public async Task DenyToolAsync(Guid pendingNodeId, CancellationToken ct = default)
     {
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             ct, _toolsCancellationTokenSource.Token);
+
+        // Same rationale as in ApproveToolAsync.
+        var leafNodeIdAtStart = CurrentLeafNodeId;
 
         ToolCallResult result;
         IncrementActiveTools();
@@ -323,12 +322,13 @@ internal class ConversationSession : IConversationSession
             DecrementActiveTools();
         }
 
-        await HandleToolCallResultAsync(pendingNodeId, result, linkedCts.Token);
+        await HandleToolCallResultAsync(pendingNodeId, result, leafNodeIdAtStart, linkedCts.Token);
     }
 
     private async Task HandleToolCallResultAsync(
         Guid pendingNodeId,
         ToolCallResult toolCallResult,
+        Guid leafNodeIdAtStart,
         CancellationToken ct)
     {
         try
@@ -345,11 +345,14 @@ internal class ConversationSession : IConversationSession
             await _runLock.WaitAsync(ct);
             try
             {
-                // Deduplication: one turn per LLM response. AssistantNodeId == default
-                // means a legacy node without the field — require manual Resume.
-                if (toolCallResult.AssistantNodeId == default
-                    || !_startedTurns.Add(toolCallResult.AssistantNodeId))
-                    return;
+                // Guard against two scenarios:
+                // 1. Concurrent tools from the same LLM response — the first one under
+                //    the lock runs the next turn and advances CurrentLeafNodeId; subsequent
+                //    ones see the mismatch and skip.
+                // 2. ResumeAsync slipping in between UpdateState and WaitAsync above —
+                //    Resume runs under the lock, advances CurrentLeafNodeId, then releases;
+                //    we then see the mismatch and skip.
+                if (CurrentLeafNodeId != leafNodeIdAtStart) return;
 
                 SetRunning(true);
                 await RunLlmTurnAsync(ct);
