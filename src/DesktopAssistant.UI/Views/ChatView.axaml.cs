@@ -6,11 +6,13 @@ namespace DesktopAssistant.UI.Views;
 public partial class ChatView : UserControl
 {
     private const double BottomThreshold = 2.0;
+    private const int MaxScrollStates = 50;
 
-    // Scroll state per ChatViewModel
-    private readonly Dictionary<object, ScrollState> _scrollStates = new();
+    // Scroll state per ChatViewModel, keyed by conversation Guid.
+    // Capped at MaxScrollStates to prevent unbounded growth over a long session.
+    private readonly Dictionary<Guid, ScrollState> _scrollStates = new();
     private bool _isAtBottom = true;
-    private object? _activeContext;
+    private Guid? _activeContextId;
 
     public ChatView()
     {
@@ -26,12 +28,13 @@ public partial class ChatView : UserControl
     private void OnDataContextChanged(ScrollViewer sv)
     {
         // Save scroll state for the previous context
-        if (_activeContext != null)
-            _scrollStates[_activeContext] = new ScrollState(sv.Offset.Y, _isAtBottom);
+        if (_activeContextId.HasValue)
+            _scrollStates[_activeContextId.Value] = new ScrollState(sv.Offset.Y, _isAtBottom);
 
-        _activeContext = DataContext;
+        var vm = DataContext as ViewModels.ChatViewModel;
+        _activeContextId = vm?.ConversationId;
 
-        if (DataContext != null && _scrollStates.TryGetValue(DataContext, out var saved))
+        if (_activeContextId.HasValue && _scrollStates.TryGetValue(_activeContextId.Value, out var saved))
         {
             _isAtBottom = saved.IsAtBottom;
             // Restore after layout completes
@@ -43,6 +46,13 @@ public partial class ChatView : UserControl
         {
             _isAtBottom = true;
             // New chat — scroll to bottom will happen automatically when messages load
+        }
+
+        // Evict oldest entries when the cap is exceeded
+        if (_scrollStates.Count > MaxScrollStates)
+        {
+            var oldest = _scrollStates.Keys.First();
+            _scrollStates.Remove(oldest);
         }
     }
 

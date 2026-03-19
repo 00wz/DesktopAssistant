@@ -29,7 +29,14 @@
     <!-- Profile editor -->
     <sys:String x:Key="ProfileEditor.Title.New">Новый профиль ассистента</sys:String>
     <sys:String x:Key="ProfileEditor.Title.Edit">Редактирование профиля</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.ModelId">ID модели *</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.BaseUrl">Base URL *</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.ApiKey">API-ключ</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.Temperature">Temperature</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.MaxTokens">Max Tokens</sys:String>
     <sys:String x:Key="ProfileEditor.Field.Description">Описание</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.ModelId">gpt-4o-mini</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.BaseUrl">https://api.openai.com/v1</sys:String>
     <sys:String x:Key="ProfileEditor.Button.Cancel">Отмена</sys:String>
     <sys:String x:Key="ProfileEditor.Button.Save">Сохранить</sys:String>
     <sys:String x:Key="ProfileEditor.Watermark.Description">Мой ассистент</sys:String>

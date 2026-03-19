@@ -20,6 +20,13 @@ public partial class App : Avalonia.Application
         // so that all {DynamicResource} references immediately receive the correct strings.
         LocalizationManager.Instance.LoadLanguage(LocalizationManager.Instance.PendingLanguage);
         AvaloniaXamlLoader.Load(this);
+
+        // Load the color palette after AvaloniaXamlLoader.Load so that the Application.Resources
+        // object is already initialized by the XAML loader and we can safely add to its
+        // MergedDictionaries without replacing the localization dictionary inserted above.
+        var colorsUri = new Uri("avares://DesktopAssistant.UI/Assets/Styles/Colors.axaml");
+        var colorsDict = (Avalonia.Controls.IResourceDictionary)Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(colorsUri);
+        Resources.MergedDictionaries.Add(colorsDict);
     }
 
     public override void OnFrameworkInitializationCompleted()

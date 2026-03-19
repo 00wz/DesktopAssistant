@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             mc:Ignorable="d"
+             x:Class="DesktopAssistant.UI.Views.ToolApprovalButtonsView"
+             x:DataType="models:ToolChatMessageModel">
+
+    <!-- Approve / Deny buttons. Visible only when tool call status is Pending.
+         ApproveCommand and DenyCommand are injected by the parent (ToolCallView). -->
+    <StackPanel Orientation="Horizontal" Spacing="8"
+                IsVisible="{Binding IsPending}">
+        <Button Content="{DynamicResource Chat.Tool.Approve}"
+                Command="{Binding $parent[views:ToolApprovalButtonsView].ApproveCommand}"
+                CommandParameter="{Binding}"
+                Background="{DynamicResource ToolApproveBg}"
+                Foreground="White"
+                Padding="10,5"/>
+        <Button Content="{DynamicResource Chat.Tool.Deny}"
+                Command="{Binding $parent[views:ToolApprovalButtonsView].DenyCommand}"
+                CommandParameter="{Binding}"
+                Background="{DynamicResource ToolDenyBg}"
+                Foreground="White"
+                Padding="10,5"/>
+    </StackPanel>
+
+</UserControl>

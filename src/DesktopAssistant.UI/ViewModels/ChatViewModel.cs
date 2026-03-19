@@ -16,6 +16,7 @@ public partial class ChatViewModel : ObservableObject
 {
     private readonly ILogger<ChatViewModel> _logger;
     private readonly SemaphoreSlim _sessionEventHandleLock = new(1, 1);
+    private const int SessionEventLockTimeoutMs = 5000;
 
     private IConversationSession? _conversationSession;
 
@@ -148,9 +149,13 @@ public partial class ChatViewModel : ObservableObject
 
     private async Task HandleSessionEvent(SessionEvent evt)
     {
-        /// _sessionEventHandleLock guards against collision when handling SessionEvents,
-        /// e.g. when a UserMessageAddedSessionEvent arrives while InitializeSessionEvent is being processed
-        await _sessionEventHandleLock.WaitAsync();
+        // Guard against collision when events arrive concurrently (e.g. UserMessageAdded during
+        // an InitializeSession reload). Timeout prevents a deadlock if a handler throws.
+        if (!await _sessionEventHandleLock.WaitAsync(SessionEventLockTimeoutMs))
+        {
+            _logger.LogWarning("Session event handler lock timed out for {EventType}", evt.GetType().Name);
+            return;
+        }
         try
         {
             switch (evt)

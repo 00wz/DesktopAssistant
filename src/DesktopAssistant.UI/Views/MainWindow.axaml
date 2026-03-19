@@ -17,46 +17,12 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="-1">
 
-    <Window.Styles>
-        <!-- Window control buttons (light background) -->
-        <Style Selector="Button.winBtn">
-            <Setter Property="Width" Value="46"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="VerticalAlignment" Value="Stretch"/>
-            <Setter Property="Foreground" Value="#555555"/>
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border Background="{TemplateBinding Background}"
-                            Width="{TemplateBinding Width}">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          Content="{TemplateBinding Content}"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="Button.winBtn:pointerover">
-            <Setter Property="Background" Value="#E0E0E0"/>
-        </Style>
-        <Style Selector="Button.winBtn:pressed">
-            <Setter Property="Background" Value="#D0D0D0"/>
-        </Style>
-        <Style Selector="Button.winBtn.close:pointerover">
-            <Setter Property="Background" Value="#C42B1C"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.winBtn.close:pressed">
-            <Setter Property="Background" Value="#A82318"/>
-        </Style>
-    </Window.Styles>
 
-    <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
+<Grid x:Name="RootGrid" RowDefinitions="Auto,*">
 
         <!-- ── Full-width window title bar ── -->
         <!-- PointerPressed on the entire title bar; buttons mark the event as Handled -->
-        <Border Grid.Row="0" Background="#F0F0F0" MinHeight="38"
+        <Border Grid.Row="0" Background="{DynamicResource TitleBarBg}" MinHeight="38"
                 PointerPressed="TitleBar_PointerPressed">
             <Grid ColumnDefinitions="*,Auto">
 
@@ -93,7 +59,7 @@
         <Grid Grid.Row="1" ColumnDefinitions="260,*">
 
             <!-- Sidebar (always visible) -->
-            <Border Grid.Column="0" Background="#2D2D30">
+            <Border Grid.Column="0" Background="{DynamicResource SidebarBg}">
                 <views:ConversationSidebarView DataContext="{Binding Sidebar}"/>
             </Border>
 

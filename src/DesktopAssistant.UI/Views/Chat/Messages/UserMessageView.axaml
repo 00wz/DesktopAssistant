@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             xmlns:converters="using:DesktopAssistant.UI.Converters"
+             mc:Ignorable="d"
+             x:Class="DesktopAssistant.UI.Views.UserMessageView"
+             x:DataType="models:UserChatMessageModel">
+
+    <UserControl.Resources>
+        <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
+    </UserControl.Resources>
+
+    <Border Margin="5"
+            Padding="12"
+            CornerRadius="12"
+            MaxWidth="500"
+            Background="{DynamicResource UserMessageBg}"
+            HorizontalAlignment="Right">
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
+                          Command="{Binding $parent[views:UserMessageView].SummarizeCommand}"
+                          CommandParameter="{Binding}"/>
+            </ContextMenu>
+        </Border.ContextMenu>
+        <StackPanel>
+
+            <!-- View mode -->
+            <StackPanel IsVisible="{Binding !IsEditing}">
+                <TextBlock Text="{Binding Content}"
+                           TextWrapping="Wrap"
+                           Foreground="White"/>
+
+                <!-- Sibling navigation + edit button -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
+                        <Button Classes="nav-btn"
+                                Command="{Binding $parent[views:UserMessageView].NavigateToPreviousSiblingCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding HasPreviousSibling}"
+                                Padding="5,2"
+                                ToolTip.Tip="{DynamicResource Chat.Tooltip.PreviousVersion}">
+                            <TextBlock Classes="icon" Text="❮" FontSize="14"/>
+                        </Button>
+                        <TextBlock VerticalAlignment="Center">
+                            <Run Text="{Binding CurrentSiblingIndex}"/>
+                            <Run Text="/"/>
+                            <Run Text="{Binding TotalSiblings}"/>
+                        </TextBlock>
+                        <Button Classes="nav-btn"
+                                Command="{Binding $parent[views:UserMessageView].NavigateToNextSiblingCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding HasNextSibling}"
+                                Padding="5,2"
+                                ToolTip.Tip="{DynamicResource Chat.Tooltip.NextVersion}">
+                            <TextBlock Classes="icon" Text="❯" FontSize="14"/>
+                        </Button>
+                    </StackPanel>
+                    <Button Command="{Binding $parent[views:UserMessageView].StartEditMessageCommand}"
+                            CommandParameter="{Binding}"
+                            Padding="5,2"
+                            Background="Transparent"
+                            ToolTip.Tip="{DynamicResource Chat.Tooltip.Edit}">
+                        <TextBlock Classes="icon" Text="✎" FontSize="14"/>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Edit mode -->
+            <StackPanel IsVisible="{Binding IsEditing}">
+                <TextBox Text="{Binding EditedContent, Mode=TwoWay}"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         MinHeight="60"
+                         Margin="0,0,0,5"/>
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                    <Button Content="{DynamicResource Chat.Action.Save}"
+                            Command="{Binding $parent[views:UserMessageView].SaveEditedMessageCommand}"
+                            CommandParameter="{Binding}"/>
+                    <Button Content="{DynamicResource Chat.Action.Cancel}"
+                            Command="{Binding $parent[views:UserMessageView].CancelEditMessageCommand}"
+                            CommandParameter="{Binding}"/>
+                </StackPanel>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+
+</UserControl>

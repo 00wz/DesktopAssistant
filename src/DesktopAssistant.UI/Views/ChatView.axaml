@@ -6,301 +6,44 @@
              xmlns:models="using:DesktopAssistant.UI.Models"
              xmlns:views="using:DesktopAssistant.UI.Views"
              xmlns:converters="using:DesktopAssistant.UI.Converters"
-             xmlns:md="clr-namespace:LiveMarkdown.Avalonia;assembly=LiveMarkdown.Avalonia"
              mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="500"
              x:Class="DesktopAssistant.UI.Views.ChatView"
              x:DataType="vm:ChatViewModel">
 
     <UserControl.Resources>
+        <!-- Used in the chat header to show/hide token count when > 1 -->
         <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
     </UserControl.Resources>
 
-    <UserControl.Styles>
-        <Style Selector="Button.nav-btn">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
-        <Style Selector="Button.nav-btn /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-        <Style Selector="Button.nav-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#20000000"/>
-        </Style>
-        <Style Selector="Button.nav-btn:disabled /template/ ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-        <!-- Expander with peek: show content with limited height when collapsed -->
-        <Style Selector="Expander.peek /template/ Border#ExpanderContent">
-            <Setter Property="IsVisible" Value="True"/>
-            <Setter Property="MaxHeight" Value="60"/>
-            <Setter Property="ClipToBounds" Value="True"/>
-        </Style>
-        <Style Selector="Expander.peek:expanded /template/ Border#ExpanderContent">
-            <Setter Property="MaxHeight" Value="9999"/>
-        </Style>
-    </UserControl.Styles>
-
     <UserControl.DataTemplates>
 
-        <!-- UserChatMessageModel -->
+        <!-- Each DataTemplate is a thin wrapper that wires ChatViewModel commands
+             to the dedicated message UserControl via StyledProperties. -->
+
         <DataTemplate DataType="models:UserChatMessageModel">
-            <Border Margin="5"
-                    Padding="12"
-                    CornerRadius="12"
-                    MaxWidth="500"
-                    Background="#007ACC"
-                    HorizontalAlignment="Right">
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
-                                  Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
-                                  CommandParameter="{Binding}"/>
-                    </ContextMenu>
-                </Border.ContextMenu>
-                <StackPanel>
-                    <StackPanel IsVisible="{Binding !IsEditing}">
-                        <TextBlock Text="{Binding Content}"
-                                   TextWrapping="Wrap"
-                                   Foreground="White"/>
-                        <!--Edit message and switch branch-->
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Right">
-                            <StackPanel Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
-                                <Button Classes="nav-btn"
-                                        Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsEnabled="{Binding HasPreviousSibling}"
-                                        Padding="5,2"
-                                        ToolTip.Tip="{DynamicResource Chat.Tooltip.PreviousVersion}">
-                                    <TextBlock Classes="icon" Text="❮" FontSize="14"/>
-                                </Button>
-                                <TextBlock VerticalAlignment="Center">
-                                    <Run Text="{Binding CurrentSiblingIndex}"/>
-                                    <Run Text="/"/>
-                                    <Run Text="{Binding TotalSiblings}"/>
-                                </TextBlock>
-                                <Button Classes="nav-btn"
-                                        Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsEnabled="{Binding HasNextSibling}"
-                                        Padding="5,2"
-                                        ToolTip.Tip="{DynamicResource Chat.Tooltip.NextVersion}">
-                                    <TextBlock Classes="icon" Text="❯" FontSize="14"/>
-                                </Button>
-                            </StackPanel>
-                            <Button Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
-                                    CommandParameter="{Binding}"
-                                    Padding="5,2"
-                                    Background="Transparent"
-                                    ToolTip.Tip="{DynamicResource Chat.Tooltip.Edit}">
-                                <TextBlock Classes="icon" Text="✎" FontSize="14"/>
-                            </Button>
-                        </StackPanel>
-
-                    </StackPanel>
-
-                    <StackPanel IsVisible="{Binding IsEditing}">
-                        <TextBox Text="{Binding EditedContent, Mode=TwoWay}"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 MinHeight="60"
-                                 Margin="0,0,0,5"/>
-                        <StackPanel Orientation="Horizontal" Spacing="5">
-                            <Button Content="{DynamicResource Chat.Action.Save}"
-                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SaveEditedMessageCommand}"
-                                    CommandParameter="{Binding}"/>
-                            <Button Content="{DynamicResource Chat.Action.Cancel}"
-                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"
-                                    CommandParameter="{Binding}"/>
-                        </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
+            <views:UserMessageView
+                SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                NavigateToPreviousSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"
+                StartEditMessageCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).StartEditMessageCommand}"
+                SaveEditedMessageCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SaveEditedMessageCommand}"
+                CancelEditMessageCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).CancelEditMessageCommand}"/>
         </DataTemplate>
 
-        <!-- AssistantChatMessageModel -->
         <DataTemplate DataType="models:AssistantChatMessageModel">
-            <Border Margin="5"
-                    Padding="12"
-                    HorizontalAlignment="Stretch"
-                    IsVisible="{Binding IsVisible}">
-                <Border.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
-                                  Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
-                                  CommandParameter="{Binding}"/>
-                    </ContextMenu>
-                </Border.ContextMenu>
-                <StackPanel>
-                    <md:MarkdownRenderer MarkdownBuilder="{Binding MarkdownBuilder}"/>
-                    <ProgressBar IsIndeterminate="True"
-                                 IsVisible="{Binding IsStreaming}"
-                                 Height="3"
-                                 Margin="0,5,0,0"/>
-                </StackPanel>
-            </Border>
+            <views:AssistantMessageView
+                SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"/>
         </DataTemplate>
 
-        <!-- ToolChatMessageModel -->
         <DataTemplate DataType="models:ToolChatMessageModel">
-            <Panel>
-
-                <!-- Regular tool call -->
-                <Border Background="#F0F4FF"
-                        CornerRadius="8"
-                        Margin="5,3"
-                        Padding="2"
-                        MaxWidth="500"
-                        HorizontalAlignment="Left"
-                        IsVisible="{Binding !IsTerminal}">
-                    <Border.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
-                                      Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
-                                      CommandParameter="{Binding}"/>
-                        </ContextMenu>
-                    </Border.ContextMenu>
-                    <Expander Classes="peek">
-                        <Expander.Header>
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Classes="icon" Text="⚒" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding PluginName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <TextBlock Text="." VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding FunctionName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding Status}"
-                                           Foreground="Gray"
-                                           FontSize="11"
-                                           VerticalAlignment="Center"
-                                           Margin="6,0,0,0"/>
-                            </StackPanel>
-                        </Expander.Header>
-                        <StackPanel Margin="4" Spacing="6">
-                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPending}">
-                                <Button Content="{DynamicResource Chat.Tool.Approve}"
-                                        Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
-                                        CommandParameter="{Binding}"
-                                        Background="#4CAF50"
-                                        Foreground="White"
-                                        Padding="10,5"/>
-                                <Button Content="{DynamicResource Chat.Tool.Deny}"
-                                        Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
-                                        CommandParameter="{Binding}"
-                                        Background="#F44336"
-                                        Foreground="White"
-                                        Padding="10,5"/>
-                            </StackPanel>
-                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
-                            <TextBlock Text="{Binding ArgumentsJson}"
-                                       FontFamily="Courier New,Monospace"
-                                       FontSize="11"
-                                       TextWrapping="Wrap"
-                                       Foreground="#333333"/>
-                            <TextBlock Text="{Binding ResultJson}"
-                                       IsVisible="{Binding HasResult}"
-                                       FontFamily="Courier New,Monospace"
-                                       FontSize="11"
-                                       TextWrapping="Wrap"
-                                       Foreground="#226622"/>
-                        </StackPanel>
-                    </Expander>
-                </Border>
-
-                <!-- Terminal tool: agent result card -->
-                <Border Background="#F5F5F5"
-                        CornerRadius="8"
-                        Margin="5,3"
-                        Padding="12"
-                        BorderBrush="#BDBDBD"
-                        BorderThickness="1"
-                        HorizontalAlignment="Stretch"
-                        IsVisible="{Binding IsTerminal}">
-                    <Border.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="{DynamicResource Chat.ContextMenu.Summarize}"
-                                      Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
-                                      CommandParameter="{Binding}"/>
-                        </ContextMenu>
-                    </Border.ContextMenu>
-                    <StackPanel Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="✓"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="#2E7D32"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{DynamicResource Chat.AgentResult.Title}"
-                                       FontWeight="SemiBold"
-                                       FontSize="12"
-                                       Foreground="#2E7D32"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Status}"
-                                       Foreground="#AAAAAA"
-                                       FontSize="11"
-                                       VerticalAlignment="Center"
-                                       Margin="6,0,0,0"
-                                       IsVisible="{Binding !HasResult}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPending}">
-                            <Button Content="{DynamicResource Chat.Tool.Approve}"
-                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
-                                    CommandParameter="{Binding}"
-                                    Background="#4CAF50"
-                                    Foreground="White"
-                                    Padding="10,5"/>
-                            <Button Content="{DynamicResource Chat.Tool.Deny}"
-                                    Command="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
-                                    CommandParameter="{Binding}"
-                                    Background="#F44336"
-                                    Foreground="White"
-                                    Padding="10,5"/>
-                        </StackPanel>
-                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExecuting}" Height="3"/>
-                        <TextBlock Text="{Binding ResultJson}"
-                                   IsVisible="{Binding HasResult}"
-                                   TextWrapping="Wrap"
-                                   Foreground="#333333"/>
-                    </StackPanel>
-                </Border>
-
-            </Panel>
+            <views:ToolCallView
+                SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                ApproveToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
+                DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"/>
         </DataTemplate>
 
-        <!-- SummarizationChatMessageModel -->
         <DataTemplate DataType="models:SummarizationChatMessageModel">
-            <Border Background="#FFF9E6"
-                    CornerRadius="8"
-                    Margin="5,3"
-                    Padding="2"
-                    MaxWidth="500"
-                    HorizontalAlignment="Left">
-                <Expander>
-                    <Expander.Header>
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <TextBlock Classes="icon" Text="☰" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Text="{DynamicResource Chat.Summary}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding StatusText}"
-                                       Foreground="Gray"
-                                       FontSize="11"
-                                       VerticalAlignment="Center"
-                                       Margin="6,0,0,0"/>
-                            <ProgressBar IsIndeterminate="True"
-                                         IsVisible="{Binding IsInProgress}"
-                                         Width="60"
-                                         Height="3"
-                                         VerticalAlignment="Center"
-                                         Margin="6,0,0,0"/>
-                        </StackPanel>
-                    </Expander.Header>
-                    <TextBlock Text="{Binding SummaryContent}"
-                               IsVisible="{Binding !IsInProgress}"
-                               TextWrapping="Wrap"
-                               FontSize="11"
-                               Foreground="#444444"
-                               Margin="4"/>
-                </Expander>
-            </Border>
+            <views:SummarizationMessageView/>
         </DataTemplate>
 
     </UserControl.DataTemplates>
@@ -309,21 +52,21 @@
 
         <!-- Chat header with settings button -->
         <Border Grid.Row="0"
-                Background="#F5F5F5"
+                Background="{DynamicResource ChatHeaderBg}"
                 Padding="10,6"
-                BorderBrush="#E0E0E0"
+                BorderBrush="{DynamicResource ChatHeaderBorderBrush}"
                 BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="*,Auto,Auto">
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{Binding AssistantProfileName}"
                                FontSize="12"
-                               Foreground="#666"
+                               Foreground="{DynamicResource ChatHeaderProfileFg}"
                                VerticalAlignment="Center"
                                IsVisible="{Binding AssistantProfileName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
                 <TextBlock Grid.Column="1"
                            FontSize="11"
-                           Foreground="#999"
+                           Foreground="{DynamicResource ChatHeaderTokenFg}"
                            VerticalAlignment="Center"
                            Margin="0,0,8,0"
                            IsVisible="{Binding LastTotalTokenCount, Converter={StaticResource IntGreaterThanConverter}}">

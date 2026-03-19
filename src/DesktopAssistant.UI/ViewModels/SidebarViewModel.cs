@@ -17,8 +17,9 @@ namespace DesktopAssistant.UI.ViewModels;
 /// without a direct two-way dependency.
 /// </para>
 /// <para>
-/// Designed for extensibility: replacing the flat <see cref="Conversations"/>
-/// with a hierarchical collection requires changes only in this class.
+/// Supports hierarchical conversations: <see cref="Conversations"/> contains only
+/// root-level items; children are nested via <see cref="ConversationListItemViewModel.Children"/>.
+/// The flat <see cref="_index"/> dictionary provides O(1) lookup by id.
 /// </para>
 /// </summary>
 public partial class SidebarViewModel : ObservableObject
@@ -26,6 +27,9 @@ public partial class SidebarViewModel : ObservableObject
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IConversationSessionService _sessionService;
     private readonly ILogger<SidebarViewModel> _logger;
+
+    /// <summary>O(1) lookup map; contains every item regardless of depth.</summary>
+    private readonly Dictionary<Guid, ConversationListItemViewModel> _index = new();
 
     /// <summary>Called when the user selects a conversation from the list.</summary>
     public Func<ConversationListItemViewModel, Task>? OnConversationSelected { get; set; }
@@ -37,8 +41,8 @@ public partial class SidebarViewModel : ObservableObject
     public Func<Task>? OnSettingsRequested { get; set; }
 
     /// <summary>
-    /// Flat list of conversations. Will be replaced in future by a hierarchical collection
-    /// of nodes without changes to <see cref="MainWindowViewModel"/>.
+    /// Root-level conversations. Children are accessed via
+    /// <see cref="ConversationListItemViewModel.Children"/> for each item.
     /// </summary>
     public ObservableCollection<ConversationListItemViewModel> Conversations { get; } = new();
 
@@ -55,7 +59,8 @@ public partial class SidebarViewModel : ObservableObject
     // ── Data loading ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Loads the conversation list from the database and synchronizes the state of active sessions.
+    /// Loads conversations from the database, builds a tree by ParentId,
+    /// and synchronizes the state of active sessions.
     /// </summary>
     public async Task LoadConversationsAsync()
     {
@@ -65,33 +70,53 @@ public partial class SidebarViewModel : ObservableObject
             var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
             var conversations = await chatService.GetConversationsAsync();
 
-            foreach (var old in Conversations)
-                old.Dispose();
+            // Dispose and clear existing items
+            foreach (var item in _index.Values)
+                item.Dispose();
             Conversations.Clear();
+            _index.Clear();
 
             var activeIds = _sessionService.ActiveSessionIds;
+            var ordered = conversations.OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt).ToList();
 
-            foreach (var conv in conversations.OrderByDescending(c => c.UpdatedAt ?? c.CreatedAt))
+            // ── Pass 1: create all ViewModels and populate index ─────────────
+            var allItems = new Dictionary<Guid, ConversationListItemViewModel>();
+            foreach (var conv in ordered)
             {
                 var model = new ConversationListItem
                 {
-                    Id = conv.Id,
-                    Title = conv.Title,
-                    UpdatedAt = conv.UpdatedAt ?? conv.CreatedAt
+                    Id       = conv.Id,
+                    Title    = conv.Title,
+                    UpdatedAt = conv.UpdatedAt ?? conv.CreatedAt,
+                    // ParentId will be mapped here once ConversationDto exposes it.
+                    // For now all conversations are root-level.
+                    ParentId = null
                 };
-
-                var item = new ConversationListItemViewModel(model);
-
-                if (activeIds.Contains(conv.Id))
-                {
-                    var session = await _sessionService.GetOrCreate(conv.Id);
-                    item.AttachSession(session);
-                }
-
-                Conversations.Add(item);
+                allItems[conv.Id] = new ConversationListItemViewModel(model);
             }
 
-            _logger.LogDebug("Loaded {Count} conversations", Conversations.Count);
+            // ── Pass 2: build tree ────────────────────────────────────────────
+            foreach (var item in allItems.Values)
+            {
+                if (item.ParentId.HasValue && allItems.TryGetValue(item.ParentId.Value, out var parent))
+                    parent.Children.Add(item);
+                else
+                    Conversations.Add(item);
+
+                _index[item.Id] = item;
+            }
+
+            // ── Pass 3: attach active sessions ───────────────────────────────
+            foreach (var id in activeIds)
+            {
+                if (_index.TryGetValue(id, out var item))
+                {
+                    var session = await _sessionService.GetOrCreate(id);
+                    item.AttachSession(session);
+                }
+            }
+
+            _logger.LogDebug("Loaded {Count} conversations ({Roots} roots)", _index.Count, Conversations.Count);
         }
         catch (Exception ex)
         {
@@ -112,7 +137,7 @@ public partial class SidebarViewModel : ObservableObject
     /// <summary>Updates the <see cref="ConversationListItemViewModel.IsSelected"/> flag for all items.</summary>
     public void MarkSelected(Guid? conversationId)
     {
-        foreach (var item in Conversations)
+        foreach (var item in _index.Values)
             item.IsSelected = item.Id == conversationId;
     }
 
@@ -136,5 +161,5 @@ public partial class SidebarViewModel : ObservableObject
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private ConversationListItemViewModel? FindItem(Guid id)
-        => Conversations.FirstOrDefault(c => c.Id == id);
+        => _index.GetValueOrDefault(id);
 }

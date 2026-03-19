@@ -10,23 +10,9 @@ public class ConversationListItem
     public DateTime UpdatedAt { get; set; }
 
     /// <summary>
-    /// Formatted time of the last update.
+    /// Id of the parent conversation. Null for root-level conversations.
+    /// Used by <see cref="SidebarViewModel"/> to build the tree.
     /// </summary>
-    public string FormattedDate
-    {
-        get
-        {
-            var local = UpdatedAt.ToLocalTime();
-            var now = DateTime.Now;
-            var diff = now - local;
+    public Guid? ParentId { get; set; }
 
-            if (diff.TotalMinutes < 1) return "just now";
-            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min. ago";
-            if (diff.TotalHours < 24 && local.Date == now.Date) return $"today, {local:HH:mm}";
-            if (diff.TotalHours < 48 && local.Date == now.Date.AddDays(-1)) return $"yesterday, {local:HH:mm}";
-            if (diff.TotalDays < 7) return local.ToString("dddd, HH:mm");
-
-            return local.ToString("d MMMM, HH:mm");
-        }
-    }
 }

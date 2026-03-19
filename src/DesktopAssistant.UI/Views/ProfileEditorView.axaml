@@ -28,21 +28,21 @@
             <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <TextBlock Grid.Row="0" Grid.Column="0"
-                           Text="Model ID *" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.ModelId}" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="0" Grid.Column="1"
                          Text="{Binding ModelId, Mode=TwoWay}"
-                         Watermark="gpt-4o-mini" Margin="0,0,0,6"/>
+                         Watermark="{DynamicResource ProfileEditor.Watermark.ModelId}" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0"
-                           Text="Base URL *" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.BaseUrl}" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="1" Grid.Column="1"
                          Text="{Binding BaseUrl, Mode=TwoWay}"
-                         Watermark="https://api.openai.com/v1" Margin="0,0,0,6"/>
+                         Watermark="{DynamicResource ProfileEditor.Watermark.BaseUrl}" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0"
-                           Text="API Key" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.ApiKey}" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="2" Grid.Column="1"
                          Text="{Binding ApiKey, Mode=TwoWay}"
@@ -51,7 +51,7 @@
                          Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="3" Grid.Column="0"
-                           Text="Temperature" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.Temperature}" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <NumericUpDown Grid.Row="3" Grid.Column="1"
                                Value="{Binding Temperature, Mode=TwoWay}"
@@ -59,7 +59,7 @@
                                FormatString="F1" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="4" Grid.Column="0"
-                           Text="Max Tokens" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.MaxTokens}" FontSize="12" Foreground="#555"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <NumericUpDown Grid.Row="4" Grid.Column="1"
                                Value="{Binding MaxTokens, Mode=TwoWay}"

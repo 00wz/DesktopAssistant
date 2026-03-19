@@ -29,7 +29,14 @@
     <!-- Profile editor -->
     <sys:String x:Key="ProfileEditor.Title.New">New Assistant Profile</sys:String>
     <sys:String x:Key="ProfileEditor.Title.Edit">Edit Profile</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.ModelId">Model ID *</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.BaseUrl">Base URL *</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.ApiKey">API Key</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.Temperature">Temperature</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.MaxTokens">Max Tokens</sys:String>
     <sys:String x:Key="ProfileEditor.Field.Description">Description</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.ModelId">gpt-4o-mini</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.BaseUrl">https://api.openai.com/v1</sys:String>
     <sys:String x:Key="ProfileEditor.Button.Cancel">Cancel</sys:String>
     <sys:String x:Key="ProfileEditor.Button.Save">Save</sys:String>
     <sys:String x:Key="ProfileEditor.Watermark.Description">My assistant</sys:String>

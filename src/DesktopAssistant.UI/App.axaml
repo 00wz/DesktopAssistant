@@ -12,5 +12,7 @@
         <Style Selector="TextBlock.icon">
             <Setter Property="FontFamily" Value="Segoe UI Symbol"/>
         </Style>
+        <StyleInclude Source="avares://DesktopAssistant.UI/Assets/Styles/ButtonStyles.axaml"/>
+        <StyleInclude Source="avares://DesktopAssistant.UI/Assets/Styles/Animations.axaml"/>
     </Application.Styles>
 </Application>

@@ -1,0 +1,43 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        loadingSpin — infinite rotation for the loading icon (✳ in sidebar item).
+        Requires RenderTransform to be set on the element, or use via Classes.loadingSpin.
+    -->
+    <Style Selector="TextBlock.loadingSpin">
+        <Setter Property="RenderTransformOrigin" Value="50%, 50%"/>
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <RotateTransform/>
+            </Setter.Value>
+        </Setter>
+        <Style.Animations>
+            <Animation Duration="0:0:1" IterationCount="INFINITE">
+                <KeyFrame Cue="0%">
+                    <Setter Property="RotateTransform.Angle" Value="0"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="RotateTransform.Angle" Value="360"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+
+    <!--
+        questionPulse — alternating opacity for the pending tool-call icon (?) in sidebar.
+    -->
+    <Style Selector="TextBlock.questionPulse">
+        <Style.Animations>
+            <Animation Duration="0:0:0.8" IterationCount="INFINITE" PlaybackDirection="Alternate">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="1.0"/>
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="0.2"/>
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+
+</Styles>
