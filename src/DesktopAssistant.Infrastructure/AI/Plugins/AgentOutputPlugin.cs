@@ -1,5 +1,7 @@
-using System.ComponentModel;
+using DesktopAssistant.Infrastructure.AI.Executors;
+using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using System.ComponentModel;
 
 namespace DesktopAssistant.Infrastructure.AI.Plugins;
 
@@ -8,7 +10,7 @@ namespace DesktopAssistant.Infrastructure.AI.Plugins;
 /// Provides the single terminal tool the LLM must call to hand control back to the host
 /// (user or orchestrating agent). Calling this tool ends the agent loop.
 /// </summary>
-public sealed class AgentOutputPlugin
+public sealed class AgentOutputPlugin(ILogger<AgentOutputPlugin> logger)
 {
     /// <summary>Plugin name used when registering to the kernel and stored in ToolNodeMetadata.</summary>
     public const string PluginName = "AgentOutput";
@@ -23,6 +25,14 @@ public sealed class AgentOutputPlugin
         "Use it to return a final result, report a failure, or ask a clarifying question. " +
         "The agent loop will stop after this call.")]
     public string CompleteTask(
-        [Description("Message to the host: final result, failure reason, or question.")] string message)
-        => message; //TODO: simplify result
+        [Description("Message to the host: final result, failure reason, or question.")] string message,
+        ToolExecutionContext executionContext)
+    {
+        logger.LogInformation(
+            "complete_task called. ConversationId={ConversationId}, ToolNodeId={ToolNodeId}",
+            executionContext.ConversationId,
+            executionContext.ToolNodeId);
+
+        return "Tool executed successfully.";
+    }
 }

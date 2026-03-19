@@ -49,7 +49,9 @@ public class AgentKernelFactory(
 
         if (mode == ConversationMode.Agent)
         {
-            kernel.ImportPluginFromObject(new AgentOutputPlugin(), AgentOutputPlugin.PluginName);
+            kernel.ImportPluginFromObject(
+                new AgentOutputPlugin(loggerFactory.CreateLogger<AgentOutputPlugin>()),
+                AgentOutputPlugin.PluginName);
         }
 
         return kernel;
