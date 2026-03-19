@@ -22,11 +22,15 @@ public class AvailableToolsService : IAvailableToolsProvider, IDisposable
         new("CoreTools", "write_to_file",          "Writes content to a file"),
         new("CoreTools", "path_exists",            "Checks whether a file or directory exists"),
         new("CoreTools", "list_directory",         "Returns a list of files in a directory"),
+#if DEBUG
+        new("CoreTools", "test_wait",              "Test function: waits 10 seconds (debug only)"),
+#endif
         new("McpManagement", "search_mcp_servers",      "Search for MCP servers in the catalog"),
         new("McpManagement", "fetch_mcp_server_readme", "Fetches the README from an MCP server repository"),
         new("McpManagement", "get_mcp_config_path",     "Returns the path to the MCP configuration file"),
         new("McpManagement", "get_mcp_servers_directory","Returns the path for cloning MCP servers"),
         new("McpManagement", "add_mcp_server",          "Adds an MCP server to the configuration"),
+        new("AgentOutput",   "complete_task",           "Signals end of agent work and returns message to host"),
     ];
 
     public event EventHandler? ToolsChanged;
