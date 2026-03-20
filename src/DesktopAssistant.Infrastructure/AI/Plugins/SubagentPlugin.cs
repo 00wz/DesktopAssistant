@@ -24,8 +24,7 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
     [Description(
         "Creates a new sub-agent conversation and sends it the first message as a task. " +
         "Blocks until the sub-agent finishes and returns its result. " +
-        "The sub-agent has access to the same tools as the calling agent. " +
-        "If interrupted and retried, automatically resumes from where it left off.")]
+        "The sub-agent has access to the same tools as the calling agent.")]
     public async Task<string> CreateSubagentAsync(
         [Description("The task or first message to send to the sub-agent.")] string first_message,
         [Description("Profile ID to use for this sub-agent. Use list_profiles to see available profiles.")] string profile_id,

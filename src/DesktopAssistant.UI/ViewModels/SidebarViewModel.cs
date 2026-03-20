@@ -96,9 +96,7 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
                     Id       = conv.Id,
                     Title    = conv.Title,
                     UpdatedAt = conv.UpdatedAt ?? conv.CreatedAt,
-                    // ParentId will be mapped here once ConversationDto exposes it.
-                    // For now all conversations are root-level.
-                    ParentId = null
+                    ParentId = conv.ParentConversationId
                 };
                 allItems[conv.Id] = new ConversationListItemViewModel(model);
             }

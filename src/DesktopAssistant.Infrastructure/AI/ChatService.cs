@@ -428,7 +428,7 @@ public class ChatService : IChatService
 
     private static ConversationDto MapToConversationDto(Conversation c) =>
         new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt,
-            c.AssistantProfileId, c.CanSpawnSubagents, c.SpawnedByToolNodeId);
+            c.AssistantProfileId, c.CanSpawnSubagents, c.SpawnedByToolNodeId, c.ParentConversationId);
 
     private async Task<AssistantProfileDto> MapToProfileDtoAsync(
         AssistantProfile p, CancellationToken cancellationToken)
