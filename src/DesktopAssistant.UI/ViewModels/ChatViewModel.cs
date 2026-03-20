@@ -173,6 +173,9 @@ public partial class ChatViewModel : ObservableObject
                     Messages.Add(ChatMessageModelFactory.FromDto(userEvt.Dto));
                     break;
 
+                // TODO: Implement a mechanism where the Assistant message will be displayed correctly,
+                // even if the subscription to _conversationSession.EventOccurred occurred after
+                // the AssistantTurnStartedSessionEvent appeared.
                 case AssistantTurnStartedSessionEvent turn:
                     _activeAssistantModel = new AssistantChatMessageModel
                     {

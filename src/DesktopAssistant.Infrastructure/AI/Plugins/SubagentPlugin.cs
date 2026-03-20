@@ -24,27 +24,34 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
     [Description(
         "Creates a new sub-agent conversation and sends it the first message as a task. " +
         "Blocks until the sub-agent finishes and returns its result. " +
-        "If the sub-agent was already created for this tool call (e.g. after a restart), " +
-        "it resumes from where it left off.")]
+        "The sub-agent has access to the same tools as the calling agent. " +
+        "If interrupted and retried, automatically resumes from where it left off.")]
     public async Task<string> CreateSubagentAsync(
         [Description("The task or first message to send to the sub-agent.")] string first_message,
+        [Description("Profile ID to use for this sub-agent. Use list_profiles to see available profiles.")] string profile_id,
         [Description("Optional system prompt that defines the sub-agent's role and constraints.")] string? system_prompt = null,
         [Description("Whether this sub-agent can in turn spawn its own sub-agents. Default: false.")] bool can_spawn_subagents = false,
         [Description("Optional title for the sub-agent conversation. Defaults to the first 60 characters of the task.")] string? name = null,
         ToolExecutionContext executionContext = null!)
     {
-        logger.LogInformation(
-            "create_subagent called. Parent={ParentId}, ToolNode={ToolNodeId}, CanSpawnSubagents={CanSpawn}",
-            executionContext.ConversationId, executionContext.ToolNodeId, can_spawn_subagents);
+        if (!Guid.TryParse(profile_id, out var resolvedProfileId))
+            return "Error: Invalid profile_id format.";
 
-        return await subagentService.RunSubagentAsync(
+        logger.LogInformation(
+            "create_subagent called. Parent={ParentId}, ToolNode={ToolNodeId}, CanSpawnSubagents={CanSpawn}, ProfileId={ProfileId}",
+            executionContext.ConversationId, executionContext.ToolNodeId, can_spawn_subagents, resolvedProfileId);
+
+        var result = await subagentService.RunSubagentAsync(
             executionContext.ConversationId,
             executionContext.ToolNodeId,
             first_message,
             system_prompt,
             can_spawn_subagents,
             name,
+            resolvedProfileId,
             CancellationToken.None);
+
+        return result;
     }
 
     /// <summary>
@@ -56,7 +63,7 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
         "Sends a new message to an existing sub-agent conversation and waits for its response. " +
         "Use this to provide follow-up instructions or answer a question the sub-agent asked.")]
     public async Task<string> SendMessageToSubagentAsync(
-        [Description("The conversation ID of the sub-agent (from list_subagents).")] string conversation_id,
+        [Description("The conversation ID of the sub-agent (from create_subagent result or list_subagents).")] string conversation_id,
         [Description("The message or follow-up instructions to send.")] string message,
         ToolExecutionContext executionContext = null!)
     {
@@ -64,10 +71,11 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
             return "Error: Invalid conversation ID format.";
 
         logger.LogInformation(
-            "send_message_to_subagent called. SubagentId={SubagentId}, Parent={ParentId}",
-            convId, executionContext.ConversationId);
+            "send_message_to_subagent called. SubagentId={SubagentId}, Parent={ParentId}, ToolNode={ToolNodeId}",
+            convId, executionContext.ConversationId, executionContext.ToolNodeId);
 
-        return await subagentService.SendMessageToSubagentAsync(convId, message, CancellationToken.None);
+        return await subagentService.SendMessageToSubagentAsync(
+            convId, executionContext.ToolNodeId, message, CancellationToken.None);
     }
 
     /// <summary>
@@ -87,6 +95,31 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
         sb.AppendLine($"Sub-agents ({subagents.Count}):");
         foreach (var sa in subagents)
             sb.AppendLine($"- ID: {sa.Id}  Title: {sa.Title}");
+
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>
+    /// Returns all available assistant profiles that can be used when creating sub-agents.
+    /// </summary>
+    [KernelFunction("list_profiles")]
+    [Description("Returns all available assistant profiles (model, description, ID) that can be used when creating a sub-agent via the profile_id parameter of create_subagent.")]
+    public async Task<string> ListProfilesAsync(ToolExecutionContext executionContext = null!)
+    {
+        var profiles = await subagentService.GetAvailableProfilesAsync(CancellationToken.None);
+
+        if (profiles.Count == 0)
+            return "No assistant profiles are available.";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Available profiles ({profiles.Count}):");
+        foreach (var p in profiles)
+        {
+            sb.Append($"- ID: {p.Id}  Model: {p.ModelId}");
+            if (!string.IsNullOrWhiteSpace(p.Description))
+                sb.Append($"  Description: {p.Description}");
+            sb.AppendLine();
+        }
 
         return sb.ToString().TrimEnd();
     }

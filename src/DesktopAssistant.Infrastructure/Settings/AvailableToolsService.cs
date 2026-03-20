@@ -34,6 +34,7 @@ public class AvailableToolsService : IAvailableToolsProvider, IDisposable
         new("Subagent",      "create_subagent",         "Creates a sub-agent and waits for it to complete the task"),
         new("Subagent",      "send_message_to_subagent","Sends a follow-up message to an existing sub-agent and waits for its response"),
         new("Subagent",      "list_subagents",          "Lists all sub-agent conversations created in this conversation"),
+        new("Subagent",      "list_profiles",           "Lists all available assistant profiles for sub-agent creation"),
     ];
 
     public event EventHandler? ToolsChanged;

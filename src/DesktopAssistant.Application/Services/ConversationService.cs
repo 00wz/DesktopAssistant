@@ -144,6 +144,21 @@ public class ConversationService
     }
 
     /// <summary>
+    /// Updates the tool node that currently owns this conversation (used for send_message_to_subagent recovery).
+    /// </summary>
+    public async Task UpdateSpawnedByToolNodeAsync(
+        Guid conversationId,
+        Guid toolNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        conversation.UpdateSpawnedByToolNode(toolNodeId);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+    }
+
+    /// <summary>
     /// Controls whether the LLM in this conversation can spawn sub-agents.
     /// </summary>
     public async Task UpdateCanSpawnSubagentsAsync(

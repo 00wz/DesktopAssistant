@@ -44,6 +44,12 @@ public interface IChatService
     Task ChangeCanSpawnSubagentsAsync(Guid conversationId, bool canSpawnSubagents, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Updates the tool node that currently owns this conversation.
+    /// Used by send_message_to_subagent so retries of the same tool call can be detected and recovered.
+    /// </summary>
+    Task UpdateSpawnedByToolNodeAsync(Guid conversationId, Guid toolNodeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets the message history of the current active branch of a conversation as DTOs.
     /// Includes sibling information for each node.
     /// System messages are not included.

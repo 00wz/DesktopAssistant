@@ -37,6 +37,7 @@ public class SubagentService : ISubagentService
         string? systemPrompt,
         bool canSpawnSubagents,
         string? name,
+        Guid profileId,
         CancellationToken ct = default)
     {
         ConversationDto conversation;
@@ -54,14 +55,6 @@ public class SubagentService : ISubagentService
             }
             else
             {
-                var parent = await chatService.GetConversationAsync(parentConversationId, ct)
-                    ?? throw new InvalidOperationException(
-                        $"Parent conversation {parentConversationId} not found.");
-
-                var profileId = parent.AssistantProfileId
-                    ?? throw new InvalidOperationException(
-                        $"Parent conversation {parentConversationId} has no assistant profile.");
-
                 var title = name
                     ?? (firstMessage.Length > 60 ? firstMessage[..60] + "…" : firstMessage);
 
@@ -73,88 +66,35 @@ public class SubagentService : ISubagentService
             }
         }
 
-        var session = await _sessionService.GetOrCreate(conversation.Id);
-
-        // If already completed, return the cached result without registering a TCS
-        if (session.State == ConversationState.AgentTaskCompleted)
-        {
-            _logger.LogInformation(
-                "Sub-agent {ConversationId} already completed — returning cached result", conversation.Id);
-
-            var cachedResult = await session.GetLastCompleteTaskResultAsync(ct);
-            return cachedResult ?? "Task completed.";
-        }
-
-        if (session.IsRunning)
-        {
-            _logger.LogInformation(
-                "Sub-agent {ConversationId} is already running — waiting for completion", conversation.Id);
-            // Already progressing; just register a TCS and wait for complete_task
-            var runningTcs = _pending.GetOrAdd(
-                conversation.Id,
-                _ => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously));
-            try { return await runningTcs.Task.WaitAsync(ct); }
-            catch (OperationCanceledException) { _pending.TryRemove(conversation.Id, out _); throw; }
-        }
-
-        var tcs = _pending.GetOrAdd(
-            conversation.Id,
-            _ => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously));
-
-        if (isNew)
-        {
-            _logger.LogInformation(
-                "Starting new sub-agent {ConversationId} (toolNode={ToolNodeId})", conversation.Id, toolNodeId);
-            _ = session.SendMessageAsync(firstMessage, ct: CancellationToken.None);
-        }
-        else
-        {
-            switch (session.State)
-            {
-                case ConversationState.LastMessageIsUser:
-                case ConversationState.AllToolCallsCompleted:
-                    _logger.LogInformation(
-                        "Resuming sub-agent {ConversationId} (state={State})", conversation.Id, session.State);
-                    _ = session.ResumeAsync(CancellationToken.None);
-                    break;
-
-                case ConversationState.HasPendingToolCalls:
-                    // Tools are executing concurrently; complete_task will fire once they finish.
-                    _logger.LogInformation(
-                        "Sub-agent {ConversationId} has pending tool calls — waiting", conversation.Id);
-                    break;
-
-                default:
-                    _pending.TryRemove(conversation.Id, out _);
-                    throw new InvalidOperationException(
-                        $"Sub-agent {conversation.Id} is in unexpected state {session.State} and cannot be resumed.");
-            }
-        }
-
-        try
-        {
-            return await tcs.Task.WaitAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            _pending.TryRemove(conversation.Id, out _);
-            throw;
-        }
+        var result = await ResumeOrStartAsync(conversation.Id, isNew, firstMessage, ct);
+        return $"Sub-agent ID: {conversation.Id}\n\n{result}";
     }
 
     /// <inheritdoc />
     public async Task<string> SendMessageToSubagentAsync(
         Guid conversationId,
+        Guid toolNodeId,
         string message,
         CancellationToken ct = default)
     {
+        ConversationDto conversation;
         using (var scope = _scopeFactory.CreateScope())
         {
             var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-            _ = await chatService.GetConversationAsync(conversationId, ct)
+            conversation = await chatService.GetConversationAsync(conversationId, ct)
                 ?? throw new InvalidOperationException($"Sub-agent conversation {conversationId} not found.");
         }
 
+        // Retry/resume path: same tool call that was interrupted
+        if (toolNodeId == conversation.SpawnedByToolNodeId)
+        {
+            _logger.LogInformation(
+                "send_message_to_subagent: detected retry for toolNode={ToolNodeId}, resuming sub-agent {ConversationId}",
+                toolNodeId, conversationId);
+            return await ResumeOrStartAsync(conversationId, isNew: false, firstMessage: message, ct);
+        }
+
+        // New send operation: validate state strictly, then hand over ownership to this tool call
         var session = await _sessionService.GetOrCreate(conversationId);
 
         if (session.IsRunning)
@@ -165,6 +105,13 @@ public class SubagentService : ISubagentService
             throw new InvalidOperationException(
                 $"Cannot send message: sub-agent is in state {session.State}. " +
                 "Expected LastMessageIsAssistant or AgentTaskCompleted.");
+
+        // Transfer ownership to this tool node so retries are detected as resumes
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            await chatService.UpdateSpawnedByToolNodeAsync(conversationId, toolNodeId, ct);
+        }
 
         var tcs = _pending.GetOrAdd(
             conversationId,
@@ -194,13 +141,97 @@ public class SubagentService : ISubagentService
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<AssistantProfileDto>> GetAvailableProfilesAsync(CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var profileService = scope.ServiceProvider.GetRequiredService<IAssistantProfileService>();
+        return (await profileService.GetAssistantProfilesAsync(ct)).ToList();
+    }
+
+    /// <inheritdoc />
     public void CompleteSubagent(Guid conversationId, string result)
     {
         if (_pending.TryRemove(conversationId, out var tcs))
         {
-            _logger.LogInformation("Sub-agent {ConversationId} completed with result: {Result}",
-                conversationId, result.Length > 100 ? result[..100] + "…" : result);
+            _logger.LogInformation("Sub-agent {ConversationId} completed", conversationId);
             tcs.SetResult(result);
+        }
+    }
+
+    // ── Shared resume/start logic ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Core state-machine used by both RunSubagentAsync and the retry path of SendMessageToSubagentAsync.
+    /// Handles all session states and awaits the completion TCS.
+    /// <paramref name="firstMessage"/> is only used when <paramref name="isNew"/> is true.
+    /// </summary>
+    private async Task<string> ResumeOrStartAsync(
+        Guid conversationId,
+        bool isNew,
+        string firstMessage,
+        CancellationToken ct)
+    {
+        var session = await _sessionService.GetOrCreate(conversationId);
+
+        if (session.State == ConversationState.AgentTaskCompleted)
+        {
+            _logger.LogInformation(
+                "Sub-agent {ConversationId} already completed — returning cached result", conversationId);
+            var cachedResult = await session.GetLastCompleteTaskResultAsync(ct);
+            return cachedResult ?? "Task completed.";
+        }
+
+        if (session.IsRunning)
+        {
+            _logger.LogInformation(
+                "Sub-agent {ConversationId} is already running — waiting for completion", conversationId);
+            var runningTcs = _pending.GetOrAdd(
+                conversationId,
+                _ => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously));
+            try { return await runningTcs.Task.WaitAsync(ct); }
+            catch (OperationCanceledException) { _pending.TryRemove(conversationId, out _); throw; }
+        }
+
+        var tcs = _pending.GetOrAdd(
+            conversationId,
+            _ => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously));
+
+        if (isNew)
+        {
+            _logger.LogInformation("Starting new sub-agent {ConversationId}", conversationId);
+            _ = session.SendMessageAsync(firstMessage, ct: CancellationToken.None);
+        }
+        else
+        {
+            switch (session.State)
+            {
+                case ConversationState.LastMessageIsUser:
+                case ConversationState.AllToolCallsCompleted:
+                    _logger.LogInformation(
+                        "Resuming sub-agent {ConversationId} (state={State})", conversationId, session.State);
+                    _ = session.ResumeAsync(CancellationToken.None);
+                    break;
+
+                case ConversationState.HasPendingToolCalls:
+                    _logger.LogInformation(
+                        "Sub-agent {ConversationId} has pending tool calls — waiting", conversationId);
+                    break;
+
+                default:
+                    _pending.TryRemove(conversationId, out _);
+                    throw new InvalidOperationException(
+                        $"Sub-agent {conversationId} is in unexpected state {session.State} and cannot be resumed.");
+            }
+        }
+
+        try
+        {
+            return await tcs.Task.WaitAsync(ct);
+        }
+        catch (OperationCanceledException)
+        {
+            _pending.TryRemove(conversationId, out _);
+            throw;
         }
     }
 }

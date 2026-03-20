@@ -88,6 +88,17 @@ public class Conversation : BaseEntity
         MarkAsUpdated();
     }
 
+    /// <summary>
+    /// Updates the tool node that currently "owns" this conversation.
+    /// Called when a new send_message_to_subagent tool call takes over the conversation,
+    /// so that a retry of the same call can be detected and handled as a resume.
+    /// </summary>
+    public void UpdateSpawnedByToolNode(Guid toolNodeId)
+    {
+        SpawnedByToolNodeId = toolNodeId;
+        MarkAsUpdated();
+    }
+
     /// <summary>Controls whether the LLM in this conversation can spawn child sub-agents.</summary>
     public void SetCanSpawnSubagents(bool value)
     {

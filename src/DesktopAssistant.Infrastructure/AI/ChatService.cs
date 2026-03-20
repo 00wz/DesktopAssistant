@@ -176,6 +176,15 @@ public class ChatService : IChatService
     }
 
     /// <inheritdoc />
+    public async Task UpdateSpawnedByToolNodeAsync(
+        Guid conversationId,
+        Guid toolNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        await _conversationService.UpdateSpawnedByToolNodeAsync(conversationId, toolNodeId, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<MessageDto>> GetConversationHistoryAsync(
         Guid conversationId,
         Guid lastNodeId,
@@ -418,7 +427,8 @@ public class ChatService : IChatService
     // ── DTO mapping ─────────────────────────────────────────────────────────
 
     private static ConversationDto MapToConversationDto(Conversation c) =>
-        new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt, c.AssistantProfileId, c.CanSpawnSubagents);
+        new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt,
+            c.AssistantProfileId, c.CanSpawnSubagents, c.SpawnedByToolNodeId);
 
     private async Task<AssistantProfileDto> MapToProfileDtoAsync(
         AssistantProfile p, CancellationToken cancellationToken)

@@ -20,14 +20,23 @@ public interface ISubagentService
         string? systemPrompt,
         bool canSpawnSubagents,
         string? name,
+        Guid profileId,
         CancellationToken ct = default);
 
     /// <summary>
     /// Sends a new message to an existing sub-agent and waits for it to finish.
-    /// Only valid when the sub-agent is in state LastMessageIsAssistant or AgentTaskCompleted.
+    /// <para>
+    /// If <paramref name="toolNodeId"/> differs from the conversation's current <c>SpawnedByToolNodeId</c>,
+    /// this is treated as a new send operation: validates state strictly, then updates <c>SpawnedByToolNodeId</c>.
+    /// </para>
+    /// <para>
+    /// If <paramref name="toolNodeId"/> matches the current <c>SpawnedByToolNodeId</c>, this is a retry/resume
+    /// of the same tool call: uses recovery logic identical to <see cref="RunSubagentAsync"/>.
+    /// </para>
     /// </summary>
     Task<string> SendMessageToSubagentAsync(
         Guid conversationId,
+        Guid toolNodeId,
         string message,
         CancellationToken ct = default);
 
@@ -35,6 +44,9 @@ public interface ISubagentService
     Task<IReadOnlyList<SubagentInfoDto>> GetSubagentsAsync(
         Guid parentConversationId,
         CancellationToken ct = default);
+
+    /// <summary>Returns all available assistant profiles for sub-agent creation.</summary>
+    Task<IReadOnlyList<AssistantProfileDto>> GetAvailableProfilesAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Called by AgentOutputPlugin.complete_task — resolves the pending awaiter for the conversation.

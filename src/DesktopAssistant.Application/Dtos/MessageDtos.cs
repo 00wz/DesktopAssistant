@@ -69,7 +69,8 @@ public record ConversationDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     Guid? AssistantProfileId = null,
-    bool CanSpawnSubagents = false);
+    bool CanSpawnSubagents = false,
+    Guid? SpawnedByToolNodeId = null);
 
 /// <summary>Minimal info about a sub-agent conversation.</summary>
 public record SubagentInfoDto(Guid Id, string Title);
