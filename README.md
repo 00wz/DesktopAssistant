@@ -1,6 +1,6 @@
 # DesktopAssistant
 
-A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any OpenAI-compatible LLM provider, real-time MCP server installation, conversation branching, and multiple simultaneous chats.
+A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any OpenAI-compatible LLM provider, real-time MCP server installation, conversation branching, multiple simultaneous chats, and recursive sub-agent orchestration.
 
 ---
 
@@ -10,6 +10,12 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 - **Multiple simultaneous chats** — open as many conversations as needed, each running independently
 - **Conversation branching** — fork any message to explore alternative responses, similar to ChatGPT's branching model
 - **Manual summarization** — right-click any message and summarize the preceding context; a `SummaryNode` is inserted into the message tree, keeping the context window lean without losing history
+
+### Sub-Agents
+- **Recursive sub-agent creation** — enable per conversation; the agent can then spawn child agents to delegate subtasks
+- **Configurable sub-agents** — when creating a sub-agent the parent specifies its assistant profile (model, endpoint, temperature), system prompt, and whether the sub-agent can spawn its own sub-agents
+- **Task assignment to existing sub-agents** — the parent agent can send new tasks to already-created sub-agents, not just create new ones
+- **Conversation tree** — each sub-agent runs as a linked conversation visible in the sidebar, showing its status and relationship to the parent
 
 ### AI & LLM
 - **OpenAI-compatible providers** — works with OpenAI, Azure OpenAI, local models via Ollama, LM Studio, or any OpenAI-compatible endpoint
@@ -45,7 +51,6 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 
 ## Planned Features
 
-- **Recursive sub-agents** — agents that spawn and coordinate child agents to solve complex tasks
 - **File support** — work with images, documents, and other file types as conversation context
 - **Extended thinking** — support for models with explicit reasoning/thinking steps
 - **Agent isolation** — sandboxed execution environments per agent
@@ -67,8 +72,11 @@ UI              — Avalonia MVVM presentation layer (CommunityToolkit.Mvvm)
 
 Key infrastructure components:
 - `KernelFactory` — creates Semantic Kernel instances per assistant profile
+- `AgentKernelFactory` — wraps `KernelFactory`, conditionally registering sub-agent tools and plugins
 - `ConversationSession` — encapsulates the LLM turn loop, tool approval, and streaming for a single conversation
 - `ConversationSessionService` — singleton session pool keyed by conversation ID
+- `SubagentService` — manages sub-agent lifecycle and inter-agent communication
+- `SubagentPlugin` — SK plugin exposing `create_subagent`, `send_message_to_subagent`, `list_subagents` tools to the LLM
 - `DpapiCredentialStore` — Windows DPAPI credential store
 - `AvailableToolsService` — aggregates static SK plugins and dynamic MCP tools
 - `SummarizationExecutor` — uses SK's `ChatHistorySummarizationReducer`
