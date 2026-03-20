@@ -28,7 +28,7 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
         "it resumes from where it left off.")]
     public async Task<string> CreateSubagentAsync(
         [Description("The task or first message to send to the sub-agent.")] string first_message,
-        [Description("Optional system prompt that defines the sub-agent's role and constraints.")] string? system_prompt,
+        [Description("Optional system prompt that defines the sub-agent's role and constraints.")] string? system_prompt = null,
         [Description("Whether this sub-agent can in turn spawn its own sub-agents. Default: false.")] bool can_spawn_subagents = false,
         [Description("Optional title for the sub-agent conversation. Defaults to the first 60 characters of the task.")] string? name = null,
         ToolExecutionContext executionContext = null!)

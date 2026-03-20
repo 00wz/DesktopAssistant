@@ -66,6 +66,7 @@
     <sys:String x:Key="ChatSettings.Mode.Label">Mode:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Label">System prompt:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">System prompt is empty...</sys:String>
+    <sys:String x:Key="ChatSettings.CanSpawnSubagents.Label">Allow spawning subagents</sys:String>
     <sys:String x:Key="ChatSettings.Save">Save</sys:String>
     <sys:String x:Key="ChatSettings.Saved">Saved</sys:String>
 
@@ -99,6 +100,7 @@
     <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">You are a helpful AI assistant...</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Label">First Message</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Write your first message...</sys:String>
+    <sys:String x:Key="NewConversation.CanSpawnSubagents.Label">Allow spawning subagents</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Cancel</sys:String>
 
 </ResourceDictionary>

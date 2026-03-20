@@ -24,6 +24,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     private string _originalSystemPrompt = string.Empty;
     private Guid? _originalProfileId;
     private ConversationMode _originalMode = ConversationMode.Chat;
+    private bool _originalCanSpawnSubagents;
 
     /// <summary>Called after a successful save; passes the new profile name.</summary>
     public Action<string>? OnProfileApplied { get; set; }
@@ -50,6 +51,10 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     private ConversationModeOption _selectedModeOption;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private bool _canSpawnSubagents;
+
+    [ObservableProperty]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -62,7 +67,8 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
     public bool HasChanges =>
         SystemPrompt != _originalSystemPrompt ||
         SelectedProfile?.Id != _originalProfileId ||
-        SelectedModeOption.Mode != _originalMode;
+        SelectedModeOption.Mode != _originalMode ||
+        CanSpawnSubagents != _originalCanSpawnSubagents;
 
     public ChatSettingsPanelViewModel(
         IAssistantProfileService profileService,
@@ -94,6 +100,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
                 : null;
             SelectedModeOption = AvailableModes.FirstOrDefault(m => m.Mode == settings.Mode)
                 ?? AvailableModes[0];
+            CanSpawnSubagents = settings.CanSpawnSubagents;
 
             TakeSnapshot();
         }
@@ -131,6 +138,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
             }
 
             await _session.ChangeModeAsync(SelectedModeOption.Mode);
+            await _session.ChangeCanSpawnSubagentsAsync(CanSpawnSubagents);
 
             TakeSnapshot();
             IsSaved = true;
@@ -152,6 +160,7 @@ public partial class ChatSettingsPanelViewModel : ObservableObject
         _originalSystemPrompt = SystemPrompt;
         _originalProfileId = SelectedProfile?.Id;
         _originalMode = SelectedModeOption.Mode;
+        _originalCanSpawnSubagents = CanSpawnSubagents;
         SaveCommand.NotifyCanExecuteChanged();
     }
 

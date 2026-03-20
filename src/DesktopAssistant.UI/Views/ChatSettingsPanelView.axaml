@@ -56,6 +56,11 @@
                          HorizontalAlignment="Stretch"/>
            </Grid>
 
+           <!-- Can spawn subagents -->
+           <CheckBox IsChecked="{Binding CanSpawnSubagents, Mode=TwoWay}"
+                     Content="{DynamicResource ChatSettings.CanSpawnSubagents.Label}"
+                     FontSize="12"/>
+
            <!-- System prompt -->
            <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
            <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"

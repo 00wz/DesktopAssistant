@@ -125,7 +125,8 @@ public class ChatService : IChatService
             conversation.SystemPrompt,
             conversation.AssistantProfileId,
             profileDto,
-            conversation.Mode);
+            conversation.Mode,
+            conversation.CanSpawnSubagents);
     }
 
     /// <inheritdoc />

@@ -66,6 +66,7 @@
     <sys:String x:Key="ChatSettings.Mode.Label">Режим:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Label">Системный промпт:</sys:String>
     <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">Системный промпт пуст...</sys:String>
+    <sys:String x:Key="ChatSettings.CanSpawnSubagents.Label">Разрешить создание субагентов</sys:String>
     <sys:String x:Key="ChatSettings.Save">Сохранить</sys:String>
     <sys:String x:Key="ChatSettings.Saved">Сохранено</sys:String>
 
@@ -99,6 +100,7 @@
     <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">Вы — полезный ИИ-ассистент...</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Label">Первое сообщение</sys:String>
     <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Напишите ваше первое сообщение...</sys:String>
+    <sys:String x:Key="NewConversation.CanSpawnSubagents.Label">Разрешить создание субагентов</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Отмена</sys:String>
 
 </ResourceDictionary>

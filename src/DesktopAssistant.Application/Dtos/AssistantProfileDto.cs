@@ -20,4 +20,5 @@ public record ConversationSettingsDto(
     string SystemPrompt,
     Guid? AssistantProfileId,
     AssistantProfileDto? Profile,
-    ConversationMode Mode = ConversationMode.Chat);
+    ConversationMode Mode = ConversationMode.Chat,
+    bool CanSpawnSubagents = false);

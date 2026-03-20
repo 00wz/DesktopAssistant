@@ -49,6 +49,9 @@ public partial class NewConversationPanelViewModel : ObservableObject
     [ObservableProperty]
     private ConversationModeOption _selectedMode;
 
+    [ObservableProperty]
+    private bool _canSpawnSubagents;
+
     /// <summary>Inline profile editor (null when the form is hidden).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCreateProfileMode))]
@@ -143,7 +146,8 @@ public partial class NewConversationPanelViewModel : ObservableObject
             SelectedProfile.Id,
             SystemPrompt.Trim(),
             trimmedMessage,
-            SelectedMode.Mode);
+            SelectedMode.Mode,
+            CanSpawnSubagents);
 
         await OnConfirm(parameters);
     }

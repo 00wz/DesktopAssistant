@@ -176,8 +176,6 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
 
     private async void OnSessionCreated(object? sender, Guid conversationId)
     {
-        if (_index.ContainsKey(conversationId)) return;
-
         try
         {
             await Dispatcher.UIThread.InvokeAsync(LoadConversationsAsync);
