@@ -471,6 +471,13 @@ internal class ConversationSession : IConversationSession
         return await chatService.GetConversationSettingsAsync(ConversationId, ct);
     }
 
+    public async Task<string?> GetLastCompleteTaskResultAsync(CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        return await chatService.GetLastCompleteTaskResultAsync(CurrentLeafNodeId, ct);
+    }
+
     public async Task ChangeProfileAsync(Guid profileId, CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -483,6 +490,13 @@ internal class ConversationSession : IConversationSession
         using var scope = _scopeFactory.CreateScope();
         var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
         await chatService.ChangeConversationModeAsync(ConversationId, mode, ct);
+    }
+
+    public async Task ChangeCanSpawnSubagentsAsync(bool canSpawnSubagents, CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+        await chatService.ChangeCanSpawnSubagentsAsync(ConversationId, canSpawnSubagents, ct);
     }
 
     // ── Helper methods ───────────────────────────────────────────────────────

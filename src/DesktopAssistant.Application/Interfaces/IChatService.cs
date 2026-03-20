@@ -19,6 +19,7 @@ public interface IChatService
         Guid? assistantProfileId = null,
         string systemPrompt = "",
         ConversationMode mode = ConversationMode.Chat,
+        bool canSpawnSubagents = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>Returns all active conversations.</summary>
@@ -38,6 +39,9 @@ public interface IChatService
 
     /// <summary>Changes the conversation mode (Chat / Agent).</summary>
     Task ChangeConversationModeAsync(Guid conversationId, ConversationMode mode, CancellationToken cancellationToken = default);
+
+    /// <summary>Controls whether the LLM in this conversation can spawn sub-agents.</summary>
+    Task ChangeCanSpawnSubagentsAsync(Guid conversationId, bool canSpawnSubagents, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the message history of the current active branch of a conversation as DTOs.
@@ -117,10 +121,11 @@ public interface IChatService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the result message from the last successful complete_task call in the conversation.
-    /// Returns null if the conversation has not yet completed.
+    /// Returns the result message from the last successful complete_task call,
+    /// traversing backwards from <paramref name="lastNodeId"/>.
+    /// Returns null if no completed terminal tool is found.
     /// </summary>
     Task<string?> GetLastCompleteTaskResultAsync(
-        Guid conversationId,
+        Guid lastNodeId,
         CancellationToken cancellationToken = default);
 }

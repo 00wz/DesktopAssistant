@@ -81,9 +81,7 @@ public class SubagentService : ISubagentService
             _logger.LogInformation(
                 "Sub-agent {ConversationId} already completed — returning cached result", conversation.Id);
 
-            using var scope = _scopeFactory.CreateScope();
-            var chatService = scope.ServiceProvider.GetRequiredService<IChatService>();
-            var cachedResult = await chatService.GetLastCompleteTaskResultAsync(conversation.Id, ct);
+            var cachedResult = await session.GetLastCompleteTaskResultAsync(ct);
             return cachedResult ?? "Task completed.";
         }
 

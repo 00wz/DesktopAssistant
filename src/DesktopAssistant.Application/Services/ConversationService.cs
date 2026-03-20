@@ -37,6 +37,7 @@ public class ConversationService
         Guid assistantProfileId,
         string systemPrompt = "",
         ConversationMode mode = ConversationMode.Chat,
+        bool canSpawnSubagents = false,
         CancellationToken cancellationToken = default)
     {
         _ = await _assistantRepository.GetByIdAsync(assistantProfileId, cancellationToken)
@@ -45,6 +46,8 @@ public class ConversationService
         var conversation = new Conversation(title, assistantProfileId, systemPrompt);
         if (mode != ConversationMode.Chat)
             conversation.SetMode(mode);
+        if (canSpawnSubagents)
+            conversation.SetCanSpawnSubagents(true);
 
         // Add anchor root node (empty System node as an entry point into the tree)
         var rootMessage = conversation.AddRootMessage();
@@ -138,6 +141,24 @@ public class ConversationService
     {
         var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken);
         return conversation?.SystemPrompt ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Controls whether the LLM in this conversation can spawn sub-agents.
+    /// </summary>
+    public async Task UpdateCanSpawnSubagentsAsync(
+        Guid conversationId,
+        bool canSpawnSubagents,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationRepository.GetByIdAsync(conversationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Conversation {conversationId} not found");
+
+        conversation.SetCanSpawnSubagents(canSpawnSubagents);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogInformation("Changed CanSpawnSubagents for conversation {ConversationId} to {Value}",
+            conversationId, canSpawnSubagents);
     }
 
     /// <summary>

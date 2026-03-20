@@ -198,7 +198,8 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
                 parameters.Title,
                 parameters.AssistantProfileId,
                 parameters.SystemPrompt,
-                parameters.Mode);
+                parameters.Mode,
+                parameters.CanSpawnSubagents);
 
             var session = await _conversationSessionService.GetOrCreate(conversation.Id);
 

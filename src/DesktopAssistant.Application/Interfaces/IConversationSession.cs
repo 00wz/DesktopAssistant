@@ -37,6 +37,12 @@ public interface IConversationSession : IDisposable
     /// <summary>Returns the conversation settings (system prompt, profile).</summary>
     Task<ConversationSettingsDto?> GetSettingsAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Returns the result message from the last successful complete_task call in the current branch.
+    /// Uses <see cref="CurrentLeafNodeId"/> as the traversal start. Returns null if not completed.
+    /// </summary>
+    Task<string?> GetLastCompleteTaskResultAsync(CancellationToken ct = default);
+
     /// <summary>Saves the conversation's system prompt.</summary>
     Task UpdateSystemPromptAsync(string systemPrompt, CancellationToken ct = default);
 
@@ -45,6 +51,9 @@ public interface IConversationSession : IDisposable
 
     /// <summary>Changes the conversation mode (Chat / Agent).</summary>
     Task ChangeModeAsync(ConversationMode mode, CancellationToken ct = default);
+
+    /// <summary>Controls whether the LLM in this conversation can spawn sub-agents.</summary>
+    Task ChangeCanSpawnSubagentsAsync(bool canSpawnSubagents, CancellationToken ct = default);
 
     /// <summary>
     /// Summarizes the context starting from the selected node.

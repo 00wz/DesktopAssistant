@@ -58,6 +58,7 @@ public class ChatService : IChatService
         Guid? assistantProfileId = null,
         string systemPrompt = "",
         ConversationMode mode = ConversationMode.Chat,
+        bool canSpawnSubagents = false,
         CancellationToken cancellationToken = default)
     {
         AssistantProfile profile;
@@ -80,7 +81,7 @@ public class ChatService : IChatService
         }
 
         var conversation = await _conversationService.CreateConversationAsync(
-            title, profile.Id, systemPrompt, mode, cancellationToken);
+            title, profile.Id, systemPrompt, mode, canSpawnSubagents, cancellationToken);
 
         _logger.LogInformation("Created conversation {ConversationId}: {Title}", conversation.Id, title);
         return MapToConversationDto(conversation);
@@ -159,6 +160,18 @@ public class ChatService : IChatService
 
         _logger.LogInformation("Changed mode for conversation {ConversationId} to {Mode}",
             conversationId, mode);
+    }
+
+    /// <inheritdoc />
+    public async Task ChangeCanSpawnSubagentsAsync(
+        Guid conversationId,
+        bool canSpawnSubagents,
+        CancellationToken cancellationToken = default)
+    {
+        await _conversationService.UpdateCanSpawnSubagentsAsync(conversationId, canSpawnSubagents, cancellationToken);
+
+        _logger.LogInformation("Changed CanSpawnSubagents for conversation {ConversationId} to {Value}",
+            conversationId, canSpawnSubagents);
     }
 
     /// <inheritdoc />
@@ -374,14 +387,10 @@ public class ChatService : IChatService
 
     /// <inheritdoc />
     public async Task<string?> GetLastCompleteTaskResultAsync(
-        Guid conversationId,
+        Guid lastNodeId,
         CancellationToken cancellationToken = default)
     {
-        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
-        if (conversation?.ActiveLeafNodeId == null) return null;
-
-        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(
-            conversation.ActiveLeafNodeId.Value, cancellationToken))
+        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(lastNodeId, cancellationToken))
         {
             if (node.NodeType != Domain.Enums.MessageNodeType.Tool) continue;
 
@@ -389,7 +398,7 @@ public class ChatService : IChatService
             if (meta?.IsTerminal != true || meta.Status != ToolNodeStatus.Completed) continue;
 
             // The agent's output message is stored as the "message" argument, not in ResultJson
-            // (ResultJson holds the tool's return value: "Task completed.").
+            // (ResultJson holds the neutral tool return value: "Task completed.").
             if (string.IsNullOrEmpty(meta.ArgumentsJson) || meta.ArgumentsJson == "{}") return null;
             try
             {

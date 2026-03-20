@@ -161,4 +161,5 @@ public record NewConversationParams(
     Guid AssistantProfileId,
     string SystemPrompt,
     string FirstMessage,
-    ConversationMode Mode = ConversationMode.Chat);
+    ConversationMode Mode = ConversationMode.Chat,
+    bool CanSpawnSubagents = false);
