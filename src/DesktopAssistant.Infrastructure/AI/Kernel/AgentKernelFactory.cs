@@ -19,9 +19,14 @@ public class AgentKernelFactory(
     IMcpServerManager mcpServerManager,
     IMcpConfigurationService mcpConfigurationService,
     IMcpCatalogSearchService mcpCatalogSearch,
+    ISubagentService subagentService,
     ILoggerFactory loggerFactory)
 {
-    public SKKernel Create(AssistantProfile profile, string apiKey, ConversationMode mode = ConversationMode.Chat)
+    public SKKernel Create(
+        AssistantProfile profile,
+        string apiKey,
+        ConversationMode mode = ConversationMode.Chat,
+        bool canSpawnSubagents = false)
     {
         var kernel = kernelFactory.Create(profile, apiKey);
 
@@ -50,8 +55,15 @@ public class AgentKernelFactory(
         if (mode == ConversationMode.Agent)
         {
             kernel.ImportPluginFromObject(
-                new AgentOutputPlugin(loggerFactory.CreateLogger<AgentOutputPlugin>()),
+                new AgentOutputPlugin(subagentService, loggerFactory.CreateLogger<AgentOutputPlugin>()),
                 AgentOutputPlugin.PluginName);
+        }
+
+        if (canSpawnSubagents)
+        {
+            kernel.ImportPluginFromObject(
+                new SubagentPlugin(subagentService, loggerFactory.CreateLogger<SubagentPlugin>()),
+                SubagentPlugin.PluginName);
         }
 
         return kernel;

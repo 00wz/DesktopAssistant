@@ -39,6 +39,15 @@ public class AppDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.ActiveLeafNodeId)
                   .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ParentConversation)
+                  .WithMany()
+                  .HasForeignKey(e => e.ParentConversationId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.ParentConversationId);
+            entity.HasIndex(e => e.SpawnedByToolNodeId).IsUnique().HasFilter("[SpawnedByToolNodeId] IS NOT NULL");
         });
 
         // MessageNode

@@ -90,4 +90,37 @@ public interface IChatService
         Guid conversationId,
         Guid selectedNodeId,
         CancellationToken cancellationToken = default);
+
+    // ── Sub-agent management ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Creates a sub-agent conversation linked to a parent via a tool node.
+    /// The sub-agent always runs in Agent mode and inherits the parent's profile.
+    /// </summary>
+    Task<ConversationDto> CreateSubagentConversationAsync(
+        Guid parentConversationId,
+        Guid spawnedByToolNodeId,
+        string title,
+        Guid profileId,
+        string systemPrompt,
+        bool canSpawnSubagents,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Finds a conversation by the tool node that spawned it. Returns null if not found.</summary>
+    Task<ConversationDto?> GetConversationByToolNodeIdAsync(
+        Guid toolNodeId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Returns all direct sub-agent conversations of a parent.</summary>
+    Task<IReadOnlyList<SubagentInfoDto>> GetSubagentConversationsAsync(
+        Guid parentConversationId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the result message from the last successful complete_task call in the conversation.
+    /// Returns null if the conversation has not yet completed.
+    /// </summary>
+    Task<string?> GetLastCompleteTaskResultAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default);
 }

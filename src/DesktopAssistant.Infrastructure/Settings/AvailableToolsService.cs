@@ -31,6 +31,9 @@ public class AvailableToolsService : IAvailableToolsProvider, IDisposable
         new("McpManagement", "get_mcp_servers_directory","Returns the path for cloning MCP servers"),
         new("McpManagement", "add_mcp_server",          "Adds an MCP server to the configuration"),
         new("AgentOutput",   "complete_task",           "Signals end of agent work and returns message to host"),
+        new("Subagent",      "create_subagent",         "Creates a sub-agent and waits for it to complete the task"),
+        new("Subagent",      "send_message_to_subagent","Sends a follow-up message to an existing sub-agent and waits for its response"),
+        new("Subagent",      "list_subagents",          "Lists all sub-agent conversations created in this conversation"),
     ];
 
     public event EventHandler? ToolsChanged;

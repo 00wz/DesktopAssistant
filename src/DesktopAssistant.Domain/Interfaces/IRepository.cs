@@ -23,6 +23,12 @@ public interface IConversationRepository : IRepository<Conversation>
     Task<IEnumerable<Conversation>> GetByAssistantIdAsync(Guid assistantId, CancellationToken cancellationToken = default);
     Task<IEnumerable<Conversation>> GetActiveConversationsAsync(CancellationToken cancellationToken = default);
     Task<Conversation?> GetWithMessagesAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Finds the conversation that was spawned by the given tool node. Returns null if not found.</summary>
+    Task<Conversation?> GetBySpawnedToolNodeAsync(Guid toolNodeId, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns all direct sub-agent conversations of the specified parent.</summary>
+    Task<IEnumerable<Conversation>> GetSubagentsAsync(Guid parentConversationId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

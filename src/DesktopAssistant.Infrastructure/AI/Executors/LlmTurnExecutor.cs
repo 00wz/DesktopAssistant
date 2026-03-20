@@ -64,7 +64,7 @@ public class LlmTurnExecutor(
         var chatHistory = contextMessages.ToChatHistory(systemPrompt);
 
         var isAgentMode = conversation.Mode == ConversationMode.Agent;
-        var kernel = _agentKernelFactory.Create(profile, apiKey, conversation.Mode);
+        var kernel = _agentKernelFactory.Create(profile, apiKey, conversation.Mode, conversation.CanSpawnSubagents);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
         var executionSettings = new OpenAIPromptExecutionSettings
         {

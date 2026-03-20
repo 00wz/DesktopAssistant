@@ -4,6 +4,7 @@ using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI;
 using DesktopAssistant.Infrastructure.AI.Executors;
 using DesktopAssistant.Infrastructure.AI.Kernel;
+using DesktopAssistant.Infrastructure.AI.Services;
 using DesktopAssistant.Infrastructure.AI.Session;
 using DesktopAssistant.Infrastructure.MCP.Search;
 using DesktopAssistant.Infrastructure.MCP.Services;
@@ -56,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<IAssistantProfileService, AssistantProfileService>();
         services.AddScoped<IChatService, ChatService>(); 
         services.AddSingleton<IConversationSessionService, ConversationSessionService>();
+        services.AddSingleton<ISubagentService, SubagentService>();
 
 
         // MCP Services
@@ -90,6 +92,21 @@ public static class DependencyInjection
     {
         using var scope = serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await dbContext.Database.EnsureCreatedAsync();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<AppDbContext>>();
+
+        try
+        {
+            await dbContext.Database.EnsureCreatedAsync();
+            // Quick schema compatibility check
+            await dbContext.Conversations.CountAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Database schema is incompatible with the current model. " +
+                "Dropping and recreating the database (all existing data will be lost).");
+            await dbContext.Database.EnsureDeletedAsync();
+            await dbContext.Database.EnsureCreatedAsync();
+        }
     }
 }

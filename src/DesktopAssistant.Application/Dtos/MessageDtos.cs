@@ -67,4 +67,9 @@ public record ConversationDto(
     string Title,
     Guid? ActiveLeafNodeId,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    Guid? AssistantProfileId = null,
+    bool CanSpawnSubagents = false);
+
+/// <summary>Minimal info about a sub-agent conversation.</summary>
+public record SubagentInfoDto(Guid Id, string Title);

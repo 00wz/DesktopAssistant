@@ -335,10 +335,80 @@ public class ChatService : IChatService
             .ToHashSet()!;
     }
 
+    // ── Sub-agent management ─────────────────────────────────────────────────
+
+    /// <inheritdoc />
+    public async Task<ConversationDto> CreateSubagentConversationAsync(
+        Guid parentConversationId,
+        Guid spawnedByToolNodeId,
+        string title,
+        Guid profileId,
+        string systemPrompt,
+        bool canSpawnSubagents,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationService.CreateSubagentConversationAsync(
+            parentConversationId, spawnedByToolNodeId, title, profileId, systemPrompt,
+            canSpawnSubagents, cancellationToken);
+
+        return MapToConversationDto(conversation);
+    }
+
+    /// <inheritdoc />
+    public async Task<ConversationDto?> GetConversationByToolNodeIdAsync(
+        Guid toolNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationService.GetConversationByToolNodeIdAsync(toolNodeId, cancellationToken);
+        return conversation == null ? null : MapToConversationDto(conversation);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<SubagentInfoDto>> GetSubagentConversationsAsync(
+        Guid parentConversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversations = await _conversationService.GetSubagentConversationsAsync(parentConversationId, cancellationToken);
+        return conversations.Select(c => new SubagentInfoDto(c.Id, c.Title)).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> GetLastCompleteTaskResultAsync(
+        Guid conversationId,
+        CancellationToken cancellationToken = default)
+    {
+        var conversation = await _conversationService.GetConversationAsync(conversationId, cancellationToken);
+        if (conversation?.ActiveLeafNodeId == null) return null;
+
+        await foreach (var node in _messageNodeRepository.TraverseToRootAsync(
+            conversation.ActiveLeafNodeId.Value, cancellationToken))
+        {
+            if (node.NodeType != Domain.Enums.MessageNodeType.Tool) continue;
+
+            var meta = ToolNodeMetadata.TryDeserialize(node.Metadata);
+            if (meta?.IsTerminal != true || meta.Status != ToolNodeStatus.Completed) continue;
+
+            // The agent's output message is stored as the "message" argument, not in ResultJson
+            // (ResultJson holds the tool's return value: "Task completed.").
+            if (string.IsNullOrEmpty(meta.ArgumentsJson) || meta.ArgumentsJson == "{}") return null;
+            try
+            {
+                var args = System.Text.Json.JsonSerializer.Deserialize<
+                    Dictionary<string, System.Text.Json.JsonElement>>(
+                        meta.ArgumentsJson, ToolNodeMetadata.JsonOptions);
+                if (args != null && args.TryGetValue("message", out var msgEl))
+                    return msgEl.GetString();
+            }
+            catch { /* fall through */ }
+        }
+
+        return null;
+    }
+
     // ── DTO mapping ─────────────────────────────────────────────────────────
 
     private static ConversationDto MapToConversationDto(Conversation c) =>
-        new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt);
+        new(c.Id, c.Title, c.ActiveLeafNodeId, c.CreatedAt, c.UpdatedAt, c.AssistantProfileId, c.CanSpawnSubagents);
 
     private async Task<AssistantProfileDto> MapToProfileDtoAsync(
         AssistantProfile p, CancellationToken cancellationToken)

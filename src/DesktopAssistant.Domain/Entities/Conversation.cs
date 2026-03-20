@@ -20,10 +20,20 @@ public class Conversation : BaseEntity
     /// <summary>Controls LLM tool-use behavior. Default is Chat (optional tool use).</summary>
     public ConversationMode Mode { get; private set; } = ConversationMode.Chat;
 
+    /// <summary>Parent conversation that spawned this one as a sub-agent. Null for top-level conversations.</summary>
+    public Guid? ParentConversationId { get; private set; }
+
+    /// <summary>Tool node in the parent conversation that triggered creation of this sub-agent conversation.</summary>
+    public Guid? SpawnedByToolNodeId { get; private set; }
+
+    /// <summary>Whether the LLM in this conversation can spawn child sub-agents.</summary>
+    public bool CanSpawnSubagents { get; private set; }
+
     // Navigation properties
     public AssistantProfile? AssistantProfile { get; private set; }
     public MessageNode? ActiveLeafNode { get; private set; }
     public ICollection<MessageNode> Messages { get; private set; } = new List<MessageNode>();
+    public Conversation? ParentConversation { get; private set; }
 
     private Conversation() { } // For EF Core
 
@@ -67,6 +77,21 @@ public class Conversation : BaseEntity
     public void SetMode(ConversationMode mode)
     {
         Mode = mode;
+        MarkAsUpdated();
+    }
+
+    /// <summary>Marks this conversation as a sub-agent spawned by a specific tool node in a parent conversation.</summary>
+    public void SetAsSubagent(Guid parentConversationId, Guid toolNodeId)
+    {
+        ParentConversationId = parentConversationId;
+        SpawnedByToolNodeId = toolNodeId;
+        MarkAsUpdated();
+    }
+
+    /// <summary>Controls whether the LLM in this conversation can spawn child sub-agents.</summary>
+    public void SetCanSpawnSubagents(bool value)
+    {
+        CanSpawnSubagents = value;
         MarkAsUpdated();
     }
 

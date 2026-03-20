@@ -39,6 +39,24 @@ public class ConversationRepository : BaseRepository<Conversation>, IConversatio
             .Include(c => c.AssistantProfile)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
+
+    public async Task<Conversation?> GetBySpawnedToolNodeAsync(
+        Guid toolNodeId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .FirstOrDefaultAsync(c => c.SpawnedByToolNodeId == toolNodeId, cancellationToken);
+    }
+
+    public async Task<IEnumerable<Conversation>> GetSubagentsAsync(
+        Guid parentConversationId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Where(c => c.ParentConversationId == parentConversationId)
+            .OrderBy(c => c.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }
 
 public class MessageNodeRepository : BaseRepository<MessageNode>, IMessageNodeRepository

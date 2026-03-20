@@ -226,6 +226,57 @@ public class ConversationService
     }
 
     /// <summary>
+    /// Creates a sub-agent conversation linked to a parent via a tool node.
+    /// The conversation is always in Agent mode.
+    /// </summary>
+    public async Task<Conversation> CreateSubagentConversationAsync(
+        Guid parentConversationId,
+        Guid spawnedByToolNodeId,
+        string title,
+        Guid assistantProfileId,
+        string systemPrompt,
+        bool canSpawnSubagents,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await _assistantRepository.GetByIdAsync(assistantProfileId, cancellationToken)
+            ?? throw new InvalidOperationException($"Assistant profile {assistantProfileId} not found");
+
+        var conversation = new Conversation(title, assistantProfileId, systemPrompt);
+        conversation.SetMode(ConversationMode.Agent);
+        conversation.SetAsSubagent(parentConversationId, spawnedByToolNodeId);
+        if (canSpawnSubagents)
+            conversation.SetCanSpawnSubagents(true);
+
+        var rootMessage = conversation.AddRootMessage();
+        await _conversationRepository.AddAsync(conversation, cancellationToken);
+
+        conversation.SetActiveLeafNode(rootMessage.Id);
+        await _conversationRepository.UpdateAsync(conversation, cancellationToken);
+
+        _logger.LogInformation(
+            "Created sub-agent conversation {ConversationId} (parent={ParentId}, toolNode={ToolNodeId})",
+            conversation.Id, parentConversationId, spawnedByToolNodeId);
+
+        return conversation;
+    }
+
+    /// <summary>
+    /// Finds the conversation spawned by the specified tool node. Returns null if not found.
+    /// </summary>
+    public async Task<Conversation?> GetConversationByToolNodeIdAsync(
+        Guid toolNodeId,
+        CancellationToken cancellationToken = default)
+        => await _conversationRepository.GetBySpawnedToolNodeAsync(toolNodeId, cancellationToken);
+
+    /// <summary>
+    /// Returns all sub-agent conversations of a parent.
+    /// </summary>
+    public async Task<IEnumerable<Conversation>> GetSubagentConversationsAsync(
+        Guid parentConversationId,
+        CancellationToken cancellationToken = default)
+        => await _conversationRepository.GetSubagentsAsync(parentConversationId, cancellationToken);
+
+    /// <summary>
     /// Soft-deletes a conversation
     /// </summary>
     public async Task DeleteConversationAsync(
