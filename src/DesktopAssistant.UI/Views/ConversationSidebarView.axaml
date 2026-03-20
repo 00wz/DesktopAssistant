@@ -9,100 +9,89 @@
 
     <UserControl.DataTemplates>
         <!--
-            Recursive DataTemplate for ConversationListItemViewModel.
-            - Uses $parent[UserControl] (= ConversationSidebarView) to reach
-              SidebarViewModel commands regardless of nesting level.
-            - IndentLeft grows 16px per depth level.
-            - Nested ItemsControl uses the same DataTemplate automatically.
+            TreeDataTemplate for ConversationListItemViewModel.
+            ItemsSource="{Binding Children}" tells TreeView where to find child nodes.
+            TreeView handles indentation per depth level automatically.
         -->
-        <DataTemplate DataType="vm:ConversationListItemViewModel">
-            <StackPanel>
+        <TreeDataTemplate DataType="vm:ConversationListItemViewModel"
+                          ItemsSource="{Binding Children}">
+            <Button Classes="convItem"
+                    Command="{Binding $parent[UserControl].((vm:SidebarViewModel)DataContext).OpenConversationCommand}"
+                    CommandParameter="{Binding}">
+                <Panel Background="Transparent">
+                    <!--
+                        Background layers (bottom to top):
+                        1. Active session   — dark-grey accent
+                        2. Selected         — blue (overlaps active)
+                        3. Hover            — semi-transparent white overlay
+                    -->
+                    <Border Background="{DynamicResource SidebarItemActiveBg}"
+                            IsVisible="{Binding IsActive}"/>
+                    <Border Background="{DynamicResource SidebarItemSelectedBg}"
+                            IsVisible="{Binding IsSelected}"/>
+                    <Border Background="{DynamicResource SidebarItemHoverOverlay}"
+                            IsVisible="{Binding $parent[Button].IsPointerOver}"/>
 
-                <!-- Item row -->
-                <Button Classes="convItem"
-                        Command="{Binding $parent[UserControl].((vm:SidebarViewModel)DataContext).OpenConversationCommand}"
-                        CommandParameter="{Binding}">
-                    <Panel Background="Transparent">
-                        <!--
-                            Background layers (bottom to top):
-                            1. Active session   — dark-grey accent
-                            2. Selected         — blue (overlaps active)
-                            3. Hover            — semi-transparent white overlay
-                        -->
-                        <Border Background="{DynamicResource SidebarItemActiveBg}"
-                                IsVisible="{Binding IsActive}"/>
-                        <Border Background="{DynamicResource SidebarItemSelectedBg}"
-                                IsVisible="{Binding IsSelected}"/>
-                        <Border Background="{DynamicResource SidebarItemHoverOverlay}"
-                                IsVisible="{Binding $parent[Button].IsPointerOver}"/>
+                    <!-- Item content -->
+                    <Grid ColumnDefinitions="*,18" Margin="4,10,12,10">
 
-                        <!-- Item content; left margin grows 16px per nesting depth level -->
-                        <Grid ColumnDefinitions="*,18"
-                              Margin="{Binding DepthMargin}">
+                        <!-- Title and date -->
+                        <StackPanel Grid.Column="0" Spacing="3">
+                            <TextBlock Text="{Binding Title}"
+                                       FontSize="13"
+                                       Foreground="White"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxLines="1"/>
+                            <TextBlock Text="{Binding FormattedDate}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource SidebarSecondaryFg}"/>
+                        </StackPanel>
 
-                            <!-- Title and date -->
-                            <StackPanel Grid.Column="0" Spacing="3">
-                                <TextBlock Text="{Binding Title}"
-                                           FontSize="13"
-                                           Foreground="White"
-                                           TextTrimming="CharacterEllipsis"
-                                           MaxLines="1"/>
-                                <TextBlock Text="{Binding FormattedDate}"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource SidebarSecondaryFg}"/>
-                            </StackPanel>
+                        <!-- Session status icon -->
+                        <Panel Grid.Column="1" VerticalAlignment="Center" Width="18">
 
-                            <!-- Session status icon -->
-                            <Panel Grid.Column="1" VerticalAlignment="Center" Width="18">
+                            <!-- Loading: spinning star; ✳ (U+2733) is symmetric on all axes -->
+                            <TextBlock Classes="icon loadingSpin"
+                                       Text="✳"
+                                       IsVisible="{Binding IsLoadingIcon}"
+                                       Classes.loadingSpin="{Binding IsLoadingIcon}"
+                                       Foreground="White"
+                                       FontSize="13"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
 
-                                <!-- Loading: spinning star; ✳ (U+2733) is symmetric on all axes -->
-                                <TextBlock Classes="icon loadingSpin"
-                                           Text="✳"
-                                           IsVisible="{Binding IsLoadingIcon}"
-                                           Classes.loadingSpin="{Binding IsLoadingIcon}"
-                                           Foreground="White"
-                                           FontSize="13"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                            <!-- Paused; ∥ (U+2225) — double vertical line -->
+                            <TextBlock Classes="icon"
+                                       Text="∥"
+                                       IsVisible="{Binding IsPausedIcon}"
+                                       Foreground="White"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
 
-                                <!-- Paused; ∥ (U+2225) — double vertical line -->
-                                <TextBlock Classes="icon"
-                                           Text="∥"
-                                           IsVisible="{Binding IsPausedIcon}"
-                                           Foreground="White"
-                                           FontSize="11"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                            <!-- Question: awaiting tool-call approval -->
+                            <TextBlock Text="?"
+                                       IsVisible="{Binding IsQuestionIcon}"
+                                       Classes.questionPulse="{Binding IsQuestionIcon}"
+                                       Foreground="White"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
 
-                                <!-- Question: awaiting tool-call approval -->
-                                <TextBlock Text="?"
-                                           IsVisible="{Binding IsQuestionIcon}"
-                                           Classes.questionPulse="{Binding IsQuestionIcon}"
-                                           Foreground="White"
-                                           FontSize="13"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-
-                                <!-- Error; ⚠ in Segoe UI Symbol — monochrome -->
-                                <TextBlock Classes="icon"
-                                           Text="⚠"
-                                           IsVisible="{Binding IsErrorIcon}"
-                                           Foreground="White"
-                                           FontSize="11"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Panel>
-                        </Grid>
-                    </Panel>
-                </Button>
-
-                <!-- Children (rendered recursively via the same DataTemplate) -->
-                <ItemsControl ItemsSource="{Binding Children}"
-                              IsVisible="{Binding HasChildren}"/>
-
-            </StackPanel>
-        </DataTemplate>
+                            <!-- Error; ⚠ in Segoe UI Symbol — monochrome -->
+                            <TextBlock Classes="icon"
+                                       Text="⚠"
+                                       IsVisible="{Binding IsErrorIcon}"
+                                       Foreground="White"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Panel>
+                    </Grid>
+                </Panel>
+            </Button>
+        </TreeDataTemplate>
     </UserControl.DataTemplates>
 
     <Grid RowDefinitions="Auto,*,Auto">
@@ -127,7 +116,43 @@
                            Margin="15,20"
                            IsVisible="{Binding !Conversations.Count}"/>
 
-                <ItemsControl ItemsSource="{Binding Conversations}"/>
+                <!--
+                    TreeView renders the conversation hierarchy with automatic indentation.
+                    Each nesting level is indented by the expander toggle button width (≈16 px).
+                    All items start expanded. TreeViewItem chrome is neutralized so our
+                    custom Button layers (active/selected/hover) control all visual feedback.
+                -->
+                <TreeView ItemsSource="{Binding Conversations}"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <TreeView.Styles>
+                        <!-- Start all nodes expanded; remove default padding -->
+                        <Style Selector="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="True"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                        <!-- Neutralize Fluent theme hover/selection backgrounds on the layout root -->
+                        <Style Selector="TreeViewItem /template/ Border#PART_LayoutRoot">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                        <Style Selector="TreeViewItem:pointerover /template/ Border#PART_LayoutRoot">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                        <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                        <Style Selector="TreeViewItem:pressed /template/ Border#PART_LayoutRoot">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                        <Style Selector="TreeViewItem:selected:pointerover /template/ Border#PART_LayoutRoot">
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </TreeView.Styles>
+                </TreeView>
             </StackPanel>
         </ScrollViewer>
 
