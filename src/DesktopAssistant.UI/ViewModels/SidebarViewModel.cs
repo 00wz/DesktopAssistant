@@ -45,10 +45,16 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
     public Func<Task>? OnSettingsRequested { get; set; }
 
     /// <summary>
-    /// Root-level conversations. Children are accessed via
+    /// Root-level conversations (tree structure). Children are accessed via
     /// <see cref="ConversationListItemViewModel.Children"/> for each item.
     /// </summary>
     public ObservableCollection<ConversationListItemViewModel> Conversations { get; } = new();
+
+    /// <summary>
+    /// Flat ordered list of currently visible conversations, respecting the expanded/collapsed
+    /// state of each node. Bound directly to the sidebar ItemsControl.
+    /// </summary>
+    public ObservableCollection<ConversationListItemViewModel> FlatConversations { get; } = new();
 
     public SidebarViewModel(
         IServiceScopeFactory scopeFactory,
@@ -126,6 +132,9 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
             if (_selectedId.HasValue && _index.TryGetValue(_selectedId.Value, out var selected))
                 selected.IsSelected = true;
 
+            // ── Pass 5: build the flat visible list ───────────────────────────
+            RebuildFlatList();
+
             _logger.LogDebug("Loaded {Count} conversations ({Roots} roots)", _index.Count, Conversations.Count);
         }
         catch (Exception ex)
@@ -150,7 +159,37 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
         _sessionService.SessionReleased -= OnSessionReleased;
     }
 
+    // ── Flat list management ──────────────────────────────────────────────────
+
+    /// <summary>
+    /// Rebuilds <see cref="FlatConversations"/> from the tree, honouring each node's
+    /// <see cref="ConversationListItemViewModel.IsExpanded"/> state.
+    /// </summary>
+    private void RebuildFlatList()
+    {
+        FlatConversations.Clear();
+        foreach (var root in Conversations)
+            AddVisible(root, depth: 0);
+    }
+
+    private void AddVisible(ConversationListItemViewModel item, int depth)
+    {
+        item.Depth = depth;
+        FlatConversations.Add(item);
+        if (item.IsExpanded)
+            foreach (var child in item.Children)
+                AddVisible(child, depth + 1);
+    }
+
     // ── Commands ─────────────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void ToggleExpand(ConversationListItemViewModel? item)
+    {
+        if (item is null) return;
+        item.IsExpanded = !item.IsExpanded;
+        RebuildFlatList();
+    }
 
     [RelayCommand]
     private async Task OpenConversationAsync(ConversationListItemViewModel? item)

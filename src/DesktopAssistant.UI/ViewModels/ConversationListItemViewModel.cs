@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using DesktopAssistant.Application.Dtos;
@@ -43,6 +44,29 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
     /// <summary>Child conversations nested under this one.</summary>
     public ObservableCollection<ConversationListItemViewModel> Children { get; } = new();
 
+    // ── Tree / flat-list layout ───────────────────────────────────────────────
+
+    /// <summary>Nesting depth (0 = root). Set by SidebarViewModel when building the flat list.</summary>
+    public int Depth { get; internal set; }
+
+    /// <summary>Left indent in device-independent pixels (Depth × 16).</summary>
+    public double IndentWidth => Depth * 16.0;
+
+    /// <summary>Left margin for indenting content inside a full-width Panel button.</summary>
+    public Thickness IndentMargin => new Thickness(IndentWidth, 0, 0, 0);
+
+    /// <summary>True when this item has child conversations.</summary>
+    public bool HasChildren => Children.Count > 0;
+
+    /// <summary>True when the item's children are visible in the flat list.</summary>
+    [ObservableProperty]
+    private bool _isExpanded = true;
+
+    /// <summary>Chevron glyph that reflects the current expanded/collapsed state.</summary>
+    public string ExpanderGlyph => IsExpanded ? "▾" : "▸";
+
+    // ── Session state ─────────────────────────────────────────────────────────
+
     /// <summary>True if an active <see cref="IConversationSession"/> exists for this conversation.</summary>
     [ObservableProperty]
     private bool _isActive;
@@ -60,7 +84,7 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
     [ObservableProperty]
     private ConversationState _sessionState = ConversationState.LastMessageIsAssistant;
 
-    // ── Computed icons — direct binding in XAML ───────────────────────────────
+    // ── Computed status icons — direct binding in XAML ────────────────────────
 
     public bool IsLoadingIcon  => IsActive && (IsRunning || IsExecutingTools);
 
@@ -127,7 +151,9 @@ public partial class ConversationListItemViewModel : ObservableObject, IDisposab
         }
     }
 
-    // Recompute derived icon properties whenever any dependent field changes
+    partial void OnIsExpandedChanged(bool value)
+        => OnPropertyChanged(nameof(ExpanderGlyph));
+
     partial void OnIsActiveChanged(bool value)             => NotifyIconProperties();
     partial void OnIsRunningChanged(bool value)            => NotifyIconProperties();
     partial void OnIsExecutingToolsChanged(bool value)     => NotifyIconProperties();

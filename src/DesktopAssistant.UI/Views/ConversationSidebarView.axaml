@@ -7,168 +7,162 @@
              x:Class="DesktopAssistant.UI.Views.ConversationSidebarView"
              x:DataType="vm:SidebarViewModel">
 
-    <UserControl.DataTemplates>
-        <!--
-            TreeDataTemplate for ConversationListItemViewModel.
-            ItemsSource="{Binding Children}" tells TreeView where to find child nodes.
-            TreeView handles indentation per depth level automatically.
-        -->
-        <TreeDataTemplate DataType="vm:ConversationListItemViewModel"
-                          ItemsSource="{Binding Children}">
-            <Button Classes="convItem"
-                    Command="{Binding $parent[UserControl].((vm:SidebarViewModel)DataContext).OpenConversationCommand}"
-                    CommandParameter="{Binding}">
-                <Panel Background="Transparent">
-                    <!--
-                        Background layers (bottom to top):
-                        1. Active session   — dark-grey accent
-                        2. Selected         — blue (overlaps active)
-                        3. Hover            — semi-transparent white overlay
-                    -->
-                    <Border Background="{DynamicResource SidebarItemActiveBg}"
-                            IsVisible="{Binding IsActive}"/>
-                    <Border Background="{DynamicResource SidebarItemSelectedBg}"
-                            IsVisible="{Binding IsSelected}"/>
-                    <Border Background="{DynamicResource SidebarItemHoverOverlay}"
-                            IsVisible="{Binding $parent[Button].IsPointerOver}"/>
+   <Grid RowDefinitions="Auto,*,Auto">
 
-                    <!-- Item content -->
-                    <Grid ColumnDefinitions="*,18" Margin="4,10,12,10">
+       <!-- "New Chat" button (top) -->
+       <Border Grid.Row="0" BorderBrush="{DynamicResource ChatHeaderBorderBrush}" BorderThickness="0,0,0,1">
+           <Button Classes="sideBtn"
+                   Command="{Binding CreateNewChatCommand}"
+                   ToolTip.Tip="{DynamicResource Sidebar.NewChat.Tooltip}">
+               <StackPanel Orientation="Horizontal" Spacing="10">
+                   <TextBlock Classes="icon" Text="+" FontSize="18" VerticalAlignment="Center"
+                              Foreground="{DynamicResource SidebarFg}"/>
+                   <TextBlock Text="{DynamicResource Sidebar.NewChat}" FontSize="13" VerticalAlignment="Center"/>
+               </StackPanel>
+           </Button>
+       </Border>
 
-                        <!-- Title and date -->
-                        <StackPanel Grid.Column="0" Spacing="3">
-                            <TextBlock Text="{Binding Title}"
-                                       FontSize="13"
-                                       Foreground="White"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxLines="1"/>
-                            <TextBlock Text="{Binding FormattedDate}"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource SidebarSecondaryFg}"/>
-                        </StackPanel>
+       <!-- Conversation list (flat, with manual indentation) -->
+       <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+           <StackPanel>
+               <TextBlock Text="{DynamicResource Sidebar.NoConversations}"
+                          Foreground="{DynamicResource SidebarSecondaryFg}"
+                          Margin="15,20"
+                          IsVisible="{Binding !FlatConversations.Count}"/>
 
-                        <!-- Session status icon -->
-                        <Panel Grid.Column="1" VerticalAlignment="Center" Width="18">
+               <!--
+                   Each row is a Panel with two sibling buttons (overlay pattern).
+                   The full-width convItem button is the base layer — handles OpenConversationCommand
+                   anywhere on the row. The convExpander button is overlaid on top, left-aligned,
+                   and only visible when HasChildren is true. When not visible it is non-hit-testable,
+                   so clicks in that area fall through to the base button — no dead zones.
+               -->
+               <ItemsControl ItemsSource="{Binding FlatConversations}">
+                   <ItemsControl.ItemTemplate>
+                       <DataTemplate DataType="vm:ConversationListItemViewModel">
 
-                            <!-- Loading: spinning star; ✳ (U+2733) is symmetric on all axes -->
-                            <TextBlock Classes="icon loadingSpin"
-                                       Text="✳"
-                                       IsVisible="{Binding IsLoadingIcon}"
-                                       Classes.loadingSpin="{Binding IsLoadingIcon}"
-                                       Foreground="White"
-                                       FontSize="13"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                           <Panel Background="Transparent">
 
-                            <!-- Paused; ∥ (U+2225) — double vertical line -->
-                            <TextBlock Classes="icon"
-                                       Text="∥"
-                                       IsVisible="{Binding IsPausedIcon}"
-                                       Foreground="White"
-                                       FontSize="11"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                               <!-- ── Background layers (full width, non-interactive) ── -->
+                               <Border Background="{DynamicResource SidebarItemActiveBg}"
+                                       IsVisible="{Binding IsActive}"
+                                       IsHitTestVisible="False"/>
+                               <Border Background="{DynamicResource SidebarItemSelectedBg}"
+                                       IsVisible="{Binding IsSelected}"
+                                       IsHitTestVisible="False"/>
+                               <Border Background="{DynamicResource SidebarItemHoverOverlay}"
+                                       IsVisible="{Binding $parent[Panel].IsPointerOver}"
+                                       IsHitTestVisible="False"/>
+                               <!-- Left accent bar: 3 px, visible when selected -->
+                               <Border Width="3" HorizontalAlignment="Left"
+                                       Background="{DynamicResource SidebarItemSelectedAccent}"
+                                       IsVisible="{Binding IsSelected}"
+                                       IsHitTestVisible="False"/>
 
-                            <!-- Question: awaiting tool-call approval -->
-                            <TextBlock Text="?"
-                                       IsVisible="{Binding IsQuestionIcon}"
-                                       Classes.questionPulse="{Binding IsQuestionIcon}"
-                                       Foreground="White"
-                                       FontSize="13"
-                                       FontWeight="Bold"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                               <!-- Base layer: full-width open button -->
+                               <Button Classes="convItem"
+                                       HorizontalAlignment="Stretch"
+                                       Command="{Binding $parent[UserControl].((vm:SidebarViewModel)DataContext).OpenConversationCommand}"
+                                       CommandParameter="{Binding}">
+                                   <Grid ColumnDefinitions="Auto,*" Margin="{Binding IndentMargin}">
 
-                            <!-- Error; ⚠ in Segoe UI Symbol — monochrome -->
-                            <TextBlock Classes="icon"
-                                       Text="⚠"
-                                       IsVisible="{Binding IsErrorIcon}"
-                                       Foreground="White"
-                                       FontSize="11"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
-                        </Panel>
-                    </Grid>
-                </Panel>
-            </Button>
-        </TreeDataTemplate>
-    </UserControl.DataTemplates>
+                                       <!-- 20 px spacer so title aligns past the expander area -->
+                                       <Border Grid.Column="0" Width="20"/>
 
-    <Grid RowDefinitions="Auto,*,Auto">
+                                       <!-- Title, date, status icon -->
+                                       <Grid Grid.Column="1" ColumnDefinitions="*,18" Margin="4,9,12,9">
 
-        <!-- "New Chat" button (top) -->
-        <Button Grid.Row="0"
-                Classes="sideBtn"
-                Command="{Binding CreateNewChatCommand}"
-                ToolTip.Tip="{DynamicResource Sidebar.NewChat.Tooltip}">
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock Classes="icon" Text="+" FontSize="18" VerticalAlignment="Center"
-                           Foreground="{DynamicResource SidebarFg}"/>
-                <TextBlock Text="{DynamicResource Sidebar.NewChat}" FontSize="13" VerticalAlignment="Center"/>
-            </StackPanel>
-        </Button>
+                                           <StackPanel Grid.Column="0" Spacing="2">
+                                               <TextBlock Text="{Binding Title}"
+                                                          FontSize="13"
+                                                          Foreground="{DynamicResource SidebarFg}"
+                                                          TextTrimming="CharacterEllipsis"
+                                                          MaxLines="1"/>
+                                               <TextBlock Text="{Binding FormattedDate}"
+                                                          FontSize="11"
+                                                          Foreground="{DynamicResource SidebarSecondaryFg}"/>
+                                           </StackPanel>
 
-        <!-- Conversation list -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <TextBlock Text="{DynamicResource Sidebar.NoConversations}"
-                           Foreground="{DynamicResource SidebarSecondaryFg}"
-                           Margin="15,20"
-                           IsVisible="{Binding !Conversations.Count}"/>
+                                           <!-- Session status icon -->
+                                           <Panel Grid.Column="1" VerticalAlignment="Center" Width="18">
 
-                <!--
-                    TreeView renders the conversation hierarchy with automatic indentation.
-                    Each nesting level is indented by the expander toggle button width (≈16 px).
-                    All items start expanded. TreeViewItem chrome is neutralized so our
-                    custom Button layers (active/selected/hover) control all visual feedback.
-                -->
-                <TreeView ItemsSource="{Binding Conversations}"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                          ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                    <TreeView.Styles>
-                        <!-- Start all nodes expanded; remove default padding -->
-                        <Style Selector="TreeViewItem">
-                            <Setter Property="IsExpanded" Value="True"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Margin" Value="0"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                        <!-- Neutralize Fluent theme hover/selection backgrounds on the layout root -->
-                        <Style Selector="TreeViewItem /template/ Border#PART_LayoutRoot">
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                        <Style Selector="TreeViewItem:pointerover /template/ Border#PART_LayoutRoot">
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                        <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                        <Style Selector="TreeViewItem:pressed /template/ Border#PART_LayoutRoot">
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                        <Style Selector="TreeViewItem:selected:pointerover /template/ Border#PART_LayoutRoot">
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                    </TreeView.Styles>
-                </TreeView>
-            </StackPanel>
-        </ScrollViewer>
+                                               <!-- Loading: spinning star -->
+                                               <TextBlock Classes="icon loadingSpin"
+                                                          Text="✳"
+                                                          IsVisible="{Binding IsLoadingIcon}"
+                                                          Classes.loadingSpin="{Binding IsLoadingIcon}"
+                                                          Foreground="{DynamicResource SidebarIconLoadingFg}"
+                                                          FontSize="13"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
 
-        <!-- "Settings" button (bottom) -->
-        <Border Grid.Row="2" BorderBrush="{DynamicResource SidebarButtonHoverBg}" BorderThickness="0,1,0,0">
-            <Button Classes="sideBtn"
-                    Command="{Binding OpenSettingsCommand}"
-                    ToolTip.Tip="{DynamicResource Sidebar.Settings.Tooltip}">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Classes="icon" Text="⚙" FontSize="14" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SidebarIconFg}"/>
-                    <TextBlock Text="{DynamicResource Sidebar.Settings}" FontSize="13" VerticalAlignment="Center"
-                               Foreground="{DynamicResource SidebarIconFg}"/>
-                </StackPanel>
-            </Button>
-        </Border>
+                                               <!-- Paused; ∥ (U+2225) -->
+                                               <TextBlock Classes="icon"
+                                                          Text="∥"
+                                                          IsVisible="{Binding IsPausedIcon}"
+                                                          Foreground="{DynamicResource SidebarIconPausedFg}"
+                                                          FontSize="11"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
 
-    </Grid>
+                                               <!-- Question: awaiting tool-call approval -->
+                                               <TextBlock Text="?"
+                                                          IsVisible="{Binding IsQuestionIcon}"
+                                                          Classes.questionPulse="{Binding IsQuestionIcon}"
+                                                          Foreground="{DynamicResource SidebarIconQuestionFg}"
+                                                          FontSize="13"
+                                                          FontWeight="Bold"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+
+                                               <!-- Error; ⚠ in Segoe UI Symbol -->
+                                               <TextBlock Classes="icon"
+                                                          Text="⚠"
+                                                          IsVisible="{Binding IsErrorIcon}"
+                                                          Foreground="{DynamicResource SidebarIconErrorFg}"
+                                                          FontSize="11"
+                                                          HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+                                           </Panel>
+                                       </Grid>
+                                   </Grid>
+                               </Button>
+
+                               <!-- Overlay: expander button, only when HasChildren -->
+                               <Button Classes="convExpander"
+                                       Width="20"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Stretch"
+                                       Margin="{Binding IndentMargin}"
+                                       IsVisible="{Binding HasChildren}"
+                                       Command="{Binding $parent[UserControl].((vm:SidebarViewModel)DataContext).ToggleExpandCommand}"
+                                       CommandParameter="{Binding}">
+                                   <TextBlock Classes="icon"
+                                              Text="{Binding ExpanderGlyph}"
+                                              FontSize="18"
+                                              Foreground="{DynamicResource SidebarSecondaryFg}"/>
+                               </Button>
+
+                           </Panel>
+                       </DataTemplate>
+                   </ItemsControl.ItemTemplate>
+               </ItemsControl>
+           </StackPanel>
+       </ScrollViewer>
+
+       <!-- "Settings" button (bottom) -->
+       <Border Grid.Row="2" BorderBrush="{DynamicResource ChatHeaderBorderBrush}" BorderThickness="0,1,0,0">
+           <Button Classes="sideBtn"
+                   Command="{Binding OpenSettingsCommand}"
+                   ToolTip.Tip="{DynamicResource Sidebar.Settings.Tooltip}">
+               <StackPanel Orientation="Horizontal" Spacing="10">
+                   <TextBlock Classes="icon" Text="⚙" FontSize="14" VerticalAlignment="Center"
+                              Foreground="{DynamicResource SidebarIconFg}"/>
+                   <TextBlock Text="{DynamicResource Sidebar.Settings}" FontSize="13" VerticalAlignment="Center"
+                              Foreground="{DynamicResource SidebarIconFg}"/>
+               </StackPanel>
+           </Button>
+       </Border>
+
+   </Grid>
 </UserControl>

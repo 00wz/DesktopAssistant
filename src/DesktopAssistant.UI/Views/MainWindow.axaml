@@ -59,7 +59,10 @@
         <Grid Grid.Row="1" ColumnDefinitions="260,*">
 
             <!-- Sidebar (always visible) -->
-            <Border Grid.Column="0" Background="{DynamicResource SidebarBg}">
+            <Border Grid.Column="0"
+                    Background="{DynamicResource SidebarBg}"
+                    BorderBrush="{DynamicResource ChatHeaderBorderBrush}"
+                    BorderThickness="0,0,1,0">
                 <views:ConversationSidebarView DataContext="{Binding Sidebar}"/>
             </Border>
 

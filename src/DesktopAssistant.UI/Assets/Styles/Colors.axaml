@@ -14,15 +14,21 @@
     <SolidColorBrush x:Key="ToolResultFg"               Color="#226622"/>
 
     <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
-    <SolidColorBrush x:Key="SidebarBg"                  Color="#2D2D30"/>
-    <SolidColorBrush x:Key="SidebarItemActiveBg"        Color="#353540"/>
-    <SolidColorBrush x:Key="SidebarItemSelectedBg"      Color="#1F3D5A"/>
-    <SolidColorBrush x:Key="SidebarItemHoverOverlay"    Color="#22FFFFFF"/>
-    <SolidColorBrush x:Key="SidebarFg"                  Color="#CCCCCC"/>
-    <SolidColorBrush x:Key="SidebarSecondaryFg"         Color="#888888"/>
-    <SolidColorBrush x:Key="SidebarButtonHoverBg"       Color="#3A3A3F"/>
-    <SolidColorBrush x:Key="SidebarButtonPressedBg"     Color="#444449"/>
-    <SolidColorBrush x:Key="SidebarIconFg"              Color="#AAAAAA"/>
+    <SolidColorBrush x:Key="SidebarBg"                  Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="SidebarItemActiveBg"        Color="#E8F0F8"/>
+    <SolidColorBrush x:Key="SidebarItemSelectedBg"      Color="#D8E8F5"/>
+    <SolidColorBrush x:Key="SidebarItemSelectedAccent"  Color="#007ACC"/>
+    <SolidColorBrush x:Key="SidebarItemHoverOverlay"    Color="#12000000"/>
+    <SolidColorBrush x:Key="SidebarFg"                  Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="SidebarSecondaryFg"         Color="#777777"/>
+    <SolidColorBrush x:Key="SidebarButtonHoverBg"       Color="#E2E2E2"/>
+    <SolidColorBrush x:Key="SidebarButtonPressedBg"     Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="SidebarIconFg"              Color="#555555"/>
+    <!-- Status icon foregrounds (semantic colours on light background) -->
+    <SolidColorBrush x:Key="SidebarIconLoadingFg"       Color="#007ACC"/>
+    <SolidColorBrush x:Key="SidebarIconPausedFg"        Color="#888888"/>
+    <SolidColorBrush x:Key="SidebarIconQuestionFg"      Color="#D97706"/>
+    <SolidColorBrush x:Key="SidebarIconErrorFg"         Color="#DC2626"/>
 
     <!-- ── Title bar ───────────────────────────────────────────────────────── -->
     <SolidColorBrush x:Key="TitleBarBg"                 Color="#F0F0F0"/>
