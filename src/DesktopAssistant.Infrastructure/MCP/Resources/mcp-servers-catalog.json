@@ -71,6 +71,13 @@
       "tags": [ "search", "semantic", "web", "ai" ]
     },
     {
+      "id": "office-word",
+      "name": "Office Word (DOCX)",
+      "description": "Создание, чтение и редактирование Microsoft Word (.docx) документов. Поддерживает заголовки, параграфы, таблицы, списки, изображения, форматирование текста (шрифт, цвет, размер, выравнивание), колонтитулы и стили.",
+      "githubUrl": "https://github.com/GongRzhe/Office-Word-MCP-Server",
+      "tags": [ "docx", "word", "documents", "office", "formatting", "tables" ]
+    },
+    {
       "id": "sequential-thinking",
       "name": "Sequential Thinking",
       "description": "A tool for step-by-step reasoning. Helps break complex tasks into steps.",

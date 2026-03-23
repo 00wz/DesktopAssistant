@@ -4,6 +4,11 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 
 ---
 
+<!-- SCREENSHOT: main UI overview -->
+![DesktopAssistant UI](docs/media/overview.png)
+
+---
+
 ## Features
 
 ### Conversations
@@ -11,11 +16,17 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 - **Conversation branching** — fork any message to explore alternative responses, similar to ChatGPT's branching model
 - **Manual summarization** — right-click any message and summarize the preceding context; a `SummaryNode` is inserted into the message tree, keeping the context window lean without losing history
 
+<!-- GIF: branching + summarization demo -->
+![Conversation branching](docs/media/branching.gif)
+
 ### Sub-Agents
 - **Recursive sub-agent creation** — enable per conversation; the agent can then spawn child agents to delegate subtasks
 - **Configurable sub-agents** — when creating a sub-agent the parent specifies its assistant profile (model, endpoint, temperature), system prompt, and whether the sub-agent can spawn its own sub-agents
 - **Task assignment to existing sub-agents** — the parent agent can send new tasks to already-created sub-agents, not just create new ones
 - **Conversation tree** — each sub-agent runs as a linked conversation visible in the sidebar, showing its status and relationship to the parent
+
+<!-- GIF: sub-agent creation and task delegation -->
+![Sub-agents](docs/media/subagents.gif)
 
 ### AI & LLM
 - **OpenAI-compatible providers** — works with OpenAI, Azure OpenAI, local models via Ollama, LM Studio, or any OpenAI-compatible endpoint
@@ -25,17 +36,13 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 - **Streaming responses** — real-time token streaming
 
 ### MCP (Model Context Protocol)
-- **Install any MCP server at runtime** — without restarting the application
-- **Built-in server catalog** — curated list of popular MCP servers:
-  - Tavily Search, Exa Search
-  - Filesystem, Git, Fetch
-  - Memory (knowledge graph)
-  - Playwright Browser automation
-  - Qdrant vector database
-  - MySQL, PostgreSQL, SQLite
-  - Kubernetes, Docker
-  - Sequential Thinking, and more
+- **Agent-driven installation** — the agent has a built-in set of tools that let it install and configure MCP servers on its own, without user involvement
+- **Install from GitHub** — the agent can install any MCP server directly from a GitHub repository URL
+- **Built-in server catalog** — a curated list of popular servers is available to the agent as a knowledge base (Tavily Search, Exa Search, Filesystem, Git, Fetch, Memory, Playwright, Qdrant, MySQL/PostgreSQL/SQLite, Kubernetes, Docker, Sequential Thinking, and more)
+- **Manual management** — users can install and manage servers directly by editing the config file
+- **No restart required** — servers connect at runtime; new tools become available immediately
 - **Per-tool auto-approval** — configure which tools run automatically without confirmation prompts
+
 
 ### Security & Storage
 - **API keys via Windows DPAPI** — credentials encrypted at rest, never stored in plain text
@@ -155,6 +162,10 @@ Logging is configured in `appsettings.json` via Serilog. Log files are written t
 | Target Framework | .NET 9 |
 
 ---
+
+## Contributing
+
+Feedback and pull requests are welcome. For major changes, please open an issue first.
 
 ## License
 
