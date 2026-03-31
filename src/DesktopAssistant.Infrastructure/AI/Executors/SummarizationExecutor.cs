@@ -77,15 +77,50 @@ public class SummarizationExecutor(
             .ToArray();
         var metadata = new SummarizationMetadata(serialized).ToJson();
 
-        // 6. Extract display text from reduced messages (role + content, blank line between)
-        var summaryContent = string.Join("\n\n", reducedMessages
-            .Select(m => $"[{m.Role}]{(string.IsNullOrEmpty(m.Content) ? string.Empty : $"\n{m.Content}")}"));
+        // 6. Extract display text from reduced messages (role + content/tool info, blank line between)
+        var summaryContent = string.Join("\n\n", reducedMessages.Select(FormatMessageForDisplay));
 
         // 7. Inject summary node into the message tree
         var summaryNode = await _conversationService.InjectSummaryNodeAsync(
             conversationId, selectedNodeId, summaryContent, metadata, cancellationToken: cancellationToken);
 
         yield return new SummarizationCompletedDto(summaryNode.Id, selectedNodeId, summaryNode.CreatedAt, summaryContent);
+    }
+
+    private static string FormatMessageForDisplay(ChatMessageContent m)
+    {
+        var parts = new List<string>();
+
+        foreach (var item in m.Items)
+        {
+            switch (item)
+            {
+                case TextContent tc when !string.IsNullOrEmpty(tc.Text):
+                    parts.Add(tc.Text);
+                    break;
+
+                case FunctionCallContent fcc:
+                    var argStr = fcc.Arguments is { Count: > 0 }
+                        ? string.Join(", ", fcc.Arguments.Select(kv => $"{kv.Key}={kv.Value}"))
+                        : string.Empty;
+                    var callName = fcc.PluginName is not null
+                        ? $"{fcc.PluginName}.{fcc.FunctionName}"
+                        : fcc.FunctionName;
+                    parts.Add($"[function_call] {callName}({argStr})");
+                    break;
+
+                case FunctionResultContent frc:
+                    var resultName = frc.PluginName is not null
+                        ? $"{frc.PluginName}.{frc.FunctionName}"
+                        : frc.FunctionName;
+                    var result = frc.Result is string s ? s : frc.Result?.ToString() ?? string.Empty;
+                    parts.Add($"[function_result] {resultName} -> {result}");
+                    break;
+            }
+        }
+
+        var body = parts.Count > 0 ? "\n" + string.Join("\n", parts) : string.Empty;
+        return $"[{m.Role}]{body}";
     }
 
     private async Task<AssistantProfile> ResolveSummarizationProfileAsync(
