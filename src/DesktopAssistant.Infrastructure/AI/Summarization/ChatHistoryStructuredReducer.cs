@@ -13,7 +13,6 @@ namespace DesktopAssistant.Infrastructure.AI.Summarization;
 /// <c>ChatHistorySummarizationReducer</c>, the output is a structured list of
 /// full <see cref="ChatMessageContent"/> objects, not a single summary string.
 /// </summary>
-[Experimental("SKEXP0001")]
 public class ChatHistoryStructuredReducer : IChatHistoryReducer
 {
     /// <summary>
@@ -158,12 +157,10 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     /// </param>
     public ChatHistoryStructuredReducer(
         IChatCompletionService service,
-        int retainedMessageCount,
+        int retainedMessageCount = 0,
         int? thresholdCount = null)
     {
         ArgumentNullException.ThrowIfNull(service);
-        if (retainedMessageCount <= 0)
-            throw new ArgumentOutOfRangeException(nameof(retainedMessageCount), "Retained message count must be greater than zero.");
         if (thresholdCount.HasValue && thresholdCount.Value <= 0)
             throw new ArgumentOutOfRangeException(nameof(thresholdCount), "The reduction threshold length must be greater than zero.");
 
@@ -180,23 +177,22 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
         var systemMessage = chatHistory.FirstOrDefault(m => m.Role == AuthorRole.System);
         bool hasSystemMessage = systemMessage is not null;
 
+        int firstNonSystemIndex = hasSystemMessage ? 1 : 0;
+
         int truncationIndex = LocateSafeReductionIndex(
             chatHistory,
             _retainedMessageCount,
-            _thresholdCount,
-            hasSystemMessage: hasSystemMessage);
+            _thresholdCount);
 
-        if (truncationIndex < 0)
+        if (truncationIndex < firstNonSystemIndex)
             return null;
-
-        int firstNonSystemIndex = hasSystemMessage ? 1 : 0;
 
         try
         {
             // Build LLM request history: compaction prompt + messages to compact
             var llmHistory = new ChatHistory();
             llmHistory.AddSystemMessage(ReduceSystemPrompt);
-            for (int i = firstNonSystemIndex; i < truncationIndex; i++)
+            for (int i = firstNonSystemIndex; i <= truncationIndex; i++)
                 llmHistory.Add(chatHistory[i]);
 
             // Register the submit_history tool and call the LLM
@@ -277,7 +273,7 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
         foreach (var msg in compacted)
             yield return msg;
 
-        for (int i = truncationIndex; i < original.Count; i++)
+        for (int i = truncationIndex + 1; i < original.Count; i++)
             yield return original[i];
     }
 
@@ -350,44 +346,55 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     }
 
     /// <summary>
-    /// Reproduces the logic of the internal <c>ChatHistoryReducerExtensions.LocateSafeReductionIndex</c>
-    /// (unavailable from external assemblies).
+    /// Returns the index of the last message that should be included in the compaction range,
+    /// ensuring that no function_call/function_result pair is split across the compaction
+    /// boundary and the retained tail.
     /// </summary>
+    /// <param name="chatHistory">The full chat history.</param>
+    /// <param name="retainedMessageCount">
+    /// Number of messages at the tail to keep verbatim. The initial candidate for the last
+    /// compacted message is <c>chatHistory.Count - retainedMessageCount - 1</c>.
+    /// Pass 0 to compact everything (subject to pair-safety adjustments).
+    /// </param>
+    /// <param name="thresholdCount">
+    /// Minimum number of compactable messages required before reduction is triggered.
+    /// Reduction is skipped when <c>chatHistory.Count - retainedMessageCount &lt; thresholdCount</c>.
+    /// </param>
+    /// <returns>
+    /// The index of the last message to include in the compaction range, or -1 if reduction
+    /// should not occur (history too short, or no safe boundary exists).
+    /// </returns>
     private static int LocateSafeReductionIndex(
         IReadOnlyList<ChatMessageContent> chatHistory,
-        int targetCount,
-        int thresholdCount,
-        bool hasSystemMessage = false)
+        int retainedMessageCount,
+        int thresholdCount)
     {
-        targetCount -= hasSystemMessage ? 1 : 0;
-
-        // Threshold index: history must be longer than this for reduction to trigger
-        int thresholdIndex = chatHistory.Count - thresholdCount - targetCount;
-
-        if (thresholdIndex <= 0)
+        // Do not trigger reduction if the number of compactable messages is below the threshold.
+        if (chatHistory.Count - retainedMessageCount < thresholdCount)
             return -1;
 
-        // Start from the desired truncation target and walk back past function-related content
-        int messageIndex = chatHistory.Count - targetCount;
+        // Initial candidate: the last message before the retained tail.
+        int messageIndex = chatHistory.Count - retainedMessageCount - 1;
 
+        // Walk back past any function_result messages so we don't leave an orphaned result
+        // at the end of the compaction range without its corresponding function_call.
         while (messageIndex >= 0)
         {
-            if (!chatHistory[messageIndex].Items.Any(i => i is FunctionCallContent || i is FunctionResultContent))
+            if (!chatHistory[messageIndex].Items.Any(i => i is FunctionResultContent))
                 break;
             --messageIndex;
         }
 
-        int targetIndex = messageIndex;
+        // Guard: entire compactable range was consumed (e.g. all messages are function_result).
+        if (messageIndex < 0)
+            return -1;
 
-        // Prefer a user message as the truncation point for better context cohesion
-        while (messageIndex >= thresholdIndex)
-        {
-            if (chatHistory[messageIndex].Role == AuthorRole.User)
-                return messageIndex;
+        // If the candidate message contains a function_call, its paired function_result is
+        // in the retained tail — step back one more to keep the pair together there.
+        if (chatHistory[messageIndex].Items.Any(i => i is FunctionCallContent))
             --messageIndex;
-        }
 
-        return targetIndex;
+        return messageIndex;
     }
 
     private static KernelFunction CreateSubmitHistoryFn()

@@ -6,6 +6,7 @@ using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Extensions;
 using DesktopAssistant.Infrastructure.AI.Metadata;
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -57,7 +58,7 @@ public class SummarizationExecutor(
         // 3. Create kernel (plain, no agent tools) and reducer
         var kernel = _kernelFactory.Create(profile, apiKey);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-        var reducer = new ChatHistorySummarizationReducer(chatCompletionService, targetCount: 1);
+        var reducer = new ChatHistoryStructuredReducer(chatCompletionService);
 
         yield return new SummarizationStartedDto(selectedNodeId);
 
