@@ -82,7 +82,7 @@ public class HistoryMessageDtoMapper
                     var args = item.Arguments is { Count: > 0 }
                         ? new KernelArguments(
                             item.Arguments.ToDictionary(kv => kv.Key, kv => (object?)kv.Value))
-                        : null;
+                        : new KernelArguments();
                     content.Items.Add(new FunctionCallContent(
                         item.FunctionName ?? string.Empty,
                         item.PluginName,
