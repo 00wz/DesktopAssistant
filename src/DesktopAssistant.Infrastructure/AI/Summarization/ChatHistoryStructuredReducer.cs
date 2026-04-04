@@ -20,31 +20,41 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     /// </summary>
     public const string DefaultReduceSystemPrompt =
         """
-        You are a conversation history compactor. Your sole task is to reduce the
-        token count of the provided conversation history and then submit the result
-        by calling submit_history exactly once.
+        You are a conversation history compactor.
 
-        You have full freedom to choose the best compaction strategy for each part
-        of the history. Depending on the content, you may:
-        - Remove entire messages that are irrelevant or outdated.
-        - Truncate or shorten verbose text within a message, keeping only the
-          essential information (e.g. if an agent read an entire file but only a
-          few lines matter, keep only those lines).
-        - Replace a long chain of messages with a shorter, semantically equivalent
-          chain, as long as all meaning and intent are preserved.
-        - Apply different strategies to different parts of the history within a
-          single compaction pass.
-
-        Hard constraints that must never be violated:
-        - Code, configuration, identifiers, file paths, and any other exact-value
-          data must be preserved verbatim — never paraphrase or approximate them.
+        Hard constraints — never violate these:
+        - Code, configuration, identifiers, file paths, and any other exact-value data
+          must be preserved verbatim. Never paraphrase or approximate them.
         - Every function_call must remain paired with its function_result.
           Never include one without the other.
-        - Every assistant message that contains function_call items must be
-          immediately and consecutively followed by tool messages with the matching
-          function_result for each function_call, in the same order.
+        - Every assistant message that contains function_call items must be immediately
+          and consecutively followed by tool messages with the matching function_result
+          for each function_call, in the same order.
         - Do not reorder messages.
         - Do not invent information that was not in the original history.
+        """;
+
+    /// <summary>
+    /// Default user message appended to the LLM request to trigger compaction.
+    /// </summary>
+    public const string DefaultReduceUserMessage =
+        """
+        Your task is to compact the conversation history above by reducing its token
+        count as much as possible while preserving all information needed to continue
+        the task or conversation seamlessly.
+
+        You have full freedom to choose the best compaction strategy for each part of
+        the history. Depending on the content, you may:
+        - Remove entire messages that are irrelevant or outdated.
+        - Truncate or shorten verbose content within a message, keeping only what
+          matters (e.g. if an agent read an entire file but only a few lines are
+          relevant, keep only those lines in the tool result).
+        - Replace a long chain of messages with a shorter, semantically equivalent
+          chain that preserves all meaning and intent.
+        - Apply different strategies to different parts of the history.
+
+        When done, call submit_history exactly once with the compacted message list.
+        Do not write anything else.
         """;
 
     private const string MessagesJsonSchema =
@@ -140,6 +150,12 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     public string ReduceSystemPrompt { get; init; } = DefaultReduceSystemPrompt;
 
     /// <summary>
+    /// User message appended after the history to trigger compaction.
+    /// Defaults to <see cref="DefaultReduceUserMessage"/>.
+    /// </summary>
+    public string ReduceUserMessage { get; init; } = DefaultReduceUserMessage;
+
+    /// <summary>
     /// Whether to rethrow exceptions that occur during reduction. Defaults to <see langword="true"/>.
     /// </summary>
     public bool FailOnError { get; init; } = true;
@@ -194,6 +210,8 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
             llmHistory.AddSystemMessage(ReduceSystemPrompt);
             for (int i = firstNonSystemIndex; i <= truncationIndex; i++)
                 llmHistory.Add(chatHistory[i]);
+
+            llmHistory.AddUserMessage(ReduceUserMessage);
 
             // Register the submit_history tool and call the LLM
             var kernel = new Microsoft.SemanticKernel.Kernel();
@@ -250,12 +268,13 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
         return obj is ChatHistoryStructuredReducer other &&
                _thresholdCount == other._thresholdCount &&
                _retainedMessageCount == other._retainedMessageCount &&
-               string.Equals(ReduceSystemPrompt, other.ReduceSystemPrompt, StringComparison.Ordinal);
+               string.Equals(ReduceSystemPrompt, other.ReduceSystemPrompt, StringComparison.Ordinal) &&
+               string.Equals(ReduceUserMessage, other.ReduceUserMessage, StringComparison.Ordinal);
     }
 
     /// <inheritdoc/>
     public override int GetHashCode() =>
-        HashCode.Combine(nameof(ChatHistoryStructuredReducer), _thresholdCount, _retainedMessageCount, ReduceSystemPrompt);
+        HashCode.Combine(nameof(ChatHistoryStructuredReducer), _thresholdCount, _retainedMessageCount, ReduceSystemPrompt, ReduceUserMessage);
 
     // -------------------------------------------------------------------------
     // Private helpers
@@ -284,6 +303,7 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     private static void Validate(List<HistoryMessageDto> messages)
     {
         // Rule 1 — every function_call id must have exactly one matching function_result call_id and vice-versa
+        // TODO: remove this rule
         var callIds = messages
             .SelectMany(m => m.Items)
             .Where(i => i.Type == "function_call" && i.Id is not null)
