@@ -92,9 +92,9 @@ public class HistoryMessageDtoMapper
 
                 case "function_result":
                     content.Items.Add(new FunctionResultContent(
-                        item.CallId ?? string.Empty,
-                        item.PluginName,
                         item.FunctionName,
+                        item.PluginName,
+                        item.CallId,
                         item.Result));
                     break;
 
