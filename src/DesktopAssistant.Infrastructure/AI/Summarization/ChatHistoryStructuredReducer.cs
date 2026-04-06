@@ -8,11 +8,16 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Summarization;
 
 /// <summary>
-/// Reduces chat history by sending the messages-to-compact to an LLM that must
-/// call <c>submit_history</c> with the compacted result.  Unlike
-/// <c>ChatHistorySummarizationReducer</c>, the output is a structured list of
-/// full <see cref="ChatMessageContent"/> objects, not a single summary string.
+/// Reduces chat history by sending the messages-to-compact to an LLM that must call
+/// <c>submit_history</c> with the compacted result as a structured list of
+/// <see cref="ChatMessageContent"/> objects.
 /// </summary>
+/// <remarks>
+/// Unlike classic summarizers, this reducer does not guarantee that the result contains fewer
+/// messages than the input — the output is whatever the LLM returns. This means the hysteresis
+/// provided by <c>thresholdCount</c> may not function as intended: if the LLM does not reduce
+/// message count, <see cref="ReduceAsync"/> will trigger on every subsequent call.
+/// </remarks>
 public class ChatHistoryStructuredReducer : IChatHistoryReducer
 {
     /// <summary>
@@ -167,9 +172,10 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     /// sent for compaction.
     /// </param>
     /// <param name="thresholdCount">
-    /// Hysteresis: reduction is not triggered unless the history exceeds
-    /// <paramref name="retainedMessageCount"/> + <paramref name="thresholdCount"/> messages.
-    /// Recommended to avoid calling the LLM on every new message.
+    /// Minimum number of compactable messages (beyond <paramref name="retainedMessageCount"/>)
+    /// required to trigger reduction. Present because <see cref="IChatHistoryReducer"/> bundles
+    /// the trigger decision with the reduction itself; in this implementation it offers only a
+    /// best-effort guard, since there is no guarantee the LLM will reduce message count.
     /// </param>
     public ChatHistoryStructuredReducer(
         IChatCompletionService service,
@@ -177,6 +183,8 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
         int? thresholdCount = null)
     {
         ArgumentNullException.ThrowIfNull(service);
+        if (retainedMessageCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(retainedMessageCount), "Retained message count must be non-negative.");
         if (thresholdCount.HasValue && thresholdCount.Value <= 0)
             throw new ArgumentOutOfRangeException(nameof(thresholdCount), "The reduction threshold length must be greater than zero.");
 
@@ -366,55 +374,33 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     }
 
     /// <summary>
-    /// Returns the index of the last message that should be included in the compaction range,
-    /// ensuring that no function_call/function_result pair is split across the compaction
-    /// boundary and the retained tail.
+    /// Returns the index of the last message to include in the compaction range: the rightmost
+    /// <see cref="AuthorRole.Assistant"/> message without <see cref="FunctionCallContent"/> that
+    /// fits before the retained tail. Returns -1 if no such position exists or the threshold is
+    /// not met. Ending on an assistant message keeps function_call/function_result pairs intact
+    /// and satisfies strict models (Gemini, Mistral) that disallow a <c>tool → user</c> transition.
     /// </summary>
-    /// <param name="chatHistory">The full chat history.</param>
-    /// <param name="retainedMessageCount">
-    /// Number of messages at the tail to keep verbatim. The initial candidate for the last
-    /// compacted message is <c>chatHistory.Count - retainedMessageCount - 1</c>.
-    /// Pass 0 to compact everything (subject to pair-safety adjustments).
-    /// </param>
-    /// <param name="thresholdCount">
-    /// Minimum number of compactable messages required before reduction is triggered.
-    /// Reduction is skipped when <c>chatHistory.Count - retainedMessageCount &lt; thresholdCount</c>.
-    /// </param>
-    /// <returns>
-    /// The index of the last message to include in the compaction range, or -1 if reduction
-    /// should not occur (history too short, or no safe boundary exists).
-    /// </returns>
     private static int LocateSafeReductionIndex(
         IReadOnlyList<ChatMessageContent> chatHistory,
         int retainedMessageCount,
         int thresholdCount)
     {
-        // Do not trigger reduction if the number of compactable messages is below the threshold.
         if (chatHistory.Count - retainedMessageCount < thresholdCount)
             return -1;
 
-        // Initial candidate: the last message before the retained tail.
         int messageIndex = chatHistory.Count - retainedMessageCount - 1;
 
-        // Walk back past any function_result messages so we don't leave an orphaned result
-        // at the end of the compaction range without its corresponding function_call.
         while (messageIndex >= 0)
         {
-            if (!chatHistory[messageIndex].Items.Any(i => i is FunctionResultContent))
-                break;
+            var msg = chatHistory[messageIndex];
+            if (msg.Role == AuthorRole.Assistant &&
+                !msg.Items.Any(i => i is FunctionCallContent))
+                return messageIndex;
+
             --messageIndex;
         }
 
-        // Guard: entire compactable range was consumed (e.g. all messages are function_result).
-        if (messageIndex < 0)
-            return -1;
-
-        // If the candidate message contains a function_call, its paired function_result is
-        // in the retained tail — step back one more to keep the pair together there.
-        if (chatHistory[messageIndex].Items.Any(i => i is FunctionCallContent))
-            --messageIndex;
-
-        return messageIndex;
+        return -1;
     }
 
     private static KernelFunction CreateSubmitHistoryFn()

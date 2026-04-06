@@ -117,6 +117,11 @@ public class SubagentService : ISubagentService
             conversationId,
             _ => new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously));
 
+        // TODO: Before sending a message to a sub-agent that completed its task via complete_task,
+        // we need to either replace the complete_task tool call and its result in the sub-agent's
+        // chat history with a regular assistant message, or artificially append an assistant message
+        // to the end of the sub-agent's dialog to ensure compatibility with models that require
+        // strict role alternation (such as Gemini, Mistral).
         _ = session.SendMessageAsync(message, ct: CancellationToken.None);
 
         try
