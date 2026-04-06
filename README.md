@@ -15,6 +15,7 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 - **Multiple simultaneous chats** — open as many conversations as needed, each running independently
 - **Conversation branching** — fork any message to explore alternative responses, similar to ChatGPT's branching model
 - **Manual summarization** — right-click any message and summarize the preceding context; a `SummaryNode` is inserted into the message tree, keeping the context window lean without losing history
+- **Structured history reduction** — uses a custom `IChatHistoryReducer` that asks the LLM to compact conversation history via a structured `submit_history` tool call, preserving roles, function calls, and function results as proper `ChatMessageContent` objects (compatible with agents using `FunctionChoiceBehavior.Required`)
 
 <!-- GIF: branching + summarization demo -->
 ![Conversation branching](docs/media/branching.gif)
@@ -86,7 +87,7 @@ Key infrastructure components:
 - `SubagentPlugin` — SK plugin exposing `create_subagent`, `send_message_to_subagent`, `list_subagents` tools to the LLM
 - `DpapiCredentialStore` — Windows DPAPI credential store
 - `AvailableToolsService` — aggregates static SK plugins and dynamic MCP tools
-- `SummarizationExecutor` — uses SK's `ChatHistorySummarizationReducer`
+- `SummarizationExecutor` — orchestrates history compaction via `ChatHistoryStructuredReducer` (see [`src/DesktopAssistant.Infrastructure/AI/Summarization/`](src/DesktopAssistant.Infrastructure/AI/Summarization/))
 
 ---
 
