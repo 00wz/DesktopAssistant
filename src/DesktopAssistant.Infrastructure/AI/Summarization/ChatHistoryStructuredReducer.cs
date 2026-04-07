@@ -310,19 +310,38 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
     /// <exception cref="InvalidOperationException">Thrown when a structural rule is violated.</exception>
     private static void Validate(List<HistoryMessageDto> messages)
     {
-        // Rule 1 — every function_call id must have exactly one matching function_result call_id and vice-versa
-        // TODO: remove this rule
-        var callIds = messages
+        // Rule 1 — every function_call id must be unique, every function_result call_id must be unique,
+        //          and the two sets must be equal (1-to-1 correspondence).
+        //
+        // Intentionally collect as lists first so duplicates are detectable.
+        // ToHashSet() would collapse ["a","b","a"] → {"a","b"} and silently pass invalid input.
+        var callIdList = messages
             .SelectMany(m => m.Items)
             .Where(i => i.Type == "function_call" && i.Id is not null)
             .Select(i => i.Id!)
-            .ToHashSet();
+            .ToList();
 
-        var resultCallIds = messages
+        var resultCallIdList = messages
             .SelectMany(m => m.Items)
             .Where(i => i.Type == "function_result" && i.CallId is not null)
             .Select(i => i.CallId!)
-            .ToHashSet();
+            .ToList();
+
+        var duplicateCallIds = callIdList
+            .GroupBy(id => id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicateCallIds.Count > 0)
+            throw new InvalidOperationException(
+                $"Duplicate function_call id(s): {string.Join(", ", duplicateCallIds)}");
+
+        var duplicateResultCallIds = resultCallIdList
+            .GroupBy(id => id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicateResultCallIds.Count > 0)
+            throw new InvalidOperationException(
+                $"Duplicate function_result call_id(s): {string.Join(", ", duplicateResultCallIds)}");
+
+        // No duplicates confirmed — set comparison is now meaningful
+        var callIds = callIdList.ToHashSet();
+        var resultCallIds = resultCallIdList.ToHashSet();
 
         var missingResults = callIds.Except(resultCallIds).ToList();
         if (missingResults.Count > 0)
