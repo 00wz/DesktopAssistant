@@ -4,6 +4,7 @@ using DesktopAssistant.Infrastructure.AI.Executors;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
+using SKKernel = Microsoft.SemanticKernel.Kernel;
 
 namespace DesktopAssistant.Infrastructure.AI.Plugins;
 
@@ -28,13 +29,15 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
     public async Task<string> CreateSubagentAsync(
         [Description("The task or first message to send to the sub-agent.")] string first_message,
         [Description("Profile ID to use for this sub-agent. Use list_profiles to see available profiles.")] string profile_id,
+        SKKernel kernel,
         [Description("Optional system prompt that defines the sub-agent's role and constraints.")] string? system_prompt = null,
         [Description("Whether this sub-agent can in turn spawn its own sub-agents. Default: false.")] bool can_spawn_subagents = false,
-        [Description("Optional title for the sub-agent conversation. Defaults to the first 60 characters of the task.")] string? name = null,
-        ToolExecutionContext executionContext = null!)
+        [Description("Optional title for the sub-agent conversation. Defaults to the first 60 characters of the task.")] string? name = null)
     {
         if (!Guid.TryParse(profile_id, out var resolvedProfileId))
             return "Error: Invalid profile_id format.";
+
+        var executionContext = (ToolExecutionContext)kernel.Data[ToolExecutionContext.ArgumentKey]!;
 
         logger.LogInformation(
             "create_subagent called. Parent={ParentId}, ToolNode={ToolNodeId}, CanSpawnSubagents={CanSpawn}, ProfileId={ProfileId}",
@@ -64,10 +67,12 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
     public async Task<string> SendMessageToSubagentAsync(
         [Description("The conversation ID of the sub-agent (from create_subagent result or list_subagents).")] string conversation_id,
         [Description("The message or follow-up instructions to send.")] string message,
-        ToolExecutionContext executionContext = null!)
+        SKKernel kernel)
     {
         if (!Guid.TryParse(conversation_id, out var convId))
             return "Error: Invalid conversation ID format.";
+
+        var executionContext = (ToolExecutionContext)kernel.Data[ToolExecutionContext.ArgumentKey]!;
 
         logger.LogInformation(
             "send_message_to_subagent called. SubagentId={SubagentId}, Parent={ParentId}, ToolNode={ToolNodeId}",
@@ -82,8 +87,9 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
     /// </summary>
     [KernelFunction("list_subagents")]
     [Description("Returns a list of all sub-agent conversations that were spawned in this conversation.")]
-    public async Task<string> ListSubagentsAsync(ToolExecutionContext executionContext = null!)
+    public async Task<string> ListSubagentsAsync(SKKernel kernel)
     {
+        var executionContext = (ToolExecutionContext)kernel.Data[ToolExecutionContext.ArgumentKey]!;
         var subagents = await subagentService.GetSubagentsAsync(
             executionContext.ConversationId, CancellationToken.None);
 
@@ -103,7 +109,7 @@ public sealed class SubagentPlugin(ISubagentService subagentService, ILogger<Sub
     /// </summary>
     [KernelFunction("list_profiles")]
     [Description("Returns all available assistant profiles (model, description, ID) that can be used when creating a sub-agent via the profile_id parameter of create_subagent.")]
-    public async Task<string> ListProfilesAsync(ToolExecutionContext executionContext = null!)
+    public async Task<string> ListProfilesAsync()
     {
         var profiles = await subagentService.GetAvailableProfilesAsync(CancellationToken.None);
 

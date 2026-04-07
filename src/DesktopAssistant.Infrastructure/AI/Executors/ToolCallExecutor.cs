@@ -77,7 +77,7 @@ public class ToolCallExecutor(
                 }
             }
 
-            kernelArgs[ToolExecutionContext.ArgumentKey] = new ToolExecutionContext
+            kernel.Data[ToolExecutionContext.ArgumentKey] = new ToolExecutionContext
             {
                 ConversationId = pendingNode.ConversationId,
                 ToolNodeId = pendingNodeId

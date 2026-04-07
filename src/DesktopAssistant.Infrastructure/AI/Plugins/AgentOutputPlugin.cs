@@ -3,6 +3,7 @@ using DesktopAssistant.Infrastructure.AI.Executors;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
+using SKKernel = Microsoft.SemanticKernel.Kernel;
 
 namespace DesktopAssistant.Infrastructure.AI.Plugins;
 
@@ -27,8 +28,10 @@ public sealed class AgentOutputPlugin(ISubagentService subagentService, ILogger<
         "The agent loop will stop after this call.")]
     public string CompleteTask(
         [Description("Message to the host: final result, failure reason, or question.")] string message,
-        ToolExecutionContext executionContext)
+        SKKernel kernel)
     {
+        var executionContext = (ToolExecutionContext)kernel.Data[ToolExecutionContext.ArgumentKey]!;
+
         logger.LogInformation(
             "complete_task called. ConversationId={ConversationId}, ToolNodeId={ToolNodeId}",
             executionContext.ConversationId,
