@@ -256,6 +256,7 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
                 ?? throw new InvalidOperationException(
                     "Reduction failed: deserialization of 'messages' returned null.");
 
+            NormalizeToolMessages(dtos);
             Validate(dtos);
 
             var mapper = new HistoryMessageDtoMapper();
@@ -302,6 +303,36 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
 
         for (int i = truncationIndex + 1; i < original.Count; i++)
             yield return original[i];
+    }
+
+    /// <summary>
+    /// Splits any tool message that contains more than one <c>function_result</c> item into
+    /// individual tool messages (one result per message).  This normalises quirky LLM output
+    /// (e.g. Anthropic models grouping all results into a single tool message) into the
+    /// canonical 1-result-per-message form required by OpenAI-compatible providers and by
+    /// the strict validation that follows.
+    /// </summary>
+    private static void NormalizeToolMessages(List<HistoryMessageDto> messages)
+    {
+        for (int i = messages.Count - 1; i >= 0; i--)
+        {
+            var msg = messages[i];
+            if (msg.Role != "tool") continue;
+
+            var resultItems = msg.Items.Where(it => it.Type == "function_result").ToList();
+            if (resultItems.Count <= 1) continue;
+
+            // Replace the multi-result message with N single-result messages (preserve order).
+            messages.RemoveAt(i);
+            for (int k = resultItems.Count - 1; k >= 0; k--)
+            {
+                messages.Insert(i, new HistoryMessageDto
+                {
+                    Role = "tool",
+                    Items = [resultItems[k]]
+                });
+            }
+        }
     }
 
     /// <summary>
