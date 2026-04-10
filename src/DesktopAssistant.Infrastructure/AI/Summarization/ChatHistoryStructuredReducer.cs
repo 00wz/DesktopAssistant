@@ -1,5 +1,3 @@
-#pragma warning disable SKEXP0001
-
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
@@ -257,6 +255,7 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
                     "Reduction failed: deserialization of 'messages' returned null.");
 
             NormalizeToolMessages(dtos);
+            NormalizeFunctionResultIds(dtos);
             Validate(dtos);
 
             var mapper = new HistoryMessageDtoMapper();
@@ -332,6 +331,37 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
                     Items = [resultItems[k]]
                 });
             }
+        }
+    }
+
+    /// <summary>
+    /// Some models (e.g. claude-haiku) emit <c>function_result</c> items with <c>id</c> instead of
+    /// <c>call_id</c>. This method copies <c>id</c> → <c>call_id</c> when <c>call_id</c> is absent,
+    /// making the output compatible with the validation and mapping steps that follow.
+    /// </summary>
+    private static void NormalizeFunctionResultIds(List<HistoryMessageDto> messages)
+    {
+        for (int i = 0; i < messages.Count; i++)
+        {
+            var msg = messages[i];
+            bool changed = false;
+            var newItems = new List<HistoryContentItemDto>(msg.Items.Count);
+
+            foreach (var item in msg.Items)
+            {
+                if (item.Type == "function_result" && item.CallId is null && item.Id is not null)
+                {
+                    newItems.Add(item with { CallId = item.Id });
+                    changed = true;
+                }
+                else
+                {
+                    newItems.Add(item);
+                }
+            }
+
+            if (changed)
+                messages[i] = msg with { Items = newItems };
         }
     }
 
