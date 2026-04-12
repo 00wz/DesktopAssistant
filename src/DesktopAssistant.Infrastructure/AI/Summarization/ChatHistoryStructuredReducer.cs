@@ -106,8 +106,8 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
                     },
                     "arguments": {
                       "type": "object",
-                      "description": "Key-value function arguments. Present when type=function_call.",
-                      "additionalProperties": { "type": "string" }
+                      "description": "Key-value function arguments. Present when type=function_call. Each value may be a string, number, boolean, array, or object — reproduce the value exactly as it appeared in the original function call.",
+                      "additionalProperties": {}
                     },
                     "call_id": {
                       "type": "string",
