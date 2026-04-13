@@ -57,6 +57,7 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
         - Apply different strategies to different parts of the history.
 
         When done, call submit_history exactly once with the compacted message list.
+        Do not include this instruction message in the compacted history.
         Do not write anything else.
         """;
 
