@@ -1,15 +1,16 @@
 using System.Text.Json;
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI.Summarization;
+namespace DesktopAssistant.Infrastructure.AI.Summarization.PairedCallSchema;
 
 /// <summary>
 /// Bidirectional mapper between <see cref="ChatMessageContent"/> and <see cref="HistoryMessageDto"/>
 /// using the paired <c>function_call</c> / <c>function_result</c> schema with explicit
 /// <c>id</c> / <c>call_id</c> correlation.
 /// </summary>
-public class PairedCallDtoMapper
+public class HistoryDtoMapper
 {
     /// <summary>
     /// Converts a <see cref="ChatMessageContent"/> to a <see cref="HistoryMessageDto"/>.

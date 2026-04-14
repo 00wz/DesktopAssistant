@@ -5,15 +5,25 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Summarization;
 
 /// <summary>
-/// Abstract base class for LLM-based chat history reducers that call <c>submit_history</c>
-/// with the compacted result as a structured list of <see cref="HistoryMessageDto"/> objects.
+/// Abstract base class for LLM-based chat history reducers that compact conversation history
+/// by asking an LLM to call <c>submit_history</c> with the compacted result as a structured
+/// list of <see cref="HistoryMessageDto"/> objects.
 /// </summary>
 /// <remarks>
+/// <para>
+/// Unlike the built-in <c>ChatHistorySummarizationReducer</c>, which replaces a range of messages
+/// with a single free-text summary, subclasses of this reducer produce a proper list of
+/// <see cref="ChatMessageContent"/> objects, preserving roles, function calls, and function results.
+/// This makes them compatible with agents that use <c>FunctionChoiceBehavior.Required</c>, where
+/// function call / result pairs must always appear together in the history.
+/// </para>
+/// <para>
 /// Subclasses provide the JSON schema, system prompt, validation, and DTO-to-message mapping
-/// specific to their approach. All common orchestration (boundary detection, LLM invocation,
-/// result assembly) lives here.
+/// specific to their serialization approach. All common orchestration (boundary detection,
+/// LLM invocation, result assembly) lives here.
+/// </para>
 /// </remarks>
-public abstract class ChatHistoryLlmReducerBase : IChatHistoryReducer
+public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
 {
     /// <summary>
     /// Default user message appended to the LLM request to trigger compaction.
@@ -74,7 +84,7 @@ public abstract class ChatHistoryLlmReducerBase : IChatHistoryReducer
     /// the trigger decision with the reduction itself; in this implementation it offers only a
     /// best-effort guard, since there is no guarantee the LLM will reduce message count.
     /// </param>
-    protected ChatHistoryLlmReducerBase(
+    protected ChatHistoryCompactionReducerBase(
         IChatCompletionService service,
         int retainedMessageCount,
         int? thresholdCount)
@@ -173,7 +183,7 @@ public abstract class ChatHistoryLlmReducerBase : IChatHistoryReducer
     /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
-        return obj is ChatHistoryLlmReducerBase other &&
+        return obj is ChatHistoryCompactionReducerBase other &&
                GetType() == other.GetType() &&
                _thresholdCount == other._thresholdCount &&
                _retainedMessageCount == other._retainedMessageCount &&

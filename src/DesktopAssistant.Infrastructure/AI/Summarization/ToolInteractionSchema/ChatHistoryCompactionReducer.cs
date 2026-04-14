@@ -1,20 +1,21 @@
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI.Summarization;
+namespace DesktopAssistant.Infrastructure.AI.Summarization.ToolInteractionSchema;
 
 /// <summary>
-/// Reduces chat history using the <c>tool_interaction</c> schema — a function call and its result
+/// Compacts chat history using the <c>tool_interaction</c> schema — a function call and its result
 /// are represented as a single item, eliminating the need for id/call_id correlation.
 /// </summary>
 /// <remarks>
 /// This approach is simpler for the LLM: it cannot forget to emit a matching result because
 /// both halves live in the same item. No adjacency or id-matching validation is required.
-/// The mapper (<see cref="HistoryMessageDtoMapper.FromDtoList"/>) expands <c>tool_interaction</c>
+/// The mapper (<see cref="HistoryDtoMapper.FromDtoList"/>) expands <c>tool_interaction</c>
 /// items back into the paired <see cref="FunctionCallContent"/> / <see cref="FunctionResultContent"/>
 /// format expected by Semantic Kernel.
 /// </remarks>
-public class ChatHistoryStructuredReducer : ChatHistoryLlmReducerBase
+public class ChatHistoryCompactionReducer : ChatHistoryCompactionReducerBase
 {
     /// <summary>
     /// Default system prompt used when calling the LLM for compaction.
@@ -120,7 +121,7 @@ public class ChatHistoryStructuredReducer : ChatHistoryLlmReducerBase
     /// Minimum number of compactable messages (beyond <paramref name="retainedMessageCount"/>)
     /// required to trigger reduction.
     /// </param>
-    public ChatHistoryStructuredReducer(
+    public ChatHistoryCompactionReducer(
         IChatCompletionService service,
         int retainedMessageCount = 0,
         int? thresholdCount = null)
@@ -153,7 +154,7 @@ public class ChatHistoryStructuredReducer : ChatHistoryLlmReducerBase
     /// <inheritdoc/>
     protected override List<ChatMessageContent> MapToMessages(List<HistoryMessageDto> dtos)
     {
-        var mapper = new HistoryMessageDtoMapper();
+        var mapper = new HistoryDtoMapper();
         return mapper.FromDtoList(dtos);
     }
 

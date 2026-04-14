@@ -1,4 +1,4 @@
-# Chat History LLM Reducers
+# ChatHistoryCompactionReducer
 
 Two implementations of `IChatHistoryReducer` (Semantic Kernel) that compact conversation history
 by asking an LLM to call a single structured tool — `submit_history` — with the reduced message list.
@@ -9,15 +9,19 @@ preserving roles, function calls, and function results. That makes them compatib
 use `FunctionChoiceBehavior.Required`, where function call / result pairs must always appear
 together in the history.
 
-Both reducers share a common base class (`ChatHistoryLlmReducerBase`) that handles all orchestration
-(boundary detection, LLM invocation, JSON parsing, result assembly) and differ only in schema,
-prompts, validation, and mapping.
+Both reducers share a common base class (`ChatHistoryCompactionReducerBase`) that handles all
+orchestration (boundary detection, LLM invocation, JSON parsing, result assembly) and differ only
+in their serialization schema, system prompts, validation, and mapping.
 
 ---
 
-## Two strategies
+## Two schema variants
 
-### 1. ChatHistoryStructuredReducer (tool_interaction)
+Both variants share the same class name `ChatHistoryCompactionReducer` and `HistoryDtoMapper`,
+separated by namespace. This makes it easy to select a winner for a future Semantic Kernel PR —
+just promote one namespace to the root.
+
+### 1. ToolInteractionSchema (`...Summarization.ToolInteractionSchema`)
 
 Uses a simplified schema where a function call and its result are represented as a **single
 `tool_interaction` item** inside an assistant message.
@@ -35,7 +39,7 @@ Uses a simplified schema where a function call and its result are represented as
 **Item types:** `text`, `tool_interaction`
 **Roles:** `user`, `assistant`
 
-### 2. ChatHistoryPairedCallReducer (function_call / function_result)
+### 2. PairedCallSchema (`...Summarization.PairedCallSchema`)
 
 Uses the traditional paired schema where `function_call` and `function_result` are separate items
 correlated by `id` / `call_id`, closer to the native OpenAI / Semantic Kernel format.
@@ -54,7 +58,7 @@ correlated by `id` / `call_id`, closer to the native OpenAI / Semantic Kernel fo
 
 ---
 
-## How it works (shared logic in ChatHistoryLlmReducerBase)
+## How it works (shared logic in ChatHistoryCompactionReducerBase)
 
 **Step 1 — Locate the compaction boundary**
 
@@ -71,9 +75,9 @@ Ending on an assistant message (rather than, say, a tool message) serves two pur
 **Step 2 — Call the LLM with `submit_history`**
 
 A temporary chat history is built for the LLM:
-- System message: `ReduceSystemPrompt` — hard constraints specific to the chosen strategy
+- System message: `ReduceSystemPrompt` — hard constraints specific to the chosen schema
 - The messages in the compaction range (index `firstNonSystemIndex` through `truncationIndex`, inclusive)
-- User message: `ReduceUserMessage` — the compaction task description (shared between strategies)
+- User message: `ReduceUserMessage` — the compaction task description (shared between variants)
 
 The LLM is called with `FunctionChoiceBehavior.Required([submit_history], autoInvoke: false)`, so
 it must respond by calling `submit_history` exactly once. The function is never auto-invoked;
@@ -82,25 +86,23 @@ its arguments are read directly from the response.
 **Step 3 — Parse, validate, assemble**
 
 The `messages` argument is deserialized to `List<HistoryMessageDto>` and passed to the
-strategy-specific `ValidateDtos` and `MapToMessages` methods. The final history is assembled as:
+variant-specific `ValidateDtos` and `MapToMessages` methods. The final history is assembled as:
 ```
 [original system message] + [compacted messages] + [retained tail]
 ```
 
 ---
 
-## Constructor (same for both reducers)
+## Constructor (same API for both variants)
 
 ```csharp
-new ChatHistoryStructuredReducer(
-    IChatCompletionService service,
-    int retainedMessageCount = 0,
-    int? thresholdCount = null)
+// ToolInteractionSchema variant
+using DesktopAssistant.Infrastructure.AI.Summarization.ToolInteractionSchema;
+var reducer = new ChatHistoryCompactionReducer(service, retainedMessageCount: 20, thresholdCount: 10);
 
-new ChatHistoryPairedCallReducer(
-    IChatCompletionService service,
-    int retainedMessageCount = 0,
-    int? thresholdCount = null)
+// PairedCallSchema variant
+using DesktopAssistant.Infrastructure.AI.Summarization.PairedCallSchema;
+var reducer = new ChatHistoryCompactionReducer(service, retainedMessageCount: 20, thresholdCount: 10);
 ```
 
 | Parameter | Description |
@@ -111,12 +113,12 @@ new ChatHistoryPairedCallReducer(
 
 ---
 
-## Properties (inherited from ChatHistoryLlmReducerBase)
+## Properties (inherited from ChatHistoryCompactionReducerBase)
 
 | Property | Default | Description |
 |---|---|---|
-| `ReduceSystemPrompt` | Strategy-specific | System message establishing hard constraints. Each strategy defines its own default. |
-| `ReduceUserMessage` | Built-in (shared) | User message appended after the history that describes the compaction task. Shared between strategies because it does not reference a specific schema. |
+| `ReduceSystemPrompt` | Variant-specific | System message establishing hard constraints. Each variant defines its own default. |
+| `ReduceUserMessage` | Built-in (shared) | User message appended after the history that describes the compaction task. Shared between variants because it does not reference a specific schema. |
 | `FailOnError` | `true` | When `true`, exceptions during reduction propagate to the caller. When `false`, `null` is returned on failure (SK interprets `null` as "no reduction performed"). |
 
 ---
@@ -130,42 +132,14 @@ for compatibility with both OpenAI strict mode and Anthropic.
 | DTO | Purpose |
 |---|---|
 | `HistoryMessageDto` | One message: `role` + `items` |
-| `HistoryContentItemDto` | One content block: `type` discriminator + type-specific fields. Contains the union of all fields used by both strategies (`Id`, `CallId` for paired-call; all fields for tool_interaction). Unused fields are `null`. |
+| `HistoryContentItemDto` | One content block: `type` discriminator + type-specific fields. Contains the union of all fields used by both variants. Unused fields are `null`. |
 
-### Mappers
+### Mappers (both named `HistoryDtoMapper`, in different namespaces)
 
-| Mapper | Strategy | Direction |
+| Namespace | Direction | Notes |
 |---|---|---|
-| `HistoryMessageDtoMapper` | tool_interaction | `FromDtoList` — expands `tool_interaction` items into paired FunctionCall/FunctionResult with generated ids |
-| `PairedCallDtoMapper` | paired-call | `ToDto` + `FromDto` — bidirectional mapping preserving id/call_id correlation |
-
----
-
-## Usage example
-
-```csharp
-// Strategy 1: tool_interaction (recommended default)
-var reducer = new ChatHistoryStructuredReducer(
-    chatCompletionService,
-    retainedMessageCount: 20,
-    thresholdCount: 10)
-{
-    FailOnError = false
-};
-
-// Strategy 2: paired function_call / function_result
-var reducer = new ChatHistoryPairedCallReducer(
-    chatCompletionService,
-    retainedMessageCount: 20,
-    thresholdCount: 10)
-{
-    FailOnError = false
-};
-
-var reduced = await reducer.ReduceAsync(chatHistory, cancellationToken);
-// reduced is null  → history was not long enough, use chatHistory as-is
-// reduced is not null → use reduced instead of chatHistory
-```
+| `ToolInteractionSchema` | `FromDtoList` only | Expands `tool_interaction` items into paired FunctionCall/FunctionResult with generated ids |
+| `PairedCallSchema` | `ToDto` + `FromDto` | Bidirectional mapping preserving id/call_id correlation |
 
 ---
 
@@ -173,20 +147,24 @@ var reduced = await reducer.ReduceAsync(chatHistory, cancellationToken);
 
 ```
 IChatHistoryReducer (Semantic Kernel)
-  └─ ChatHistoryLlmReducerBase (abstract — shared orchestration)
-       ├─ ChatHistoryStructuredReducer (tool_interaction schema)
-       └─ ChatHistoryPairedCallReducer (function_call/function_result schema)
+  └─ ChatHistoryCompactionReducerBase           ...Summarization
+       ├─ ChatHistoryCompactionReducer          ...Summarization.ToolInteractionSchema
+       └─ ChatHistoryCompactionReducer          ...Summarization.PairedCallSchema
 ```
 
 ---
 
 ## Files
 
-| File | Contents |
-|---|---|
-| `ChatHistoryLlmReducerBase.cs` | Abstract base class — shared LLM orchestration, boundary detection, result assembly |
-| `ChatHistoryStructuredReducer.cs` | tool_interaction reducer (schema, prompts, validation, mapping) |
-| `ChatHistoryPairedCallReducer.cs` | Paired-call reducer (schema, prompts, normalization, validation, mapping) |
-| `HistoryMessageDto.cs` | Shared DTOs: `HistoryMessageDto`, `HistoryContentItemDto`, `AnyValueToStringDictionaryConverter` |
-| `HistoryMessageDtoMapper.cs` | Mapper for tool_interaction strategy (`FromDtoList`) |
-| `PairedCallDtoMapper.cs` | Bidirectional mapper for paired-call strategy (`ToDto` + `FromDto`) |
+```
+Summarization/
+├── ChatHistoryCompactionReducerBase.cs     Shared orchestration (abstract base)
+├── HistoryMessageDto.cs                    Shared DTOs + JSON converter
+├── README.md                               This file
+├── ToolInteractionSchema/
+│   ├── ChatHistoryCompactionReducer.cs     tool_interaction variant
+│   └── HistoryDtoMapper.cs                 Mapper (FromDtoList with expansion)
+└── PairedCallSchema/
+    ├── ChatHistoryCompactionReducer.cs     function_call/function_result variant
+    └── HistoryDtoMapper.cs                 Bidirectional mapper (ToDto + FromDto)
+```

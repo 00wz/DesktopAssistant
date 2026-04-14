@@ -1,10 +1,17 @@
-using System.Text.Json;
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI.Summarization;
+namespace DesktopAssistant.Infrastructure.AI.Summarization.ToolInteractionSchema;
 
-public class HistoryMessageDtoMapper
+/// <summary>
+/// Maps <see cref="HistoryMessageDto"/> lists back to <see cref="ChatMessageContent"/> objects
+/// using the <c>tool_interaction</c> schema. Each <c>tool_interaction</c> item is expanded into
+/// a paired <see cref="FunctionCallContent"/> (in the assistant message) and a separate
+/// <see cref="FunctionResultContent"/> (in a generated tool message) with auto-generated matching ids.
+/// Consecutive assistant messages are merged.
+/// </summary>
+public class HistoryDtoMapper
 {
     /// <summary>
     /// Restores a list of <see cref="ChatMessageContent"/> from a list of <see cref="HistoryMessageDto"/>.

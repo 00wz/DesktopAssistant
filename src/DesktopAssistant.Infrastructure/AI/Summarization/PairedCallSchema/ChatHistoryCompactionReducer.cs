@@ -1,10 +1,11 @@
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI.Summarization;
+namespace DesktopAssistant.Infrastructure.AI.Summarization.PairedCallSchema;
 
 /// <summary>
-/// Reduces chat history using the paired <c>function_call</c> / <c>function_result</c> schema
+/// Compacts chat history using the paired <c>function_call</c> / <c>function_result</c> schema
 /// with explicit <c>id</c> / <c>call_id</c> correlation. This format is closer to the native
 /// Semantic Kernel / OpenAI message representation.
 /// </summary>
@@ -14,7 +15,7 @@ namespace DesktopAssistant.Infrastructure.AI.Summarization;
 /// function_result items). Normalization steps handle common LLM quirks (multi-result tool
 /// messages, id/call_id confusion).
 /// </remarks>
-public class ChatHistoryPairedCallReducer : ChatHistoryLlmReducerBase
+public class ChatHistoryCompactionReducer : ChatHistoryCompactionReducerBase
 {
     /// <summary>
     /// Default system prompt used when calling the LLM for compaction.
@@ -133,7 +134,7 @@ public class ChatHistoryPairedCallReducer : ChatHistoryLlmReducerBase
     /// Minimum number of compactable messages (beyond <paramref name="retainedMessageCount"/>)
     /// required to trigger reduction.
     /// </param>
-    public ChatHistoryPairedCallReducer(
+    public ChatHistoryCompactionReducer(
         IChatCompletionService service,
         int retainedMessageCount = 0,
         int? thresholdCount = null)
@@ -158,7 +159,7 @@ public class ChatHistoryPairedCallReducer : ChatHistoryLlmReducerBase
     /// <inheritdoc/>
     protected override List<ChatMessageContent> MapToMessages(List<HistoryMessageDto> dtos)
     {
-        var mapper = new PairedCallDtoMapper();
+        var mapper = new HistoryDtoMapper();
         return dtos.Select(mapper.FromDto).ToList();
     }
 
