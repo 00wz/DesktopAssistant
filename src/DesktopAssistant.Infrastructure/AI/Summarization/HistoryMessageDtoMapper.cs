@@ -7,131 +7,100 @@ namespace DesktopAssistant.Infrastructure.AI.Summarization;
 public class HistoryMessageDtoMapper
 {
     /// <summary>
-    /// Converts a <see cref="ChatMessageContent"/> to a <see cref="HistoryMessageDto"/>.
-    /// Unknown KernelContent item types are silently skipped.
+    /// Restores a list of <see cref="ChatMessageContent"/> from a list of <see cref="HistoryMessageDto"/>.
+    /// <c>tool_interaction</c> items in assistant messages are expanded into paired
+    /// <see cref="FunctionCallContent"/> / <see cref="FunctionResultContent"/> entries with generated ids,
+    /// and the corresponding tool messages are inserted immediately after each assistant message.
+    /// Consecutive assistant messages not separated by a tool message are merged into one.
     /// </summary>
-    public HistoryMessageDto ToDto(ChatMessageContent message)
+    public List<ChatMessageContent> FromDtoList(IEnumerable<HistoryMessageDto> dtos)
     {
-        var items = new List<HistoryContentItemDto>();
+        var result = new List<ChatMessageContent>();
 
-        foreach (var item in message.Items)
+        foreach (var dto in dtos)
         {
-            switch (item)
+            switch (dto.Role)
             {
-                case TextContent tc:
-                    items.Add(new HistoryContentItemDto
+                case "user":
+                {
+                    var msg = new ChatMessageContent(AuthorRole.User, content: null);
+                    foreach (var item in dto.Items)
                     {
-                        Type = "text",
-                        Text = tc.Text
-                    });
+                        if (item.Type == "text")
+                            msg.Items.Add(new TextContent(item.Text));
+                    }
+                    result.Add(msg);
                     break;
+                }
 
-                case FunctionCallContent fcc:
-                    items.Add(new HistoryContentItemDto
+                case "assistant":
+                {
+                    var assistantMsg = new ChatMessageContent(AuthorRole.Assistant, content: null);
+                    var toolInteractions = new List<(string Id, string? PluginName, string? FunctionName, string? Result)>();
+
+                    foreach (var item in dto.Items)
                     {
-                        Type = "function_call",
-                        Id = fcc.Id,
-                        PluginName = fcc.PluginName,
-                        FunctionName = fcc.FunctionName,
-                        Arguments = SerializeArguments(fcc.Arguments)
-                    });
-                    break;
+                        switch (item.Type)
+                        {
+                            case "text":
+                                assistantMsg.Items.Add(new TextContent(item.Text));
+                                break;
 
-                case FunctionResultContent frc:
-                    items.Add(new HistoryContentItemDto
+                            case "tool_interaction":
+                                var id = Guid.NewGuid().ToString("N");
+                                var args = item.Arguments is { Count: > 0 }
+                                    ? new KernelArguments(
+                                        item.Arguments.ToDictionary(kv => kv.Key, kv => (object?)kv.Value))
+                                    : new KernelArguments();
+                                assistantMsg.Items.Add(new FunctionCallContent(
+                                    item.FunctionName ?? string.Empty,
+                                    item.PluginName,
+                                    id,
+                                    args));
+                                toolInteractions.Add((id, item.PluginName, item.FunctionName, item.Result));
+                                break;
+                        }
+                    }
+
+                    result.Add(assistantMsg);
+
+                    foreach (var (id, pluginName, functionName, resultValue) in toolInteractions)
                     {
-                        Type = "function_result",
-                        CallId = frc.CallId,
-                        PluginName = frc.PluginName,
-                        FunctionName = frc.FunctionName,
-                        Result = frc.Result is string s ? s
-                            : frc.Result is null ? null
-                            : JsonSerializer.Serialize(frc.Result)
-                    });
-                    break;
+                        var toolMsg = new ChatMessageContent(AuthorRole.Tool, content: null);
+                        toolMsg.Items.Add(new FunctionResultContent(
+                            functionName,
+                            pluginName,
+                            id,
+                            resultValue));
+                        result.Add(toolMsg);
+                    }
 
-                // Unknown types are silently skipped
+                    break;
+                }
             }
         }
 
-        return new HistoryMessageDto
-        {
-            Role = RoleToString(message.Role),
-            Items = items
-        };
+        return MergeConsecutiveAssistantMessages(result);
     }
 
-    /// <summary>
-    /// Restores a <see cref="ChatMessageContent"/> from a <see cref="HistoryMessageDto"/>.
-    /// Unknown item types are silently skipped.
-    /// </summary>
-    public ChatMessageContent FromDto(HistoryMessageDto dto)
+    private static List<ChatMessageContent> MergeConsecutiveAssistantMessages(List<ChatMessageContent> messages)
     {
-        var role = StringToRole(dto.Role);
-        var content = new ChatMessageContent(role, content: null);
-
-        foreach (var item in dto.Items)
+        for (int i = 0; i < messages.Count - 1; )
         {
-            switch (item.Type)
+            if (messages[i].Role == AuthorRole.Assistant &&
+                messages[i + 1].Role == AuthorRole.Assistant)
             {
-                case "text":
-                    content.Items.Add(new TextContent(item.Text));
-                    break;
-
-                case "function_call":
-                    var args = item.Arguments is { Count: > 0 }
-                        ? new KernelArguments(
-                            item.Arguments.ToDictionary(kv => kv.Key, kv => (object?)kv.Value))
-                        : new KernelArguments();
-                    content.Items.Add(new FunctionCallContent(
-                        item.FunctionName ?? string.Empty,
-                        item.PluginName,
-                        item.Id,
-                        args));
-                    break;
-
-                case "function_result":
-                    content.Items.Add(new FunctionResultContent(
-                        item.FunctionName,
-                        item.PluginName,
-                        item.CallId,
-                        item.Result));
-                    break;
-
-                // Unknown types are silently skipped
+                foreach (var item in messages[i + 1].Items)
+                    messages[i].Items.Add(item);
+                messages.RemoveAt(i + 1);
+                // re-check same position
+            }
+            else
+            {
+                i++;
             }
         }
 
-        return content;
+        return messages;
     }
-
-    private static Dictionary<string, string>? SerializeArguments(KernelArguments? arguments)
-    {
-        if (arguments is null || arguments.Count == 0)
-            return null;
-
-        return arguments.ToDictionary(
-            kv => kv.Key,
-            kv => kv.Value is string s ? s
-                : kv.Value is null ? string.Empty
-                : JsonSerializer.Serialize(kv.Value));
-    }
-
-    private static string RoleToString(AuthorRole role)
-    {
-        if (role == AuthorRole.User) return "user";
-        if (role == AuthorRole.Assistant) return "assistant";
-        if (role == AuthorRole.Tool) return "tool";
-        if (role == AuthorRole.System) return "system";
-        return role.Label;
-    }
-
-    private static AuthorRole StringToRole(string role) => role switch
-    {
-        "user" => AuthorRole.User,
-        "assistant" => AuthorRole.Assistant,
-        "tool" => AuthorRole.Tool,
-        "system" => AuthorRole.System,
-        _ => new AuthorRole(role)
-    };
 }

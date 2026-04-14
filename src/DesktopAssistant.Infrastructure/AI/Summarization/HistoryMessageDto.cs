@@ -7,13 +7,10 @@ namespace DesktopAssistant.Infrastructure.AI.Summarization;
 public record HistoryContentItemDto
 {
     [JsonPropertyName("type")]
-    public required string Type { get; init; }
+    public required string Type { get; init; }   // "text" | "tool_interaction"
 
     [JsonPropertyName("text")]
     public string? Text { get; init; }
-
-    [JsonPropertyName("id")]
-    public string? Id { get; init; }
 
     [JsonPropertyName("plugin_name")]
     public string? PluginName { get; init; }
@@ -29,9 +26,6 @@ public record HistoryContentItemDto
     [JsonPropertyName("arguments")]
     [JsonConverter(typeof(AnyValueToStringDictionaryConverter))]
     public Dictionary<string, string>? Arguments { get; init; }
-
-    [JsonPropertyName("call_id")]
-    public string? CallId { get; init; }
 
     [JsonPropertyName("result")]
     public string? Result { get; init; }
