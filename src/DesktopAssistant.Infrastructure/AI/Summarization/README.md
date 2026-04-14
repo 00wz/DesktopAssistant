@@ -1,17 +1,60 @@
-# ChatHistoryStructuredReducer
+# Chat History LLM Reducers
 
-An implementation of `IChatHistoryReducer` (Semantic Kernel) that compacts conversation history by
-asking an LLM to call a single structured tool — `submit_history` — with the reduced message list.
+Two implementations of `IChatHistoryReducer` (Semantic Kernel) that compact conversation history
+by asking an LLM to call a single structured tool — `submit_history` — with the reduced message list.
 
 Unlike the built-in `ChatHistorySummarizationReducer`, which replaces a range of messages with a
-single free-text summary, this reducer produces a proper list of `ChatMessageContent` objects,
-preserving roles, function calls, and function results. That makes it compatible with agents that
+single free-text summary, these reducers produce a proper list of `ChatMessageContent` objects,
+preserving roles, function calls, and function results. That makes them compatible with agents that
 use `FunctionChoiceBehavior.Required`, where function call / result pairs must always appear
 together in the history.
 
+Both reducers share a common base class (`ChatHistoryLlmReducerBase`) that handles all orchestration
+(boundary detection, LLM invocation, JSON parsing, result assembly) and differ only in schema,
+prompts, validation, and mapping.
+
 ---
 
-## How it works
+## Two strategies
+
+### 1. ChatHistoryStructuredReducer (tool_interaction)
+
+Uses a simplified schema where a function call and its result are represented as a **single
+`tool_interaction` item** inside an assistant message.
+
+**Pros:**
+- The LLM cannot forget to emit a matching result — both halves live in the same item
+- No id/call_id correlation needed
+- Simpler schema → fewer LLM errors
+- No normalization of quirky model output required
+
+**Cons:**
+- The schema diverges from the native SK/OpenAI message format
+- Less familiar to models trained heavily on OpenAI function calling format
+
+**Item types:** `text`, `tool_interaction`
+**Roles:** `user`, `assistant`
+
+### 2. ChatHistoryPairedCallReducer (function_call / function_result)
+
+Uses the traditional paired schema where `function_call` and `function_result` are separate items
+correlated by `id` / `call_id`, closer to the native OpenAI / Semantic Kernel format.
+
+**Pros:**
+- Closer to the format models see during training
+- Roles match the actual SK representation (`user`, `assistant`, `tool`, `system`)
+
+**Cons:**
+- The LLM must maintain id/call_id pairing correctly
+- Requires strict adjacency validation (assistant → tool messages in order)
+- Needs normalization for common model quirks (multi-result tool messages, id/call_id confusion)
+
+**Item types:** `text`, `function_call`, `function_result`
+**Roles:** `user`, `assistant`, `tool`, `system`
+
+---
+
+## How it works (shared logic in ChatHistoryLlmReducerBase)
 
 **Step 1 — Locate the compaction boundary**
 
@@ -28,9 +71,9 @@ Ending on an assistant message (rather than, say, a tool message) serves two pur
 **Step 2 — Call the LLM with `submit_history`**
 
 A temporary chat history is built for the LLM:
-- System message: `ReduceSystemPrompt` — hard constraints only (what must never be violated)
+- System message: `ReduceSystemPrompt` — hard constraints specific to the chosen strategy
 - The messages in the compaction range (index `firstNonSystemIndex` through `truncationIndex`, inclusive)
-- User message: `ReduceUserMessage` — the compaction task description appended after the history
+- User message: `ReduceUserMessage` — the compaction task description (shared between strategies)
 
 The LLM is called with `FunctionChoiceBehavior.Required([submit_history], autoInvoke: false)`, so
 it must respond by calling `submit_history` exactly once. The function is never auto-invoked;
@@ -38,43 +81,23 @@ its arguments are read directly from the response.
 
 **Step 3 — Parse, validate, assemble**
 
-The `messages` argument is deserialized to `List<HistoryMessageDto>` and validated:
-- Only `user` and `assistant` roles are allowed.
-- `tool_interaction` items are only permitted in `assistant` messages.
-
-The validated DTOs are mapped back to `ChatMessageContent` via `HistoryMessageDtoMapper.FromDtoList`.
-Each `tool_interaction` item is expanded into a paired `FunctionCallContent` (in the assistant message)
-and a separate `FunctionResultContent` (in a generated tool message), with auto-generated matching ids.
-Consecutive assistant messages are merged.
-
-The final history is assembled as:
+The `messages` argument is deserialized to `List<HistoryMessageDto>` and passed to the
+strategy-specific `ValidateDtos` and `MapToMessages` methods. The final history is assembled as:
 ```
 [original system message] + [compacted messages] + [retained tail]
 ```
 
 ---
 
-## JSON Schema — `tool_interaction` approach
-
-The LLM schema uses only two roles (`user`, `assistant`) and two item types:
-
-| Item type | Description |
-|---|---|
-| `text` | Plain text content block |
-| `tool_interaction` | A function call together with its result in a single item. Contains `plugin_name`, `function_name`, `arguments`, and `result`. |
-
-This approach is simpler than the previous `function_call` / `function_result` paired scheme:
-- The LLM cannot forget to emit a matching result — both halves are in the same item.
-- No need for `id` / `call_id` correlation, deduplication, or adjacency validation.
-- No `tool` or `system` role in the output schema.
-- The mapper (`FromDtoList`) handles expansion to the SK-required format (separate assistant/tool messages).
-
----
-
-## Constructor
+## Constructor (same for both reducers)
 
 ```csharp
 new ChatHistoryStructuredReducer(
+    IChatCompletionService service,
+    int retainedMessageCount = 0,
+    int? thresholdCount = null)
+
+new ChatHistoryPairedCallReducer(
     IChatCompletionService service,
     int retainedMessageCount = 0,
     int? thresholdCount = null)
@@ -88,12 +111,12 @@ new ChatHistoryStructuredReducer(
 
 ---
 
-## Properties
+## Properties (inherited from ChatHistoryLlmReducerBase)
 
 | Property | Default | Description |
 |---|---|---|
-| `ReduceSystemPrompt` | Built-in prompt | System message establishing hard constraints (what must never be violated). Intentionally brief — task instructions belong in `ReduceUserMessage`. |
-| `ReduceUserMessage` | Built-in prompt | User message appended after the history that describes the compaction task and available strategies. Keeping it separate from the system prompt improves instruction-following on most providers. |
+| `ReduceSystemPrompt` | Strategy-specific | System message establishing hard constraints. Each strategy defines its own default. |
+| `ReduceUserMessage` | Built-in (shared) | User message appended after the history that describes the compaction task. Shared between strategies because it does not reference a specific schema. |
 | `FailOnError` | `true` | When `true`, exceptions during reduction propagate to the caller. When `false`, `null` is returned on failure (SK interprets `null` as "no reduction performed"). |
 
 ---
@@ -106,21 +129,32 @@ for compatibility with both OpenAI strict mode and Anthropic.
 
 | DTO | Purpose |
 |---|---|
-| `HistoryMessageDto` | One message: `role` (`user` or `assistant`) + `items` |
-| `HistoryContentItemDto` | One content block: `type` discriminator (`text`, `tool_interaction`) + type-specific fields |
+| `HistoryMessageDto` | One message: `role` + `items` |
+| `HistoryContentItemDto` | One content block: `type` discriminator + type-specific fields. Contains the union of all fields used by both strategies (`Id`, `CallId` for paired-call; all fields for tool_interaction). Unused fields are `null`. |
 
-`HistoryMessageDtoMapper` handles reconstruction:
-- `FromDtoList` — converts `List<HistoryMessageDto>` → `List<ChatMessageContent>`, expanding
-  `tool_interaction` items into paired `FunctionCallContent` / `FunctionResultContent` entries
-  with generated ids, and inserting tool messages after each assistant message. Consecutive
-  assistant messages are merged.
+### Mappers
+
+| Mapper | Strategy | Direction |
+|---|---|---|
+| `HistoryMessageDtoMapper` | tool_interaction | `FromDtoList` — expands `tool_interaction` items into paired FunctionCall/FunctionResult with generated ids |
+| `PairedCallDtoMapper` | paired-call | `ToDto` + `FromDto` — bidirectional mapping preserving id/call_id correlation |
 
 ---
 
 ## Usage example
 
 ```csharp
+// Strategy 1: tool_interaction (recommended default)
 var reducer = new ChatHistoryStructuredReducer(
+    chatCompletionService,
+    retainedMessageCount: 20,
+    thresholdCount: 10)
+{
+    FailOnError = false
+};
+
+// Strategy 2: paired function_call / function_result
+var reducer = new ChatHistoryPairedCallReducer(
     chatCompletionService,
     retainedMessageCount: 20,
     thresholdCount: 10)
@@ -135,10 +169,24 @@ var reduced = await reducer.ReduceAsync(chatHistory, cancellationToken);
 
 ---
 
+## Class hierarchy
+
+```
+IChatHistoryReducer (Semantic Kernel)
+  └─ ChatHistoryLlmReducerBase (abstract — shared orchestration)
+       ├─ ChatHistoryStructuredReducer (tool_interaction schema)
+       └─ ChatHistoryPairedCallReducer (function_call/function_result schema)
+```
+
+---
+
 ## Files
 
 | File | Contents |
 |---|---|
-| `ChatHistoryStructuredReducer.cs` | Main reducer class |
-| `HistoryMessageDto.cs` | `HistoryMessageDto` and `HistoryContentItemDto` records |
-| `HistoryMessageDtoMapper.cs` | Mapper from DTOs back to SK types (with `tool_interaction` expansion) |
+| `ChatHistoryLlmReducerBase.cs` | Abstract base class — shared LLM orchestration, boundary detection, result assembly |
+| `ChatHistoryStructuredReducer.cs` | tool_interaction reducer (schema, prompts, validation, mapping) |
+| `ChatHistoryPairedCallReducer.cs` | Paired-call reducer (schema, prompts, normalization, validation, mapping) |
+| `HistoryMessageDto.cs` | Shared DTOs: `HistoryMessageDto`, `HistoryContentItemDto`, `AnyValueToStringDictionaryConverter` |
+| `HistoryMessageDtoMapper.cs` | Mapper for tool_interaction strategy (`FromDtoList`) |
+| `PairedCallDtoMapper.cs` | Bidirectional mapper for paired-call strategy (`ToDto` + `FromDto`) |
