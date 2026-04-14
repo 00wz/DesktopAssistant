@@ -39,15 +39,35 @@ its arguments are read directly from the response.
 **Step 3 — Parse, validate, assemble**
 
 The `messages` argument is deserialized to `List<HistoryMessageDto>` and validated:
-- Every `function_call` id must have exactly one matching `function_result` call_id, and vice-versa.
-- Each assistant message containing `function_call` items must be immediately followed by the
-  corresponding `tool` messages in the same order (strict adjacency).
+- Only `user` and `assistant` roles are allowed.
+- `tool_interaction` items are only permitted in `assistant` messages.
 
-The validated DTOs are mapped back to `ChatMessageContent` via `HistoryMessageDtoMapper`.
+The validated DTOs are mapped back to `ChatMessageContent` via `HistoryMessageDtoMapper.FromDtoList`.
+Each `tool_interaction` item is expanded into a paired `FunctionCallContent` (in the assistant message)
+and a separate `FunctionResultContent` (in a generated tool message), with auto-generated matching ids.
+Consecutive assistant messages are merged.
+
 The final history is assembled as:
 ```
 [original system message] + [compacted messages] + [retained tail]
 ```
+
+---
+
+## JSON Schema — `tool_interaction` approach
+
+The LLM schema uses only two roles (`user`, `assistant`) and two item types:
+
+| Item type | Description |
+|---|---|
+| `text` | Plain text content block |
+| `tool_interaction` | A function call together with its result in a single item. Contains `plugin_name`, `function_name`, `arguments`, and `result`. |
+
+This approach is simpler than the previous `function_call` / `function_result` paired scheme:
+- The LLM cannot forget to emit a matching result — both halves are in the same item.
+- No need for `id` / `call_id` correlation, deduplication, or adjacency validation.
+- No `tool` or `system` role in the output schema.
+- The mapper (`FromDtoList`) handles expansion to the SK-required format (separate assistant/tool messages).
 
 ---
 
@@ -86,12 +106,14 @@ for compatibility with both OpenAI strict mode and Anthropic.
 
 | DTO | Purpose |
 |---|---|
-| `HistoryMessageDto` | One message: `role` + `items` |
-| `HistoryContentItemDto` | One content block: `type` discriminator (`text`, `function_call`, `function_result`) + type-specific fields |
+| `HistoryMessageDto` | One message: `role` (`user` or `assistant`) + `items` |
+| `HistoryContentItemDto` | One content block: `type` discriminator (`text`, `tool_interaction`) + type-specific fields |
 
-`HistoryMessageDtoMapper` handles both directions:
-- `ToDto` — converts `ChatMessageContent` → `HistoryMessageDto` (unknown `KernelContent` types are skipped)
-- `FromDto` — reconstructs `ChatMessageContent` from `HistoryMessageDto` (unknown item types are skipped)
+`HistoryMessageDtoMapper` handles reconstruction:
+- `FromDtoList` — converts `List<HistoryMessageDto>` → `List<ChatMessageContent>`, expanding
+  `tool_interaction` items into paired `FunctionCallContent` / `FunctionResultContent` entries
+  with generated ids, and inserting tool messages after each assistant message. Consecutive
+  assistant messages are merged.
 
 ---
 
@@ -119,4 +141,4 @@ var reduced = await reducer.ReduceAsync(chatHistory, cancellationToken);
 |---|---|
 | `ChatHistoryStructuredReducer.cs` | Main reducer class |
 | `HistoryMessageDto.cs` | `HistoryMessageDto` and `HistoryContentItemDto` records |
-| `HistoryMessageDtoMapper.cs` | Bidirectional mapper between SK types and DTOs |
+| `HistoryMessageDtoMapper.cs` | Mapper from DTOs back to SK types (with `tool_interaction` expansion) |

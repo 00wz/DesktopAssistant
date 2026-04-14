@@ -27,11 +27,9 @@ public class ChatHistoryStructuredReducer : IChatHistoryReducer
         Hard constraints — never violate these:
         - Code, configuration, identifiers, file paths, and any other exact-value data
           must be preserved verbatim. Never paraphrase or approximate them.
-        - Every function_call must remain paired with its function_result.
-          Never include one without the other.
-        - Every assistant message that contains function_call items must be immediately
-          and consecutively followed by tool messages with the matching function_result
-          for each function_call, in the same order.
+        - Every tool_interaction item must include both arguments and result.
+          Never drop one without the other.
+        - tool_interaction items are only allowed in assistant messages.
         - Do not reorder messages.
         - Do not invent information that was not in the original history.
         """;
