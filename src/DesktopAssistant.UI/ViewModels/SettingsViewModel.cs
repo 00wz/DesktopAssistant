@@ -36,9 +36,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void ShowGeneral()
+    private async Task ShowGeneralAsync()
     {
         ActiveSection = SettingsSection.General;
+        await GeneralSettings.InitializeAsync();
     }
 
     [RelayCommand]

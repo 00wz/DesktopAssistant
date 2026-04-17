@@ -13,6 +13,8 @@
     <sys:String x:Key="General.Title">Общие настройки</sys:String>
     <sys:String x:Key="General.Language.Label">Язык приложения</sys:String>
     <sys:String x:Key="General.Language.Hint">Язык интерфейса. Изменения применяются немедленно.</sys:String>
+    <sys:String x:Key="General.SummarizationSchema.Label">Схема суммаризации</sys:String>
+    <sys:String x:Key="General.SummarizationSchema.Hint">Определяет формат сериализации вызовов функций при компактизации истории чата. Изменение вступает в силу при следующей суммаризации.</sys:String>
 
     <!-- Profiles section -->
     <sys:String x:Key="Profiles.Title">Профили ассистентов</sys:String>

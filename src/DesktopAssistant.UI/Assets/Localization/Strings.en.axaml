@@ -13,6 +13,8 @@
     <sys:String x:Key="General.Title">General Settings</sys:String>
     <sys:String x:Key="General.Language.Label">Application Language</sys:String>
     <sys:String x:Key="General.Language.Hint">Interface language. Changes apply immediately.</sys:String>
+    <sys:String x:Key="General.SummarizationSchema.Label">Summarization Schema</sys:String>
+    <sys:String x:Key="General.SummarizationSchema.Hint">Controls how function calls are serialized when the LLM compacts chat history. Changes take effect on the next summarization.</sys:String>
 
     <!-- Profiles section -->
     <sys:String x:Key="Profiles.Title">Assistant Profiles</sys:String>

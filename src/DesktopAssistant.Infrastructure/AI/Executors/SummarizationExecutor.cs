@@ -6,7 +6,7 @@ using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Extensions;
 using DesktopAssistant.Infrastructure.AI.Metadata;
-using DesktopAssistant.Infrastructure.AI.Summarization.ToolInteractionSchema;
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -14,8 +14,9 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Executors;
 
 /// <summary>
-/// Implements conversation context summarization via ChatHistorySummarizationReducer.
+/// Implements conversation context summarization via <see cref="IChatHistoryReducer"/>.
 /// Uses the summarization profile from AppSettings, separate from the chat profile.
+/// The concrete reducer strategy is determined by <see cref="ISummarizationSchemaService"/>.
 /// </summary>
 public class SummarizationExecutor(
     ConversationService conversationService,
@@ -23,6 +24,8 @@ public class SummarizationExecutor(
     ISecureCredentialStore credentialStore,
     IAppSettingsRepository appSettingsRepository,
     IAssistantProfileRepository assistantProfileRepository,
+    ISummarizationSchemaService schemaService,
+    IChatHistoryReducerFactory reducerFactory,
     ILogger<SummarizationExecutor> logger) : ISummarizationService
 {
     private readonly ConversationService _conversationService = conversationService;
@@ -30,6 +33,8 @@ public class SummarizationExecutor(
     private readonly ISecureCredentialStore _credentialStore = credentialStore;
     private readonly IAppSettingsRepository _appSettingsRepository = appSettingsRepository;
     private readonly IAssistantProfileRepository _assistantProfileRepository = assistantProfileRepository;
+    private readonly ISummarizationSchemaService _schemaService = schemaService;
+    private readonly IChatHistoryReducerFactory _reducerFactory = reducerFactory;
     private readonly ILogger<SummarizationExecutor> _logger = logger;
 
     /// <inheritdoc />
@@ -55,17 +60,19 @@ public class SummarizationExecutor(
         var contextMessages = await _conversationService.BuildContextAsync(selectedNodeId, cancellationToken);
         var chatHistory = contextMessages.ToChatHistory();
 
-        // 3. Create kernel (plain, no agent tools) and reducer
+        // 3. Resolve schema and create the appropriate reducer
+        var schema = await _schemaService.GetSchemaAsync(cancellationToken);
         var kernel = _kernelFactory.Create(profile, apiKey);
         var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
-        var reducer = new ChatHistoryCompactionReducer(chatCompletionService);
+        var reducer = _reducerFactory.Create(chatCompletionService, schema);
 
         yield return new SummarizationStartedDto(selectedNodeId);
 
         // 4. Run summarization
         _logger.LogInformation(
-            "[SUMMARIZATION] Starting for node {SelectedNodeId} in conversation {ConversationId} ({MessageCount} messages)",
-            selectedNodeId, conversationId, chatHistory.Count);
+            "[SUMMARIZATION] Starting for node {SelectedNodeId} in conversation {ConversationId} " +
+            "({MessageCount} messages, schema={Schema})",
+            selectedNodeId, conversationId, chatHistory.Count, schema);
 
         var reducedMessages = (await reducer.ReduceAsync(chatHistory, cancellationToken))?.ToList()
             ?? throw new InvalidOperationException("Summarization returned no result.");

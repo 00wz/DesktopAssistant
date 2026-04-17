@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
              xmlns:loc="using:DesktopAssistant.UI.Localization"
-             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="300"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="400"
              x:Class="DesktopAssistant.UI.Views.GeneralSettingsView"
              x:DataType="vm:GeneralSettingsViewModel">
 
@@ -33,6 +34,29 @@
             </ComboBox>
 
             <TextBlock Text="{DynamicResource General.Language.Hint}"
+                       FontSize="12"
+                       Foreground="#888"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Summarization schema -->
+        <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource General.SummarizationSchema.Label}"
+                       FontSize="13"
+                       FontWeight="SemiBold"/>
+
+            <ComboBox ItemsSource="{Binding AvailableSchemas}"
+                      SelectedItem="{Binding SelectedSchema, Mode=TwoWay}"
+                      MinWidth="360"
+                      HorizontalAlignment="Left">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="models:SummarizationSchemaOption">
+                        <TextBlock Text="{Binding DisplayName}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="{DynamicResource General.SummarizationSchema.Hint}"
                        FontSize="12"
                        Foreground="#888"
                        TextWrapping="Wrap"/>

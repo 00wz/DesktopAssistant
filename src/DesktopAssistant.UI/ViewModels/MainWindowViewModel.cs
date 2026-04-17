@@ -144,7 +144,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             var vm = _serviceProvider.GetRequiredService<SettingsViewModel>();
-            await vm.ProfilesSettings.LoadProfilesAsync();
+            await Task.WhenAll(
+                vm.ProfilesSettings.LoadProfilesAsync(),
+                vm.GeneralSettings.InitializeAsync());
             SettingsView = vm;
         }
         catch (Exception ex)
