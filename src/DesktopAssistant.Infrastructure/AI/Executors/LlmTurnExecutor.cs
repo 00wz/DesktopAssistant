@@ -87,6 +87,18 @@ public class LlmTurnExecutor(
         var assistantMessage = aggregator.Build();
         var (inputTokenCount, outputTokenCount, totalTokenCount) = TokenUsageHelper.Extract(assistantMessage);
 
+        var brokenCalls = FunctionCallContent.GetFunctionCalls(assistantMessage)
+            .Where(c => c.Exception != null)
+            .ToList();
+        if (brokenCalls.Count > 0)
+        {
+            var details = string.Join("; ", brokenCalls.Select(c =>
+                $"{c.PluginName}.{c.FunctionName}: {c.Exception!.Message}"));
+            throw new InvalidOperationException(
+                $"LLM returned {brokenCalls.Count} function call(s) with unparseable arguments. " +
+                $"The assistant message will not be saved to preserve history integrity. Details: {details}");
+        }
+
         var assistantMetadata = ChatMessageSerializer.Serialize(assistantMessage);
         var assistantNode = await _conversationService.AddNodeAsync(
             conversationId,
