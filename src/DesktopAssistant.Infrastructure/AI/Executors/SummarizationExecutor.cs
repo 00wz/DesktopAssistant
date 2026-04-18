@@ -89,8 +89,10 @@ public class SummarizationExecutor(
         var summaryContent = string.Join("\n\n", reducedMessages.Select(FormatMessageForDisplay));
 
         // 7. Inject summary node into the message tree
-        var summaryNode = await _conversationService.InjectSummaryNodeAsync(
-            conversationId, selectedNodeId, summaryContent, metadata, cancellationToken: cancellationToken);
+        //var summaryNode = await _conversationService.InjectSummaryNodeAsync(
+        //    conversationId, selectedNodeId, summaryContent, metadata, cancellationToken: cancellationToken);
+        var summaryNode = await _conversationService.AddNodeAsync(
+            conversationId, selectedNodeId, Domain.Enums.MessageNodeType.Summary, summaryContent, metadata, cancellationToken: cancellationToken);
 
         yield return new SummarizationCompletedDto(summaryNode.Id, selectedNodeId, summaryNode.CreatedAt, summaryContent);
     }
