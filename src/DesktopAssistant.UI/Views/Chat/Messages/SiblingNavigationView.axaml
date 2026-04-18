@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
+             xmlns:converters="using:DesktopAssistant.UI.Converters"
+             x:Class="DesktopAssistant.UI.Views.SiblingNavigationView"
+             x:DataType="models:ChatMessageModel">
+
+    <UserControl.Resources>
+        <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
+    </UserControl.Resources>
+
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Center"
+                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
+        <Button Classes="nav-btn"
+                Command="{Binding $parent[views:SiblingNavigationView].NavigateToPreviousSiblingCommand}"
+                CommandParameter="{Binding}"
+                IsEnabled="{Binding HasPreviousSibling}"
+                Padding="5,2"
+                ToolTip.Tip="{DynamicResource Chat.Tooltip.PreviousVersion}">
+            <TextBlock Classes="icon" Text="❮" FontSize="14"/>
+        </Button>
+        <TextBlock VerticalAlignment="Center">
+            <Run Text="{Binding CurrentSiblingIndex}"/>
+            <Run Text="/"/>
+            <Run Text="{Binding TotalSiblings}"/>
+        </TextBlock>
+        <Button Classes="nav-btn"
+                Command="{Binding $parent[views:SiblingNavigationView].NavigateToNextSiblingCommand}"
+                CommandParameter="{Binding}"
+                IsEnabled="{Binding HasNextSibling}"
+                Padding="5,2"
+                ToolTip.Tip="{DynamicResource Chat.Tooltip.NextVersion}">
+            <TextBlock Classes="icon" Text="❯" FontSize="14"/>
+        </Button>
+    </StackPanel>
+
+</UserControl>

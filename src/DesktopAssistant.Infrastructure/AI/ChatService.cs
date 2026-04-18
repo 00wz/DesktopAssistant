@@ -258,11 +258,15 @@ public class ChatService : IChatService
         Guid? prevId = idx > 0 ? userSiblings[idx - 1].Id : null;
         Guid? nextId = idx < total - 1 ? userSiblings[idx + 1].Id : null;
 
-        return new UserMessageDto(
-            userNode.Id, userNode.ParentId, userNode.CreatedAt, userNode.Content,
-            idx >= 0 ? idx + 1 : 1, total,
-            idx > 0, idx < total - 1,
-            prevId, nextId);
+        return new UserMessageDto(userNode.Id, userNode.ParentId, userNode.CreatedAt, userNode.Content)
+        {
+            CurrentSiblingIndex = idx >= 0 ? idx + 1 : 1,
+            TotalSiblings = total,
+            HasPreviousSibling = idx > 0,
+            HasNextSibling = idx < total - 1,
+            PreviousSiblingId = prevId,
+            NextSiblingId = nextId
+        };
     }
 
     /// <inheritdoc />
@@ -449,15 +453,21 @@ public class ChatService : IChatService
 
         return node.NodeType switch
         {
-            MessageNodeType.User => new UserMessageDto(
-                node.Id, node.ParentId, node.CreatedAt, node.Content,
-                currentIndex, total, hasPrev, hasNext, prevId, nextId),
+            MessageNodeType.User => new UserMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content)
+            {
+                CurrentSiblingIndex = currentIndex,
+                TotalSiblings = total,
+                HasPreviousSibling = hasPrev,
+                HasNextSibling = hasNext,
+                PreviousSiblingId = prevId,
+                NextSiblingId = nextId
+            },
 
             MessageNodeType.Assistant => MapAssistantNodeToDto(node, currentIndex, total, hasPrev, hasNext, prevId, nextId),
 
-            MessageNodeType.Tool => MapToolNodeToDto(node),
+            MessageNodeType.Tool => MapToolNodeToDto(node, siblingsMap),
 
-            MessageNodeType.Summary => MapSummaryNodeToDto(node),
+            MessageNodeType.Summary => MapSummaryNodeToDto(node, siblingsMap),
 
             _ => new AssistantMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content)
         };
@@ -492,29 +502,53 @@ public class ChatService : IChatService
         if (ChatMessageSerializer.TryDeserialize(node.Metadata, out var msg) && msg != null)
             (inputTokenCount, outputTokenCount, totalTokenCount) = TokenUsageHelper.Extract(msg);
 
-        return new AssistantMessageDto(
-            node.Id, node.ParentId, node.CreatedAt, node.Content,
-            currentIndex, total, hasPrev, hasNext, prevId, nextId,
-            inputTokenCount, outputTokenCount, totalTokenCount);
+        return new AssistantMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content,
+            inputTokenCount, outputTokenCount, totalTokenCount)
+        {
+            CurrentSiblingIndex = currentIndex,
+            TotalSiblings = total,
+            HasPreviousSibling = hasPrev,
+            HasNextSibling = hasNext,
+            PreviousSiblingId = prevId,
+            NextSiblingId = nextId
+        };
     }
 
-    private static SummaryMessageDto MapSummaryNodeToDto(MessageNode node)
+    private static SummaryMessageDto MapSummaryNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {
-        return new SummaryMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content);
+        var (currentIndex, total, hasPrev, hasNext, prevId, nextId) = ComputeSiblingInfo(node, siblingsMap);
+        return new SummaryMessageDto(node.Id, node.ParentId, node.CreatedAt, node.Content)
+        {
+            CurrentSiblingIndex = currentIndex,
+            TotalSiblings = total,
+            HasPreviousSibling = hasPrev,
+            HasNextSibling = hasNext,
+            PreviousSiblingId = prevId,
+            NextSiblingId = nextId
+        };
     }
 
-    private static ToolResultDto MapToolNodeToDto(MessageNode node)
+    private static ToolResultDto MapToolNodeToDto(MessageNode node, Dictionary<Guid, List<MessageNode>> siblingsMap)
     {
         var meta = ToolNodeMetadata.TryDeserialize(node.Metadata)
             ?? throw new InvalidOperationException(
                 $"Failed to deserialize ToolNodeMetadata for node {node.Id}");
 
+        var (currentIndex, total, hasPrev, hasNext, prevId, nextId) = ComputeSiblingInfo(node, siblingsMap);
         return new ToolResultDto(
             node.Id, node.ParentId, node.CreatedAt,
             meta.CallId, meta.PluginName, meta.FunctionName,
             meta.ResultJson ?? string.Empty,
             Status: meta.Status,
             meta.ArgumentsJson,
-            IsTerminal: meta.IsTerminal);
+            IsTerminal: meta.IsTerminal)
+        {
+            CurrentSiblingIndex = currentIndex,
+            TotalSiblings = total,
+            HasPreviousSibling = hasPrev,
+            HasNextSibling = hasNext,
+            PreviousSiblingId = prevId,
+            NextSiblingId = nextId
+        };
     }
 }

@@ -9,48 +9,27 @@ namespace DesktopAssistant.UI.Models;
 /// </summary>
 public static class ChatMessageModelFactory
 {
-    public static ChatMessageModel FromDto(MessageDto dto) => dto switch
+    public static ChatMessageModel FromDto(MessageDto dto)
     {
-        UserMessageDto u => new UserChatMessageModel(u.Id, u.Content, u.CreatedAt)
+        ChatMessageModel model = dto switch
         {
-            ParentId = u.ParentId,
-            CurrentSiblingIndex = u.CurrentSiblingIndex,
-            TotalSiblings = u.TotalSiblings,
-            HasPreviousSibling = u.HasPreviousSibling,
-            HasNextSibling = u.HasNextSibling,
-            PreviousSiblingId = u.PreviousSiblingId,
-            NextSiblingId = u.NextSiblingId
-        },
-
-        AssistantMessageDto a => new AssistantChatMessageModel(a.Id, a.Content, a.CreatedAt)
-        {
-            ParentId = a.ParentId,
-            CurrentSiblingIndex = a.CurrentSiblingIndex,
-            TotalSiblings = a.TotalSiblings,
-            HasPreviousSibling = a.HasPreviousSibling,
-            HasNextSibling = a.HasNextSibling,
-            PreviousSiblingId = a.PreviousSiblingId,
-            NextSiblingId = a.NextSiblingId
-        },
-
-        ToolResultDto t => t.IsTerminal
-            ? new AgentResultModel
+            UserMessageDto u => new UserChatMessageModel(u.Id, u.Content, u.CreatedAt),
+            AssistantMessageDto a => new AssistantChatMessageModel(a.Id, a.Content, a.CreatedAt),
+            ToolResultDto t when t.IsTerminal => new AgentResultModel
             {
                 Id = t.Id,
                 CreatedAt = t.CreatedAt,
-                ParentId = t.ParentId,
                 CallId = t.CallId,
                 PluginName = t.PluginName,
                 FunctionName = t.FunctionName,
                 ResultJson = t.ResultJson,
                 Status = MapStatus(t.Status),
                 Message = AgentResultModel.ExtractMessage(t.ArgumentsJson)
-            }
-            : new RegularToolCallModel
+            },
+            ToolResultDto t => new RegularToolCallModel
             {
                 Id = t.Id,
                 CreatedAt = t.CreatedAt,
-                ParentId = t.ParentId,
                 CallId = t.CallId,
                 PluginName = t.PluginName,
                 FunctionName = t.FunctionName,
@@ -58,18 +37,26 @@ public static class ChatMessageModelFactory
                 ResultJson = t.ResultJson,
                 Status = MapStatus(t.Status)
             },
+            SummaryMessageDto s => new SummarizationChatMessageModel
+            {
+                Id = s.Id,
+                CreatedAt = s.CreatedAt,
+                SummaryContent = s.SummaryContent,
+                Status = SummarizationStatus.Completed
+            },
+            _ => throw new ArgumentOutOfRangeException(nameof(dto), $"Unknown DTO type: {dto.GetType().Name}")
+        };
 
-        SummaryMessageDto s => new SummarizationChatMessageModel
-        {
-            Id = s.Id,
-            CreatedAt = s.CreatedAt,
-            ParentId = s.ParentId,
-            SummaryContent = s.SummaryContent,
-            Status = SummarizationStatus.Completed
-        },
+        model.ParentId = dto.ParentId;
+        model.CurrentSiblingIndex = dto.CurrentSiblingIndex;
+        model.TotalSiblings = dto.TotalSiblings;
+        model.HasPreviousSibling = dto.HasPreviousSibling;
+        model.HasNextSibling = dto.HasNextSibling;
+        model.PreviousSiblingId = dto.PreviousSiblingId;
+        model.NextSiblingId = dto.NextSiblingId;
 
-        _ => throw new ArgumentOutOfRangeException(nameof(dto), $"Unknown DTO type: {dto.GetType().Name}")
-    };
+        return model;
+    }
 
     private static ToolCallStatus MapStatus(ToolNodeStatus s) => s switch
     {

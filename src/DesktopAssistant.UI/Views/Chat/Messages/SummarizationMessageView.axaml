@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:models="using:DesktopAssistant.UI.Models"
+             xmlns:views="using:DesktopAssistant.UI.Views"
              mc:Ignorable="d"
              x:Class="DesktopAssistant.UI.Views.SummarizationMessageView"
              x:DataType="models:SummarizationChatMessageModel">
@@ -13,31 +14,36 @@
             Padding="2"
             MaxWidth="500"
             HorizontalAlignment="Left">
-        <Expander>
-            <Expander.Header>
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <TextBlock Classes="icon" Text="☰" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <TextBlock Text="{DynamicResource Chat.Summary}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding StatusText}"
-                               Foreground="Gray"
-                               FontSize="11"
-                               VerticalAlignment="Center"
-                               Margin="6,0,0,0"/>
-                    <ProgressBar IsIndeterminate="True"
-                                 IsVisible="{Binding IsInProgress}"
-                                 Width="60"
-                                 Height="3"
-                                 VerticalAlignment="Center"
-                                 Margin="6,0,0,0"/>
-                </StackPanel>
-            </Expander.Header>
-            <TextBlock Text="{Binding SummaryContent}"
-                       IsVisible="{Binding !IsInProgress}"
-                       TextWrapping="Wrap"
-                       FontSize="11"
-                       Foreground="#444444"
-                       Margin="4"/>
-        </Expander>
+        <StackPanel>
+            <Expander>
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Classes="icon" Text="☰" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource Chat.Summary}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding StatusText}"
+                                   Foreground="Gray"
+                                   FontSize="11"
+                                   VerticalAlignment="Center"
+                                   Margin="6,0,0,0"/>
+                        <ProgressBar IsIndeterminate="True"
+                                     IsVisible="{Binding IsInProgress}"
+                                     Width="60"
+                                     Height="3"
+                                     VerticalAlignment="Center"
+                                     Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Expander.Header>
+                <TextBlock Text="{Binding SummaryContent}"
+                           IsVisible="{Binding !IsInProgress}"
+                           TextWrapping="Wrap"
+                           FontSize="11"
+                           Foreground="#444444"
+                           Margin="4"/>
+            </Expander>
+            <views:SiblingNavigationView
+                NavigateToPreviousSiblingCommand="{Binding $parent[views:SummarizationMessageView].NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[views:SummarizationMessageView].NavigateToNextSiblingCommand}"/>
+        </StackPanel>
     </Border>
 
 </UserControl>

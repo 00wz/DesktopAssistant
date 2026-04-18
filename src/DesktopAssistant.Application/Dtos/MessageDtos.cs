@@ -1,36 +1,32 @@
 namespace DesktopAssistant.Application.Dtos;
 
 /// <summary>
-/// Base DTO for conversation messages. Replaces direct use of the domain entity MessageNode in the UI.
+/// Base DTO for conversation messages. Sibling navigation fields apply to all message types.
 /// </summary>
-public abstract record MessageDto(Guid Id, Guid? ParentId, DateTime CreatedAt);
+public abstract record MessageDto(Guid Id, Guid? ParentId, DateTime CreatedAt)
+{
+    public int CurrentSiblingIndex { get; init; } = 1;
+    public int TotalSiblings { get; init; } = 1;
+    public bool HasPreviousSibling { get; init; } = false;
+    public bool HasNextSibling { get; init; } = false;
+    public Guid? PreviousSiblingId { get; init; } = null;
+    public Guid? NextSiblingId { get; init; } = null;
+}
 
-/// <summary>User message. Includes sibling information for branch navigation.</summary>
+/// <summary>User message.</summary>
 public record UserMessageDto(
     Guid Id,
     Guid? ParentId,
     DateTime CreatedAt,
-    string Content,
-    int CurrentSiblingIndex = 1,
-    int TotalSiblings = 1,
-    bool HasPreviousSibling = false,
-    bool HasNextSibling = false,
-    Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null
+    string Content
 ) : MessageDto(Id, ParentId, CreatedAt);
 
-/// <summary>Assistant message. Includes sibling information.</summary>
+/// <summary>Assistant message.</summary>
 public record AssistantMessageDto(
     Guid Id,
     Guid? ParentId,
     DateTime CreatedAt,
     string Content,
-    int CurrentSiblingIndex = 1,
-    int TotalSiblings = 1,
-    bool HasPreviousSibling = false,
-    bool HasNextSibling = false,
-    Guid? PreviousSiblingId = null,
-    Guid? NextSiblingId = null,
     int InputTokenCount = 0,
     int OutputTokenCount = 0,
     int TotalTokenCount = 0

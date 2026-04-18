@@ -63,6 +63,9 @@
                            FontSize="11"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource ToolResultFg}"/>
+                <views:SiblingNavigationView
+                    NavigateToPreviousSiblingCommand="{Binding $parent[views:RegularToolCallView].NavigateToPreviousSiblingCommand}"
+                    NavigateToNextSiblingCommand="{Binding $parent[views:RegularToolCallView].NavigateToNextSiblingCommand}"/>
             </StackPanel>
         </Expander>
     </Border>

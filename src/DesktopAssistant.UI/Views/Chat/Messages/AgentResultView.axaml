@@ -49,6 +49,9 @@
                        IsVisible="{Binding HasMessage}"
                        TextWrapping="Wrap"
                        Foreground="{DynamicResource ToolMonoFg}"/>
+            <views:SiblingNavigationView
+                NavigateToPreviousSiblingCommand="{Binding $parent[views:AgentResultView].NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[views:AgentResultView].NavigateToNextSiblingCommand}"/>
         </StackPanel>
     </Border>
 

@@ -4,13 +4,13 @@ using System.Windows.Input;
 
 namespace DesktopAssistant.UI.Views;
 
-public partial class SummarizationMessageView : UserControl
+public partial class SiblingNavigationView : UserControl
 {
     public static readonly StyledProperty<ICommand?> NavigateToPreviousSiblingCommandProperty =
-        AvaloniaProperty.Register<SummarizationMessageView, ICommand?>(nameof(NavigateToPreviousSiblingCommand));
+        AvaloniaProperty.Register<SiblingNavigationView, ICommand?>(nameof(NavigateToPreviousSiblingCommand));
 
     public static readonly StyledProperty<ICommand?> NavigateToNextSiblingCommandProperty =
-        AvaloniaProperty.Register<SummarizationMessageView, ICommand?>(nameof(NavigateToNextSiblingCommand));
+        AvaloniaProperty.Register<SiblingNavigationView, ICommand?>(nameof(NavigateToNextSiblingCommand));
 
     public ICommand? NavigateToPreviousSiblingCommand
     {
@@ -24,7 +24,7 @@ public partial class SummarizationMessageView : UserControl
         set => SetValue(NavigateToNextSiblingCommandProperty, value);
     }
 
-    public SummarizationMessageView()
+    public SiblingNavigationView()
     {
         InitializeComponent();
     }

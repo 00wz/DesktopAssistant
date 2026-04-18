@@ -32,25 +32,33 @@
 
         <DataTemplate DataType="models:AssistantChatMessageModel">
             <views:AssistantMessageView
-                SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"/>
+                SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
+                NavigateToPreviousSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"/>
         </DataTemplate>
 
         <DataTemplate DataType="models:RegularToolCallModel">
             <views:RegularToolCallView
                 SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
                 ApproveToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
-                DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"/>
+                DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
+                NavigateToPreviousSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"/>
         </DataTemplate>
 
         <DataTemplate DataType="models:AgentResultModel">
             <views:AgentResultView
                 SummarizeCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).SummarizeMessageCommand}"
                 ApproveToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).ApproveToolCommand}"
-                DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"/>
+                DenyToolCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).DenyToolCommand}"
+                NavigateToPreviousSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"/>
         </DataTemplate>
 
         <DataTemplate DataType="models:SummarizationChatMessageModel">
-            <views:SummarizationMessageView/>
+            <views:SummarizationMessageView
+                NavigateToPreviousSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[UserControl].((vm:ChatViewModel)DataContext).NavigateToNextSiblingCommand}"/>
         </DataTemplate>
 
     </UserControl.DataTemplates>

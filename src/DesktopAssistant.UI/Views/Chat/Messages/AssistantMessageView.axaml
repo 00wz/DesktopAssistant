@@ -26,6 +26,9 @@
                          IsVisible="{Binding IsStreaming}"
                          Height="3"
                          Margin="0,5,0,0"/>
+            <views:SiblingNavigationView
+                NavigateToPreviousSiblingCommand="{Binding $parent[views:AssistantMessageView].NavigateToPreviousSiblingCommand}"
+                NavigateToNextSiblingCommand="{Binding $parent[views:AssistantMessageView].NavigateToNextSiblingCommand}"/>
         </StackPanel>
     </Border>
 

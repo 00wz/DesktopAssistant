@@ -4,14 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:models="using:DesktopAssistant.UI.Models"
              xmlns:views="using:DesktopAssistant.UI.Views"
-             xmlns:converters="using:DesktopAssistant.UI.Converters"
              mc:Ignorable="d"
              x:Class="DesktopAssistant.UI.Views.UserMessageView"
              x:DataType="models:UserChatMessageModel">
-
-    <UserControl.Resources>
-        <converters:IntGreaterThanConverter x:Key="IntGreaterThanConverter" Threshold="1"/>
-    </UserControl.Resources>
 
     <Border Margin="5"
             Padding="12"
@@ -36,31 +31,9 @@
 
                 <!-- Sibling navigation + edit button -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                IsVisible="{Binding TotalSiblings, Converter={StaticResource IntGreaterThanConverter}}">
-                        <Button Classes="nav-btn"
-                                Command="{Binding $parent[views:UserMessageView].NavigateToPreviousSiblingCommand}"
-                                CommandParameter="{Binding}"
-                                IsEnabled="{Binding HasPreviousSibling}"
-                                Padding="5,2"
-                                ToolTip.Tip="{DynamicResource Chat.Tooltip.PreviousVersion}">
-                            <TextBlock Classes="icon" Text="❮" FontSize="14"/>
-                        </Button>
-                        <TextBlock VerticalAlignment="Center">
-                            <Run Text="{Binding CurrentSiblingIndex}"/>
-                            <Run Text="/"/>
-                            <Run Text="{Binding TotalSiblings}"/>
-                        </TextBlock>
-                        <Button Classes="nav-btn"
-                                Command="{Binding $parent[views:UserMessageView].NavigateToNextSiblingCommand}"
-                                CommandParameter="{Binding}"
-                                IsEnabled="{Binding HasNextSibling}"
-                                Padding="5,2"
-                                ToolTip.Tip="{DynamicResource Chat.Tooltip.NextVersion}">
-                            <TextBlock Classes="icon" Text="❯" FontSize="14"/>
-                        </Button>
-                    </StackPanel>
+                    <views:SiblingNavigationView
+                        NavigateToPreviousSiblingCommand="{Binding $parent[views:UserMessageView].NavigateToPreviousSiblingCommand}"
+                        NavigateToNextSiblingCommand="{Binding $parent[views:UserMessageView].NavigateToNextSiblingCommand}"/>
                     <Button Command="{Binding $parent[views:UserMessageView].StartEditMessageCommand}"
                             CommandParameter="{Binding}"
                             Padding="5,2"
