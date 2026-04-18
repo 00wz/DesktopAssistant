@@ -2,6 +2,7 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 
 namespace DesktopAssistant.UI.Views;
@@ -40,6 +41,8 @@ public partial class TextInputWithButtonView : UserControl
     public TextInputWithButtonView()
     {
         InitializeComponent();
+        this.FindControl<TextBox>("InputTextBox")!
+            .AddHandler(KeyDownEvent, TextBox_KeyDown, RoutingStrategies.Tunnel);
     }
 
     private void TextBox_KeyDown(object? sender, KeyEventArgs e)
