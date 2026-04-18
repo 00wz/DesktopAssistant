@@ -4,15 +4,15 @@
              x:Name="Self">
 
     <Panel>
-        <TextBox Text="{Binding Text, ElementName=Self, Mode=TwoWay}"
+        <TextBox x:Name="InputTextBox"
+                 Text="{Binding Text, ElementName=Self, Mode=TwoWay}"
                  Watermark="{Binding Watermark, ElementName=Self}"
-                 AcceptsReturn="False"
+                 AcceptsReturn="True"
                  TextWrapping="Wrap"
                  MinHeight="{Binding MinInputHeight, ElementName=Self}"
                  MaxHeight="{Binding MaxInputHeight, ElementName=Self}"
                  Padding="8,8,40,8"
-                 VerticalContentAlignment="{Binding InputVerticalContentAlignment, ElementName=Self}"
-                 KeyDown="TextBox_KeyDown"/>
+                 VerticalContentAlignment="{Binding InputVerticalContentAlignment, ElementName=Self}"/>
         <Button Command="{Binding SendCommand, ElementName=Self}"
                 IsEnabled="{Binding IsSendEnabled, ElementName=Self}"
                 HorizontalAlignment="Right"
