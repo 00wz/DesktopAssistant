@@ -151,6 +151,11 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
                 ?? throw new InvalidOperationException(
                     "Reduction failed: LLM did not call submit_history.");
 
+            if (callContent.Exception is not null)
+                throw new InvalidOperationException(
+                    "Reduction failed: submit_history was called with unparseable arguments.",
+                    callContent.Exception);
+
             // Resolve the raw JSON — may arrive as JsonElement, string, or other object
             var rawArg = callContent.Arguments?["messages"];
             var json = rawArg switch
