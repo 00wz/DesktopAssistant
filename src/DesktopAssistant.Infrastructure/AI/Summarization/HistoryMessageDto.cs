@@ -7,16 +7,10 @@ namespace DesktopAssistant.Infrastructure.AI.Summarization;
 public record HistoryContentItemDto
 {
     [JsonPropertyName("type")]
-    public required string Type { get; init; }   // "text" | "tool_interaction" | "function_call" | "function_result"
+    public required string Type { get; init; }   // "text" | "tool_interaction"
 
     [JsonPropertyName("text")]
     public string? Text { get; init; }
-
-    /// <summary>
-    /// Unique call identifier. Used by the paired-call reducer for <c>function_call</c> items.
-    /// </summary>
-    [JsonPropertyName("id")]
-    public string? Id { get; init; }
 
     [JsonPropertyName("plugin_name")]
     public string? PluginName { get; init; }
@@ -32,13 +26,6 @@ public record HistoryContentItemDto
     [JsonPropertyName("arguments")]
     [JsonConverter(typeof(AnyValueToStringDictionaryConverter))]
     public Dictionary<string, string>? Arguments { get; init; }
-
-    /// <summary>
-    /// Matches the <see cref="Id"/> of the corresponding <c>function_call</c>.
-    /// Used by the paired-call reducer for <c>function_result</c> items.
-    /// </summary>
-    [JsonPropertyName("call_id")]
-    public string? CallId { get; init; }
 
     [JsonPropertyName("result")]
     public string? Result { get; init; }

@@ -6,7 +6,7 @@ using DesktopAssistant.Domain.Entities;
 using DesktopAssistant.Domain.Interfaces;
 using DesktopAssistant.Infrastructure.AI.Extensions;
 using DesktopAssistant.Infrastructure.AI.Metadata;
-using DesktopAssistant.Infrastructure.AI.Summarization.ToolInteractionSchema;
+using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;

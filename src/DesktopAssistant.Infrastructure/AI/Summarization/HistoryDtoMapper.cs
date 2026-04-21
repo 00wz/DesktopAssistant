@@ -1,8 +1,7 @@
-using DesktopAssistant.Infrastructure.AI.Summarization;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace DesktopAssistant.Infrastructure.AI.Summarization.ToolInteractionSchema;
+namespace DesktopAssistant.Infrastructure.AI.Summarization;
 
 /// <summary>
 /// Maps <see cref="HistoryMessageDto"/> lists back to <see cref="ChatMessageContent"/> objects
@@ -92,7 +91,7 @@ public class HistoryDtoMapper
 
     private static List<ChatMessageContent> MergeConsecutiveAssistantMessages(List<ChatMessageContent> messages)
     {
-        for (int i = 0; i < messages.Count - 1; )
+        for (int i = 0; i < messages.Count - 1;)
         {
             if (messages[i].Role == AuthorRole.Assistant &&
                 messages[i + 1].Role == AuthorRole.Assistant)
@@ -100,7 +99,6 @@ public class HistoryDtoMapper
                 foreach (var item in messages[i + 1].Items)
                     messages[i].Items.Add(item);
                 messages.RemoveAt(i + 1);
-                // re-check same position
             }
             else
             {

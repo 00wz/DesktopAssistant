@@ -5,32 +5,39 @@ using Microsoft.SemanticKernel.ChatCompletion;
 namespace DesktopAssistant.Infrastructure.AI.Summarization;
 
 /// <summary>
-/// Abstract base class for LLM-based chat history reducers that compact conversation history
-/// by asking an LLM to call <c>submit_history</c> with the compacted result as a structured
-/// list of <see cref="HistoryMessageDto"/> objects.
+/// Reduces chat history by sending the messages-to-compact to an LLM that must call
+/// <c>submit_history</c> with the compacted result as a structured list of
+/// <see cref="ChatMessageContent"/> objects.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Unlike the built-in <c>ChatHistorySummarizationReducer</c>, which replaces a range of messages
-/// with a single free-text summary, subclasses of this reducer produce a proper list of
-/// <see cref="ChatMessageContent"/> objects, preserving roles, function calls, and function results.
-/// This makes them compatible with agents that use <c>FunctionChoiceBehavior.Required</c>, where
-/// function call / result pairs must always appear together in the history.
-/// </para>
-/// <para>
-/// Subclasses provide the JSON schema, system prompt, validation, and DTO-to-message mapping
-/// specific to their serialization approach. All common orchestration (boundary detection,
-/// LLM invocation, result assembly) lives here.
-/// </para>
+/// Unlike classic summarizers, this reducer does not guarantee that the result contains fewer
+/// messages than the input — the output is whatever the LLM returns. This means the hysteresis
+/// provided by <c>thresholdCount</c> may not function as intended: if the LLM does not reduce
+/// message count, <see cref="ReduceAsync"/> will trigger on every subsequent call.
 /// </remarks>
-public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
+public class ChatHistoryCompactionReducer : IChatHistoryReducer
 {
     /// <summary>
-    /// Default user message appended to the LLM request to trigger compaction.
-    /// Shared by all subclasses because it describes the compaction task without
-    /// referencing a specific schema.
+    /// Default system prompt used when calling the LLM for compaction.
     /// </summary>
-    public const string SharedDefaultReduceUserMessage =
+    public const string DefaultReduceSystemPrompt =
+        """
+        You are a conversation history compactor.
+
+        Hard constraints — never violate these:
+        - Code, configuration, identifiers, file paths, and any other exact-value data
+          must be preserved verbatim. Never paraphrase or approximate them.
+        - Every tool_interaction item must include both arguments and result.
+          Never drop one without the other.
+        - tool_interaction items are only allowed in assistant messages.
+        - Do not reorder messages.
+        - Do not invent information that was not in the original history.
+        """;
+
+    /// <summary>
+    /// Default user message appended to the LLM request to trigger compaction.
+    /// </summary>
+    public const string DefaultReduceUserMessage =
         """
         Your task is to compact the conversation history above by reducing its token
         count as much as possible while preserving all information needed to continue
@@ -51,21 +58,93 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
         Do not write anything else.
         """;
 
+    private const string MessagesJsonSchema =
+        """
+        {
+          "type": "array",
+          "description": "The compacted list of conversation messages.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "items"],
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": ["user", "assistant"],
+                "description": "Author role of the message. Use 'assistant' for messages that include tool_interaction items."
+              },
+              "items": {
+                "type": "array",
+                "description": "Content blocks of the message.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["type"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["text", "tool_interaction"],
+                      "description": "Content block discriminator. Use 'tool_interaction' to represent a function call together with its result."
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Plain text content. Required when type=text."
+                    },
+                    "plugin_name": {
+                      "type": "string",
+                      "description": "Plugin name. Present when type=tool_interaction."
+                    },
+                    "function_name": {
+                      "type": "string",
+                      "description": "Function name. Present when type=tool_interaction."
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "description": "Key-value function arguments. Present when type=tool_interaction.",
+                      "additionalProperties": {}
+                    },
+                    "result": {
+                      "type": "string",
+                      "description": "Serialized result value. Present when type=tool_interaction."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+    private const string SubmitHistoryDescription =
+        """
+        Submits the compacted conversation history. Call this function
+        exactly once with the result of your compaction work.
+
+        Structural rules for the messages argument:
+        - Use role 'assistant' for messages that include tool_interaction items.
+        - A tool_interaction item represents a single function call together
+          with its result. Both arguments and result must always be present.
+        - Multiple tool_interaction items in a single assistant message are allowed.
+        - Messages must remain in their original chronological order.
+        """;
+
+    private static readonly KernelFunction s_submitHistoryFn = CreateSubmitHistoryFn();
+
     private readonly IChatCompletionService _service;
     private readonly int _retainedMessageCount;
     private readonly int _thresholdCount;
 
     /// <summary>
     /// System prompt sent to the LLM for compaction.
-    /// Defaults to the subclass-specific <see cref="GetDefaultReduceSystemPrompt"/>.
+    /// Defaults to <see cref="DefaultReduceSystemPrompt"/>.
     /// </summary>
-    public string ReduceSystemPrompt { get; init; }
+    public string ReduceSystemPrompt { get; init; } = DefaultReduceSystemPrompt;
 
     /// <summary>
     /// User message appended after the history to trigger compaction.
-    /// Defaults to <see cref="SharedDefaultReduceUserMessage"/>.
+    /// Defaults to <see cref="DefaultReduceUserMessage"/>.
     /// </summary>
-    public string ReduceUserMessage { get; init; } = SharedDefaultReduceUserMessage;
+    public string ReduceUserMessage { get; init; } = DefaultReduceUserMessage;
 
     /// <summary>
     /// Whether to rethrow exceptions that occur during reduction. Defaults to <see langword="true"/>.
@@ -84,10 +163,10 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
     /// the trigger decision with the reduction itself; in this implementation it offers only a
     /// best-effort guard, since there is no guarantee the LLM will reduce message count.
     /// </param>
-    protected ChatHistoryCompactionReducerBase(
+    public ChatHistoryCompactionReducer(
         IChatCompletionService service,
-        int retainedMessageCount,
-        int? thresholdCount)
+        int retainedMessageCount = 0,
+        int? thresholdCount = null)
     {
         ArgumentNullException.ThrowIfNull(service);
         if (retainedMessageCount < 0)
@@ -98,9 +177,6 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
         _service = service;
         _retainedMessageCount = retainedMessageCount;
         _thresholdCount = thresholdCount ?? 0;
-
-        // Set default system prompt from the subclass
-        ReduceSystemPrompt = GetDefaultReduceSystemPrompt();
     }
 
     /// <inheritdoc/>
@@ -110,14 +186,9 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
     {
         var systemMessage = chatHistory.FirstOrDefault(m => m.Role == AuthorRole.System);
         bool hasSystemMessage = systemMessage is not null;
-
         int firstNonSystemIndex = hasSystemMessage ? 1 : 0;
 
-        int truncationIndex = LocateSafeReductionIndex(
-            chatHistory,
-            _retainedMessageCount,
-            _thresholdCount);
-
+        int truncationIndex = LocateSafeReductionIndex(chatHistory, _retainedMessageCount, _thresholdCount);
         if (truncationIndex < firstNonSystemIndex)
             return null;
 
@@ -128,33 +199,25 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
             llmHistory.AddSystemMessage(ReduceSystemPrompt);
             for (int i = firstNonSystemIndex; i <= truncationIndex; i++)
                 llmHistory.Add(chatHistory[i]);
-
             llmHistory.AddUserMessage(ReduceUserMessage);
 
             // Register the submit_history tool and call the LLM
-            var submitHistoryFn = GetSubmitHistoryFunction();
             var kernel = new Microsoft.SemanticKernel.Kernel();
-            kernel.Plugins.AddFromFunctions("_compaction", [submitHistoryFn]);
+            kernel.Plugins.AddFromFunctions("_compaction", [s_submitHistoryFn]);
 
             var settings = new PromptExecutionSettings
             {
-                FunctionChoiceBehavior = FunctionChoiceBehavior.Required(
-                    functions: [submitHistoryFn],
-                    autoInvoke: false)
+                FunctionChoiceBehavior = FunctionChoiceBehavior.Required(functions: [s_submitHistoryFn], autoInvoke: false)
             };
 
-            var response = await _service.GetChatMessageContentAsync(
-                llmHistory, settings, kernel, cancellationToken).ConfigureAwait(false);
+            var response = await _service.GetChatMessageContentAsync(llmHistory, settings, kernel, cancellationToken).ConfigureAwait(false);
 
             // Extract the function call
             var callContent = response.Items.OfType<FunctionCallContent>().FirstOrDefault()
-                ?? throw new InvalidOperationException(
-                    "Reduction failed: LLM did not call submit_history.");
+                ?? throw new InvalidOperationException("Reduction failed: LLM did not call submit_history.");
 
             if (callContent.Exception is not null)
-                throw new InvalidOperationException(
-                    "Reduction failed: submit_history was called with unparseable arguments.",
-                    callContent.Exception);
+                throw new InvalidOperationException("Reduction failed: submit_history was called with unparseable arguments.", callContent.Exception);
 
             // Resolve the raw JSON — may arrive as JsonElement, string, or other object
             var rawArg = callContent.Arguments?["messages"];
@@ -163,18 +226,16 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
                 JsonElement { ValueKind: JsonValueKind.String } je => je.GetString()!,
                 JsonElement je => je.GetRawText(),
                 string s => s,
-                null => throw new InvalidOperationException(
-                    "Reduction failed: submit_history was called without a 'messages' argument."),
+                null => throw new InvalidOperationException("Reduction failed: submit_history was called without a 'messages' argument."),
                 var other => JsonSerializer.Serialize(other)
             };
 
             var dtos = JsonSerializer.Deserialize<List<HistoryMessageDto>>(json)
-                ?? throw new InvalidOperationException(
-                    "Reduction failed: deserialization of 'messages' returned null.");
+                ?? throw new InvalidOperationException("Reduction failed: deserialization of 'messages' returned null.");
 
-            ValidateDtos(dtos);
-
-            var compacted = MapToMessages(dtos);
+            Validate(dtos);
+            var mapper = new HistoryDtoMapper();
+            var compacted = mapper.FromDtoList(dtos);
 
             return AssembleResult(systemMessage, compacted, chatHistory, truncationIndex);
         }
@@ -188,8 +249,7 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
     /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
-        return obj is ChatHistoryCompactionReducerBase other &&
-               GetType() == other.GetType() &&
+        return obj is ChatHistoryCompactionReducer other &&
                _thresholdCount == other._thresholdCount &&
                _retainedMessageCount == other._retainedMessageCount &&
                string.Equals(ReduceSystemPrompt, other.ReduceSystemPrompt, StringComparison.Ordinal) &&
@@ -198,38 +258,26 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
 
     /// <inheritdoc/>
     public override int GetHashCode() =>
-        HashCode.Combine(GetType().Name, _thresholdCount, _retainedMessageCount, ReduceSystemPrompt, ReduceUserMessage);
-
-    // -------------------------------------------------------------------------
-    // Abstract members — implemented by each strategy
-    // -------------------------------------------------------------------------
+        HashCode.Combine(nameof(ChatHistoryCompactionReducer), _thresholdCount, _retainedMessageCount, ReduceSystemPrompt, ReduceUserMessage);
 
     /// <summary>
-    /// Returns the default system prompt for this reducer strategy.
-    /// Called once during construction to initialize <see cref="ReduceSystemPrompt"/>.
-    /// </summary>
-    protected abstract string GetDefaultReduceSystemPrompt();
-
-    /// <summary>
-    /// Returns the <see cref="KernelFunction"/> representing <c>submit_history</c>
-    /// with the JSON schema specific to this strategy.
-    /// </summary>
-    protected abstract KernelFunction GetSubmitHistoryFunction();
-
-    /// <summary>
-    /// Validates structural integrity of the deserialized DTOs.
+    /// Validates structural integrity of the compacted history returned by the LLM.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when a structural rule is violated.</exception>
-    protected abstract void ValidateDtos(List<HistoryMessageDto> messages);
+    private static void Validate(List<HistoryMessageDto> messages)
+    {
+        for (int i = 0; i < messages.Count; i++)
+        {
+            var msg = messages[i];
+            if (msg.Role == "assistant") continue;
 
-    /// <summary>
-    /// Maps deserialized DTOs back to <see cref="ChatMessageContent"/> objects.
-    /// </summary>
-    protected abstract List<ChatMessageContent> MapToMessages(List<HistoryMessageDto> dtos);
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
+            bool hasToolInteraction = msg.Items.Any(it => it.Type == "tool_interaction");
+            if (hasToolInteraction)
+                throw new InvalidOperationException(
+                    $"Message at index {i} has role '{msg.Role}' but contains tool_interaction items. " +
+                    "tool_interaction items are only allowed in assistant messages.");
+        }
+    }
 
     private static IEnumerable<ChatMessageContent> AssembleResult(
         ChatMessageContent? systemMessage,
@@ -275,5 +323,22 @@ public abstract class ChatHistoryCompactionReducerBase : IChatHistoryReducer
         }
 
         return -1;
+    }
+
+    private static KernelFunction CreateSubmitHistoryFn()
+    {
+        return KernelFunctionFactory.CreateFromMethod(
+            method: static (string messages) => messages,
+            functionName: "submit_history",
+            description: SubmitHistoryDescription,
+            parameters:
+            [
+                new KernelParameterMetadata("messages")
+                {
+                    ParameterType = typeof(string),
+                    IsRequired = true,
+                    Schema = KernelJsonSchema.Parse(MessagesJsonSchema)
+                }
+            ]);
     }
 }
