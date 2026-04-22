@@ -87,7 +87,7 @@ Key infrastructure components:
 - `SubagentPlugin` — SK plugin exposing `create_subagent`, `send_message_to_subagent`, `list_subagents` tools to the LLM
 - `DpapiCredentialStore` — Windows DPAPI credential store
 - `AvailableToolsService` — aggregates static SK plugins and dynamic MCP tools
-- `SummarizationExecutor` — orchestrates history compaction via `ChatHistoryStructuredReducer` (see [`src/DesktopAssistant.Infrastructure/AI/Summarization/`](src/DesktopAssistant.Infrastructure/AI/Summarization/))
+- `SummarizationExecutor` — orchestrates history compaction via `ChatHistoryCompactionReducer` (see [`src/DesktopAssistant.Infrastructure/AI/Summarization/`](src/DesktopAssistant.Infrastructure/AI/Summarization/))
 
 ---
 
