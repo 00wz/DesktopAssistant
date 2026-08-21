@@ -1,6 +1,6 @@
 # DesktopAssistant
 
-A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any OpenAI-compatible LLM provider, real-time MCP server installation, conversation branching, multiple simultaneous chats, and recursive sub-agent orchestration.
+A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any OpenAI-compatible LLM provider, real-time MCP server installation, conversation branching, multiple simultaneous chats, and a sub-agent tree for divide-and-conquer task delegation.
 
 ---
 
@@ -21,7 +21,7 @@ A desktop AI agent application built with .NET 9 and Avalonia UI. Supports any O
 ![Conversation branching](docs/media/branching.gif)
 
 ### Sub-Agents
-- **Recursive sub-agent creation** — enable per conversation; the agent can then spawn child agents to delegate subtasks
+- **Sub-agent tree** — enable per conversation; the agent can decompose its task and delegate parts of it to child agents, which can in turn decompose and delegate to their own children, forming a divide-and-conquer hierarchy rather than a single flat layer of helpers
 - **Configurable sub-agents** — when creating a sub-agent the parent specifies its assistant profile (model, endpoint, temperature), system prompt, and whether the sub-agent can spawn its own sub-agents
 - **Task assignment to existing sub-agents** — the parent agent can send new tasks to already-created sub-agents, not just create new ones
 - **Conversation tree** — each sub-agent runs as a linked conversation visible in the sidebar, showing its status and relationship to the parent
