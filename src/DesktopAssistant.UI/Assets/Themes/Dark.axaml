@@ -1,0 +1,85 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ── Surfaces ────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="WindowBg"                   Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="AppBg"                      Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="PanelBg"                    Color="#252526"/>
+    <SolidColorBrush x:Key="PanelSubtleBg"              Color="#2D2D30"/>
+    <SolidColorBrush x:Key="PanelHeaderBg"              Color="#2D2D30"/>
+    <SolidColorBrush x:Key="PanelSelectedBg"            Color="#04395E"/>
+    <SolidColorBrush x:Key="PanelBorderBrush"           Color="#3F3F46"/>
+    <SolidColorBrush x:Key="DividerBrush"               Color="#333337"/>
+    <SolidColorBrush x:Key="EditorBg"                   Color="#252526"/>
+    <SolidColorBrush x:Key="InfoBg"                     Color="#2D2D30"/>
+    <SolidColorBrush x:Key="InfoFg"                     Color="#9CDCFE"/>
+    <SolidColorBrush x:Key="ChatSettingsBg"             Color="#252526"/>
+    <SolidColorBrush x:Key="ChatSettingsBorderBrush"    Color="#3F3F46"/>
+    <SolidColorBrush x:Key="NavHoverOverlay"            Color="#20FFFFFF"/>
+
+    <!-- ── Text ────────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="LabelFg"                    Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="SecondaryFg"                Color="#B0B0B0"/>
+    <SolidColorBrush x:Key="MutedFg"                    Color="#9D9D9D"/>
+    <SolidColorBrush x:Key="SubtleFg"                   Color="#8D8D8D"/>
+    <SolidColorBrush x:Key="BodyFg"                     Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="ErrorFg"                    Color="#F48771"/>
+    <SolidColorBrush x:Key="WarningFg"                  Color="#D7BA7D"/>
+    <SolidColorBrush x:Key="SuccessFg"                  Color="#89D185"/>
+
+    <!-- ── Status / badges ─────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="ErrorBg"                    Color="#4B1D1D"/>
+    <SolidColorBrush x:Key="DangerBg"                   Color="#4B1D1D"/>
+    <SolidColorBrush x:Key="DangerFg"                   Color="#F48771"/>
+    <SolidColorBrush x:Key="BadgeDefaultBg"             Color="#0E639C"/>
+    <SolidColorBrush x:Key="BadgeDefaultFg"             Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="OnAccentFg"                 Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BadgePurpleBg"              Color="#3A2A3F"/>
+    <SolidColorBrush x:Key="BadgePurpleFg"              Color="#C586C0"/>
+    <SolidColorBrush x:Key="BadgeGreenBg"               Color="#1F3A1F"/>
+    <SolidColorBrush x:Key="BadgeGreenFg"               Color="#89D185"/>
+
+    <!-- ── Chat messages ───────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="UserMessageBg"              Color="#0E639C"/>
+    <SolidColorBrush x:Key="ToolCallBg"                 Color="#252526"/>
+    <SolidColorBrush x:Key="TerminalToolCallBg"         Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="TerminalToolCallBorderBrush" Color="#3F3F46"/>
+    <SolidColorBrush x:Key="SummarizationBg"            Color="#2D2A1E"/>
+    <SolidColorBrush x:Key="ToolApproveBg"              Color="#388A34"/>
+    <SolidColorBrush x:Key="ToolDenyBg"                 Color="#D13438"/>
+    <SolidColorBrush x:Key="AgentSuccessFg"             Color="#89D185"/>
+    <SolidColorBrush x:Key="ToolMonoFg"                 Color="#D4D4D4"/>
+    <SolidColorBrush x:Key="ToolResultFg"               Color="#89D185"/>
+
+    <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="SidebarBg"                  Color="#252526"/>
+    <SolidColorBrush x:Key="SidebarItemActiveBg"        Color="#2A2D2E"/>
+    <SolidColorBrush x:Key="SidebarItemSelectedBg"      Color="#04395E"/>
+    <SolidColorBrush x:Key="SidebarItemSelectedAccent"  Color="#3794FF"/>
+    <SolidColorBrush x:Key="SidebarItemHoverOverlay"    Color="#16FFFFFF"/>
+    <SolidColorBrush x:Key="SidebarFg"                  Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="SidebarSecondaryFg"         Color="#9D9D9D"/>
+    <SolidColorBrush x:Key="SidebarButtonHoverBg"       Color="#3E3E42"/>
+    <SolidColorBrush x:Key="SidebarButtonPressedBg"     Color="#333337"/>
+    <SolidColorBrush x:Key="SidebarIconFg"              Color="#C5C5C5"/>
+    <!-- Status icon foregrounds (semantic colours on dark background) -->
+    <SolidColorBrush x:Key="SidebarIconLoadingFg"       Color="#3794FF"/>
+    <SolidColorBrush x:Key="SidebarIconPausedFg"        Color="#9D9D9D"/>
+    <SolidColorBrush x:Key="SidebarIconQuestionFg"      Color="#D7BA7D"/>
+    <SolidColorBrush x:Key="SidebarIconErrorFg"         Color="#F48771"/>
+
+    <!-- ── Title bar ───────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="TitleBarBg"                 Color="#2D2D30"/>
+    <SolidColorBrush x:Key="WinBtnFg"                   Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="WinBtnHoverBg"              Color="#3E3E42"/>
+    <SolidColorBrush x:Key="WinBtnPressedBg"            Color="#4A4A4F"/>
+    <SolidColorBrush x:Key="WinCloseBtnHoverBg"         Color="#C42B1C"/>
+    <SolidColorBrush x:Key="WinCloseBtnPressedBg"       Color="#A82318"/>
+
+    <!-- ── Chat header ─────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="ChatHeaderBg"               Color="#2D2D30"/>
+    <SolidColorBrush x:Key="ChatHeaderBorderBrush"      Color="#3F3F46"/>
+    <SolidColorBrush x:Key="ChatHeaderProfileFg"        Color="#9D9D9D"/>
+    <SolidColorBrush x:Key="ChatHeaderTokenFg"          Color="#6D6D6D"/>
+
+</ResourceDictionary>

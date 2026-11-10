@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:DesktopAssistant.UI.ViewModels"
              xmlns:loc="using:DesktopAssistant.UI.Localization"
+             xmlns:themes="using:DesktopAssistant.UI.Themes"
              mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="300"
              x:Class="DesktopAssistant.UI.Views.GeneralSettingsView"
              x:DataType="vm:GeneralSettingsViewModel">
@@ -34,7 +35,30 @@
 
             <TextBlock Text="{DynamicResource General.Language.Hint}"
                        FontSize="12"
-                       Foreground="#888"
+                       Foreground="{DynamicResource MutedFg}"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Interface theme -->
+        <StackPanel Spacing="8">
+            <TextBlock Text="{DynamicResource General.Theme.Label}"
+                       FontSize="13"
+                       FontWeight="SemiBold"/>
+
+            <ComboBox ItemsSource="{Binding AvailableThemes}"
+                      SelectedItem="{Binding SelectedTheme, Mode=TwoWay}"
+                      MinWidth="200"
+                      HorizontalAlignment="Left">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="themes:ThemeOption">
+                        <TextBlock Text="{Binding DisplayName}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="{DynamicResource General.Theme.Hint}"
+                       FontSize="12"
+                       Foreground="{DynamicResource MutedFg}"
                        TextWrapping="Wrap"/>
         </StackPanel>
 

@@ -17,17 +17,17 @@
                        FontWeight="SemiBold"/>
             <TextBlock Text="{DynamicResource ToolApproval.Description}"
                        FontSize="12"
-                       Foreground="#666"
+                       Foreground="{DynamicResource SecondaryFg}"
                        TextWrapping="Wrap"/>
         </StackPanel>
 
         <!-- Error -->
-        <Border Background="#FFE0E0"
+        <Border Background="{DynamicResource ErrorBg}"
                 Padding="12"
                 CornerRadius="4"
                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding ErrorMessage}"
-                       Foreground="#CC0000"
+                       Foreground="{DynamicResource ErrorFg}"
                        TextWrapping="Wrap"/>
         </Border>
 
@@ -37,13 +37,13 @@
                      IsVisible="{Binding IsLoading}"/>
 
         <!-- Empty list -->
-        <Border Background="#F8F8F8"
+        <Border Background="{DynamicResource PanelSubtleBg}"
                 Padding="24"
                 CornerRadius="4"
                 IsVisible="{Binding !HasGroups}">
             <TextBlock Text="{DynamicResource ToolApproval.Empty}"
                        HorizontalAlignment="Center"
-                       Foreground="#888"
+                       Foreground="{DynamicResource MutedFg}"
                        FontSize="13"/>
         </Border>
 
@@ -52,7 +52,7 @@
                       IsVisible="{Binding HasGroups}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="models:ToolApprovalGroupModel">
-                    <Border BorderBrush="#E0E0E0"
+                    <Border BorderBrush="{DynamicResource PanelBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Margin="0,0,0,10"
@@ -60,22 +60,22 @@
 
                         <StackPanel>
                             <!-- Group header -->
-                            <Border Background="#F0F4FF"
+                            <Border Background="{DynamicResource InfoBg}"
                                     Padding="14,9">
                                 <TextBlock Text="{Binding PluginName}"
                                            FontWeight="SemiBold"
                                            FontSize="13"
-                                           Foreground="#1A3C6E"/>
+                                           Foreground="{DynamicResource InfoFg}"/>
                             </Border>
 
                             <!-- Group tools -->
                             <ItemsControl ItemsSource="{Binding Tools}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="models:ToolApprovalItemModel">
-                                        <Border BorderBrush="#F0F0F0"
+                                        <Border BorderBrush="{DynamicResource DividerBrush}"
                                                 BorderThickness="0,1,0,0"
                                                 Padding="14,9"
-                                                Background="White">
+                                                Background="{DynamicResource PanelBg}">
                                             <Grid ColumnDefinitions="*,Auto">
 
                                                 <!-- Tool info -->
@@ -86,7 +86,7 @@
                                                                FontSize="13"/>
                                                     <TextBlock Text="{Binding Description}"
                                                                FontSize="11"
-                                                               Foreground="#888"
+                                                               Foreground="{DynamicResource MutedFg}"
                                                                TextWrapping="Wrap"
                                                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                                 </StackPanel>

@@ -40,7 +40,7 @@
                     <TextBlock Grid.Column="0"
                                Text="{DynamicResource NewConversation.Profile.Label}"
                                FontSize="13"
-                               Foreground="#555"
+                               Foreground="{DynamicResource LabelFg}"
                                VerticalAlignment="Center"/>
                     <Button Grid.Column="1"
                             Command="{Binding ToggleCreateProfileModeCommand}"
@@ -65,7 +65,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
                                 <TextBlock Text="{Binding Description}"
-                                           Foreground="#888"
+                                           Foreground="{DynamicResource MutedFg}"
                                            FontSize="11"
                                            VerticalAlignment="Center"
                                            MaxWidth="200"
@@ -76,7 +76,7 @@
                 </ComboBox>
 
                 <TextBlock Text="{DynamicResource NewConversation.Profile.Empty}"
-                           Foreground="#CC8800"
+                           Foreground="{DynamicResource WarningFg}"
                            FontSize="12"
                            IsVisible="{Binding !AvailableProfiles.Count}"/>
 
@@ -91,7 +91,7 @@
                 <TextBlock Grid.Column="0"
                            Text="{DynamicResource NewConversation.Mode.Label}"
                            FontSize="13"
-                           Foreground="#555"
+                           Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center"/>
                 <ComboBox Grid.Column="1"
                           ItemsSource="{Binding AvailableModes}"
@@ -112,7 +112,7 @@
                 <TextBlock Grid.Row="0"
                            Text="{DynamicResource NewConversation.SystemPrompt.Label}"
                            FontSize="13"
-                           Foreground="#555"
+                           Foreground="{DynamicResource LabelFg}"
                            Margin="0,0,0,4"/>
                 <TextBox Grid.Row="1"
                          Text="{Binding SystemPrompt, Mode=TwoWay}"
@@ -127,13 +127,13 @@
 
             <!-- Error -->
             <Border Grid.Row="5"
-                    Background="#FFE0E0"
+                    Background="{DynamicResource ErrorBg}"
                     Padding="10"
                     CornerRadius="4"
                     Margin="0,0,0,8"
                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <TextBlock Text="{Binding ErrorMessage}"
-                           Foreground="#CC0000"
+                           Foreground="{DynamicResource ErrorFg}"
                            TextWrapping="Wrap"/>
             </Border>
 
@@ -142,7 +142,7 @@
                 <TextBlock Grid.Row="0"
                            Text="{DynamicResource NewConversation.FirstMessage.Label}"
                            FontSize="13"
-                           Foreground="#555"
+                           Foreground="{DynamicResource LabelFg}"
                            Margin="0,0,0,4"/>
                 <views:TextInputWithButtonView Grid.Row="1"
                                               Text="{Binding FirstMessage, Mode=TwoWay}"

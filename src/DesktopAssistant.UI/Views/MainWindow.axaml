@@ -15,7 +15,8 @@
         WindowStartupLocation="CenterScreen"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
-        ExtendClientAreaTitleBarHeightHint="-1">
+        ExtendClientAreaTitleBarHeightHint="-1"
+        Background="{DynamicResource WindowBg}">
 
 
 <Grid x:Name="RootGrid" RowDefinitions="Auto,*">
@@ -75,7 +76,7 @@
                 </Panel>
 
                 <!-- Empty state (no conversation selected) -->
-                <Border Background="#FAFAFA"
+                <Border Background="{DynamicResource AppBg}"
                         IsVisible="{Binding !HasActiveChat}">
                     <StackPanel VerticalAlignment="Center"
                                 HorizontalAlignment="Center"
@@ -86,7 +87,7 @@
                                    HorizontalAlignment="Center"/>
                         <TextBlock Text="{DynamicResource MainWindow.Welcome.Subtitle}"
                                    FontSize="14"
-                                   Foreground="Gray"
+                                   Foreground="{DynamicResource MutedFg}"
                                    HorizontalAlignment="Center"/>
                         <Button Content="{DynamicResource MainWindow.Welcome.NewChat}"
                                 Command="{Binding CreateNewChatCommand}"
@@ -97,13 +98,13 @@
 
                 <!-- Inline panel for creating a new conversation (overlays the rest) -->
                 <Border IsVisible="{Binding IsNewConversationPanelVisible}"
-                        Background="#FAFAFA">
+                        Background="{DynamicResource AppBg}">
                     <views:NewConversationPanelView DataContext="{Binding NewConversationPanel}"/>
                 </Border>
 
                 <!-- Settings panel (on top of everything) -->
                 <Border IsVisible="{Binding IsSettingsVisible}"
-                        Background="White">
+                        Background="{DynamicResource PanelBg}">
                     <views:SettingsView DataContext="{Binding SettingsView}"/>
                 </Border>
 

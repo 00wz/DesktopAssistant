@@ -32,7 +32,7 @@
             <StackPanel IsVisible="{Binding !IsEditing}">
                 <TextBlock Text="{Binding Content}"
                            TextWrapping="Wrap"
-                           Foreground="White"/>
+                           Foreground="{DynamicResource OnAccentFg}"/>
 
                 <!-- Sibling navigation + edit button -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

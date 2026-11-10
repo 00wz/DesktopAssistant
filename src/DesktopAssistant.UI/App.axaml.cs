@@ -4,6 +4,7 @@ using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
 using DesktopAssistant.UI.Localization;
+using DesktopAssistant.UI.Themes;
 using DesktopAssistant.UI.ViewModels;
 using DesktopAssistant.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +25,7 @@ public partial class App : Avalonia.Application
         // Load the color palette after AvaloniaXamlLoader.Load so that the Application.Resources
         // object is already initialized by the XAML loader and we can safely add to its
         // MergedDictionaries without replacing the localization dictionary inserted above.
-        var colorsUri = new Uri("avares://DesktopAssistant.UI/Assets/Styles/Colors.axaml");
-        var colorsDict = (Avalonia.Controls.IResourceDictionary)Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(colorsUri);
-        Resources.MergedDictionaries.Add(colorsDict);
+        ThemeManager.Instance.LoadTheme(ThemeManager.Instance.CurrentTheme);
     }
 
     public override void OnFrameworkInitializationCompleted()

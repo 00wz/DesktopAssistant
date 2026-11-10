@@ -25,12 +25,12 @@
         </Grid>
 
         <!-- Error -->
-        <Border Background="#FFE0E0"
+        <Border Background="{DynamicResource ErrorBg}"
                 Padding="10"
                 CornerRadius="4"
                 IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <TextBlock Text="{Binding ErrorMessage}"
-                       Foreground="#CC0000"
+                       Foreground="{DynamicResource ErrorFg}"
                        TextWrapping="Wrap"/>
         </Border>
 
@@ -41,7 +41,7 @@
 
         <!-- Empty state -->
         <TextBlock Text="{DynamicResource Profiles.Empty}"
-                   Foreground="#888"
+                   Foreground="{DynamicResource MutedFg}"
                    FontSize="13"
                    IsVisible="{Binding !Profiles.Count}"/>
 
@@ -49,8 +49,8 @@
         <ItemsControl ItemsSource="{Binding Profiles}">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="dto:AssistantProfileDto">
-                    <Border Background="White"
-                            BorderBrush="#E0E0E0"
+                    <Border Background="{DynamicResource PanelBg}"
+                            BorderBrush="{DynamicResource PanelBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="14,10"
@@ -65,43 +65,43 @@
                                                FontSize="14"
                                                VerticalAlignment="Center"/>
                                     <!-- "Default" badge -->
-                                    <Border Background="#007ACC"
+                                    <Border Background="{DynamicResource BadgeDefaultBg}"
                                             CornerRadius="4"
                                             Padding="6,2"
                                             IsVisible="{Binding IsDefault}">
                                         <TextBlock Text="{DynamicResource Profiles.Badge.Default}"
-                                                   Foreground="White"
+                                                   Foreground="{DynamicResource BadgeDefaultFg}"
                                                    FontSize="10"/>
                                     </Border>
                                     <!-- "Summarization" badge -->
-                                    <Border Background="#F3E5F5"
+                                    <Border Background="{DynamicResource BadgePurpleBg}"
                                             CornerRadius="4"
                                             Padding="6,2"
                                             IsVisible="{Binding IsSummarizationProfile}">
                                         <TextBlock Text="{DynamicResource Profiles.Badge.Summarization}"
-                                                   Foreground="#6A1B9A"
+                                                   Foreground="{DynamicResource BadgePurpleFg}"
                                                    FontSize="10"/>
                                     </Border>
                                     <!-- "API key set" badge -->
-                                    <Border Background="#E8F5E9"
+                                    <Border Background="{DynamicResource BadgeGreenBg}"
                                             CornerRadius="4"
                                             Padding="6,2"
                                             IsVisible="{Binding HasApiKey}">
                                         <TextBlock Text="{DynamicResource Profiles.Badge.ApiKey}"
-                                                   Foreground="#2E7D32"
+                                                   Foreground="{DynamicResource BadgeGreenFg}"
                                                    FontSize="10"/>
                                     </Border>
                                 </StackPanel>
                                 <TextBlock Text="{Binding Description}"
                                            FontSize="12"
-                                           Foreground="#555"
+                                           Foreground="{DynamicResource LabelFg}"
                                            TextWrapping="Wrap"
                                            IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 								<Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Grid.Column="0"
 										       Text="{Binding BaseUrl}"
                                                FontSize="11"
-                                               Foreground="#999"/>
+                                               Foreground="{DynamicResource SubtleFg}"/>
 
 									<!-- Action buttons — WrapPanel: wraps to a new line when there is not enough width -->
 									<WrapPanel Orientation="Horizontal"
@@ -133,8 +133,8 @@
 												FontSize="11"
 												Padding="10,5"
 												Margin="0,0,0,4"
-												Background="#FFEBEE"
-												Foreground="#C62828"/>
+												Background="{DynamicResource DangerBg}"
+												Foreground="{DynamicResource DangerFg}"/>
 									</WrapPanel>
 								</Grid>
                             </StackPanel>
