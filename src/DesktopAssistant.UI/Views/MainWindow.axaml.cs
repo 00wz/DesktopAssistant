@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using DesktopAssistant.UI.Localization;
 using DesktopAssistant.UI.ViewModels;
 
 namespace DesktopAssistant.UI.Views;
@@ -12,6 +13,22 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        ApplyFlowDirection();
+        LocalizationManager.Instance.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e) => ApplyFlowDirection();
+
+    /// <summary>Mirrors the whole window for right-to-left languages such as Persian.</summary>
+    private void ApplyFlowDirection()
+    {
+        FlowDirection = LocalizationManager.Instance.FlowDirection;
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        LocalizationManager.Instance.LanguageChanged -= OnLanguageChanged;
+        base.OnClosed(e);
     }
 
     /// <summary>
