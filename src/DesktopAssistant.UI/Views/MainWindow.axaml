@@ -57,10 +57,12 @@
         </Border>
 
         <!-- ── Main content: sidebar + workspace ── -->
-        <Grid Grid.Row="1" ColumnDefinitions="260,*">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
 
-            <!-- Sidebar (always visible) -->
+            <!-- Sidebar (collapsible with Ctrl+B) -->
             <Border Grid.Column="0"
+                    Width="260"
+                    IsVisible="{Binding IsSidebarVisible}"
                     Background="{DynamicResource SidebarBg}"
                     BorderBrush="{DynamicResource ChatHeaderBorderBrush}"
                     BorderThickness="0,0,1,0">

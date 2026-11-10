@@ -160,6 +160,31 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         SettingsView = null;
     }
 
+    /// <summary>
+    /// Opens the settings panel on the requested section. Used by keyboard shortcuts.
+    /// </summary>
+    public async Task OpenSettingsSectionAsync(SettingsSection section)
+    {
+        await OpenSettingsAsync();
+        if (SettingsView is null) return;
+
+        switch (section)
+        {
+            case SettingsSection.General:
+                SettingsView.ShowGeneralCommand.Execute(null);
+                break;
+            case SettingsSection.Profiles:
+                SettingsView.ShowProfilesCommand.Execute(null);
+                break;
+            case SettingsSection.ToolApproval:
+                SettingsView.ShowToolApprovalCommand.Execute(null);
+                break;
+            case SettingsSection.Help:
+                SettingsView.ShowHelpCommand.Execute(null);
+                break;
+        }
+    }
+
     [RelayCommand]
     public void ToggleSidebar()
     {

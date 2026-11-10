@@ -99,6 +99,22 @@
                            </Button>
                        </Panel>
 
+                       <!-- Help — navigation item -->
+                       <Panel Margin="8,0,8,2">
+                           <Border Background="{DynamicResource PanelSelectedBg}"
+                                   CornerRadius="4"
+                                   IsVisible="{Binding IsHelpActive}"/>
+                           <Button Command="{Binding ShowHelpCommand}"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Padding="12,8">
+                               <TextBlock Text="{DynamicResource Settings.Nav.Help}"
+                                          FontSize="13"/>
+                           </Button>
+                       </Panel>
+
                    </StackPanel>
                </Border>
 
@@ -122,6 +138,10 @@
                        <!-- Tool auto-approval section -->
                        <Panel IsVisible="{Binding IsToolApprovalActive}">
                            <views:ToolApprovalSettingsView DataContext="{Binding ToolApprovalSettings}"/>
+                       </Panel>
+                       <!-- Help section -->
+                       <Panel IsVisible="{Binding IsHelpActive}">
+                           <views:HelpSettingsView/>
                        </Panel>
                    </Panel>
                </ScrollViewer>
