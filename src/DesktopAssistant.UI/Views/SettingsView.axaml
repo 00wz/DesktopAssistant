@@ -17,10 +17,21 @@
                    Padding="20,12"
                    BorderBrush="{DynamicResource PanelBorderBrush}"
                    BorderThickness="0,0,0,1">
-               <TextBlock Text="{DynamicResource Settings.Title}"
-                          FontSize="20"
-                          FontWeight="SemiBold"
-                          VerticalAlignment="Center"/>
+               <Grid ColumnDefinitions="*,Auto">
+                   <TextBlock Text="{DynamicResource Settings.Title}"
+                              FontSize="20"
+                              FontWeight="SemiBold"
+                              VerticalAlignment="Center"/>
+                   <Button Grid.Column="1"
+                           Command="{Binding CloseCommand}"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           Padding="8,6"
+                           VerticalAlignment="Center"
+                           ToolTip.Tip="{DynamicResource Settings.Close}">
+                       <TextBlock Classes="icon" Text="✕" FontSize="12"/>
+                   </Button>
+               </Grid>
            </Border>
 
            <!-- Two-column layout -->

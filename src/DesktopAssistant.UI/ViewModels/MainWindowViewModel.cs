@@ -143,7 +143,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
+            CloseOverlays();
             var vm = _serviceProvider.GetRequiredService<SettingsViewModel>();
+            vm.OnClose = CloseSettings;
             await vm.ProfilesSettings.LoadProfilesAsync();
             SettingsView = vm;
         }
@@ -151,6 +153,11 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         {
             _logger.LogError(ex, "Error opening settings");
         }
+    }
+
+    private void CloseSettings()
+    {
+        SettingsView = null;
     }
 
     [RelayCommand]

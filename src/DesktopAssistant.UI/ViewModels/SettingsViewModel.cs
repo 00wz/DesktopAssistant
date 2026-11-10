@@ -15,6 +15,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public ProfilesSettingsViewModel ProfilesSettings { get; }
     public ToolApprovalSettingsViewModel ToolApprovalSettings { get; }
 
+    /// <summary>Set by the main window to hide the settings panel.</summary>
+    public Action? OnClose { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsGeneralActive))]
     [NotifyPropertyChangedFor(nameof(IsProfilesActive))]
@@ -34,6 +37,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         ProfilesSettings = profilesSettings;
         ToolApprovalSettings = toolApprovalSettings;
     }
+
+    [RelayCommand]
+    private void Close() => OnClose?.Invoke();
 
     [RelayCommand]
     private void ShowGeneral()

@@ -21,7 +21,9 @@
             <TextBlock Text="&#x2715;" FontSize="14"/>
         </Button>
 
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto"
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
               Margin="20,30,20,20"
               MaxWidth="620"
               HorizontalAlignment="Stretch">
@@ -108,7 +110,7 @@
                       />
 
             <!-- System prompt — stretches vertically -->
-            <Grid Grid.Row="4" RowDefinitions="Auto,*" Margin="0,0,0,16">
+            <Grid Grid.Row="4" RowDefinitions="Auto,Auto" Margin="0,0,0,16">
                 <TextBlock Grid.Row="0"
                            Text="{DynamicResource NewConversation.SystemPrompt.Label}"
                            FontSize="13"
@@ -154,5 +156,6 @@
             </Grid>
 
         </Grid>
+        </ScrollViewer>
     </Panel>
 </UserControl>

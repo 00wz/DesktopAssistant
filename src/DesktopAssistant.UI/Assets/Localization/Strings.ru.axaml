@@ -4,6 +4,7 @@
 
     <!-- Settings navigation -->
     <sys:String x:Key="Settings.Title">Настройки</sys:String>
+    <sys:String x:Key="Settings.Close">Закрыть настройки</sys:String>
     <sys:String x:Key="Settings.Nav.Group.Main">ОСНОВНЫЕ</sys:String>
     <sys:String x:Key="Settings.Nav.General">Общие</sys:String>
     <sys:String x:Key="Settings.Nav.Profiles">Профили ассистентов</sys:String>
