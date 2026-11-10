@@ -19,7 +19,7 @@
                     <TextBlock Classes="icon" Text="☰" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Text="{DynamicResource Chat.Summary}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding StatusText}"
-                               Foreground="Gray"
+                               Foreground="{DynamicResource MutedFg}"
                                FontSize="11"
                                VerticalAlignment="Center"
                                Margin="6,0,0,0"/>
@@ -35,7 +35,7 @@
                        IsVisible="{Binding !IsInProgress}"
                        TextWrapping="Wrap"
                        FontSize="11"
-                       Foreground="#444444"
+                       Foreground="{DynamicResource BodyFg}"
                        Margin="4"/>
         </Expander>
     </Border>

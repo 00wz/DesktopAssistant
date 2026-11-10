@@ -12,11 +12,11 @@
         <StackPanel Spacing="6">
 
             <!-- Error -->
-            <Border Background="#FFE0E0"
+            <Border Background="{DynamicResource ErrorBg}"
                     Padding="10"
                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <TextBlock Text="{Binding ErrorMessage}"
-                           Foreground="#CC0000"
+                           Foreground="{DynamicResource ErrorFg}"
                            TextWrapping="Wrap"/>
             </Border>
 

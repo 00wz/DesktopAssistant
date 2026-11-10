@@ -4,15 +4,19 @@
 
     <!-- Settings navigation -->
     <sys:String x:Key="Settings.Title">Settings</sys:String>
+    <sys:String x:Key="Settings.Close">Close settings</sys:String>
     <sys:String x:Key="Settings.Nav.Group.Main">GENERAL</sys:String>
     <sys:String x:Key="Settings.Nav.General">General</sys:String>
     <sys:String x:Key="Settings.Nav.Profiles">Assistant Profiles</sys:String>
     <sys:String x:Key="Settings.Nav.ToolApproval">Tool Auto-Approval</sys:String>
+    <sys:String x:Key="Settings.Nav.Help">Help</sys:String>
 
     <!-- General settings section -->
     <sys:String x:Key="General.Title">General Settings</sys:String>
     <sys:String x:Key="General.Language.Label">Application Language</sys:String>
     <sys:String x:Key="General.Language.Hint">Interface language. Changes apply immediately.</sys:String>
+    <sys:String x:Key="General.Theme.Label">Application Theme</sys:String>
+    <sys:String x:Key="General.Theme.Hint">Color theme. Changes apply immediately.</sys:String>
 
     <!-- Profiles section -->
     <sys:String x:Key="Profiles.Title">Assistant Profiles</sys:String>
@@ -102,5 +106,18 @@
     <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Write your first message...</sys:String>
     <sys:String x:Key="NewConversation.CanSpawnSubagents.Label">Allow spawning subagents</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Cancel</sys:String>
+
+    <!-- Help section -->
+    <sys:String x:Key="Help.Title">Keyboard Shortcuts</sys:String>
+    <sys:String x:Key="Help.Description">Use these shortcuts to move around the app faster.</sys:String>
+    <sys:String x:Key="Help.Column.Action">Action</sys:String>
+    <sys:String x:Key="Help.Column.Shortcut">Shortcut</sys:String>
+    <sys:String x:Key="Help.Shortcut.NewChat">New chat</sys:String>
+    <sys:String x:Key="Help.Shortcut.Settings">Open settings</sys:String>
+    <sys:String x:Key="Help.Shortcut.General">General settings</sys:String>
+    <sys:String x:Key="Help.Shortcut.Profiles">Assistant profiles</sys:String>
+    <sys:String x:Key="Help.Shortcut.ToolApproval">Tool auto-approval</sys:String>
+    <sys:String x:Key="Help.Shortcut.Sidebar">Toggle sidebar</sys:String>
+    <sys:String x:Key="Help.Shortcut.Help">Open help</sys:String>
 
 </ResourceDictionary>

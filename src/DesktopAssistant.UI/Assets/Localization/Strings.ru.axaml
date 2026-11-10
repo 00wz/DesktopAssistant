@@ -4,15 +4,19 @@
 
     <!-- Settings navigation -->
     <sys:String x:Key="Settings.Title">Настройки</sys:String>
+    <sys:String x:Key="Settings.Close">Закрыть настройки</sys:String>
     <sys:String x:Key="Settings.Nav.Group.Main">ОСНОВНЫЕ</sys:String>
     <sys:String x:Key="Settings.Nav.General">Общие</sys:String>
     <sys:String x:Key="Settings.Nav.Profiles">Профили ассистентов</sys:String>
     <sys:String x:Key="Settings.Nav.ToolApproval">Автоподтверждение tools</sys:String>
+    <sys:String x:Key="Settings.Nav.Help">Справка</sys:String>
 
     <!-- General settings section -->
     <sys:String x:Key="General.Title">Общие настройки</sys:String>
     <sys:String x:Key="General.Language.Label">Язык приложения</sys:String>
     <sys:String x:Key="General.Language.Hint">Язык интерфейса. Изменения применяются немедленно.</sys:String>
+    <sys:String x:Key="General.Theme.Label">Тема приложения</sys:String>
+    <sys:String x:Key="General.Theme.Hint">Цветовая тема. Изменения применяются немедленно.</sys:String>
 
     <!-- Profiles section -->
     <sys:String x:Key="Profiles.Title">Профили ассистентов</sys:String>
@@ -102,5 +106,18 @@
     <sys:String x:Key="NewConversation.FirstMessage.Placeholder">Напишите ваше первое сообщение...</sys:String>
     <sys:String x:Key="NewConversation.CanSpawnSubagents.Label">Разрешить создание субагентов</sys:String>
     <sys:String x:Key="NewConversation.Button.Cancel">Отмена</sys:String>
+
+    <!-- Help section -->
+    <sys:String x:Key="Help.Title">Горячие клавиши</sys:String>
+    <sys:String x:Key="Help.Description">Используйте эти сочетания клавиш для быстрой навигации по приложению.</sys:String>
+    <sys:String x:Key="Help.Column.Action">Действие</sys:String>
+    <sys:String x:Key="Help.Column.Shortcut">Сочетание</sys:String>
+    <sys:String x:Key="Help.Shortcut.NewChat">Новый чат</sys:String>
+    <sys:String x:Key="Help.Shortcut.Settings">Открыть настройки</sys:String>
+    <sys:String x:Key="Help.Shortcut.General">Общие настройки</sys:String>
+    <sys:String x:Key="Help.Shortcut.Profiles">Профили ассистентов</sys:String>
+    <sys:String x:Key="Help.Shortcut.ToolApproval">Автоподтверждение tools</sys:String>
+    <sys:String x:Key="Help.Shortcut.Sidebar">Показать/скрыть боковую панель</sys:String>
+    <sys:String x:Key="Help.Shortcut.Help">Открыть справку</sys:String>
 
 </ResourceDictionary>

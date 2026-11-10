@@ -16,13 +16,13 @@
                 Command="{Binding $parent[views:ToolApprovalButtonsView].ApproveCommand}"
                 CommandParameter="{Binding}"
                 Background="{DynamicResource ToolApproveBg}"
-                Foreground="White"
+                Foreground="{DynamicResource OnAccentFg}"
                 Padding="10,5"/>
         <Button Content="{DynamicResource Chat.Tool.Deny}"
                 Command="{Binding $parent[views:ToolApprovalButtonsView].DenyCommand}"
                 CommandParameter="{Binding}"
                 Background="{DynamicResource ToolDenyBg}"
-                Foreground="White"
+                Foreground="{DynamicResource OnAccentFg}"
                 Padding="10,5"/>
     </StackPanel>
 

@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="640" d:DesignHeight="400"
+             x:Class="DesktopAssistant.UI.Views.HelpSettingsView">
+
+    <StackPanel Spacing="16">
+
+        <!-- Header -->
+        <StackPanel Spacing="4">
+            <TextBlock Text="{DynamicResource Help.Title}"
+                       FontSize="18"
+                       FontWeight="SemiBold"/>
+            <TextBlock Text="{DynamicResource Help.Description}"
+                       FontSize="13"
+                       Foreground="{DynamicResource MutedFg}"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Shortcut list -->
+        <Border Background="{DynamicResource PanelBg}"
+                BorderBrush="{DynamicResource PanelBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                ClipToBounds="True">
+            <StackPanel>
+
+                <!-- Column headers -->
+                <Border Background="{DynamicResource PanelSubtleBg}" Padding="14,8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Column.Action}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SecondaryFg}"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{DynamicResource Help.Column.Shortcut}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource SecondaryFg}"/>
+                    </Grid>
+                </Border>
+
+                <!-- New chat -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.NewChat}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="Ctrl + N" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Open settings -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.Settings}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="Ctrl + ," FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- General settings -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.General}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="Ctrl + 1" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Assistant profiles -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.Profiles}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="Ctrl + 2" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Tool auto-approval -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.ToolApproval}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="Ctrl + 3" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Toggle sidebar -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.Sidebar}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="Ctrl + B" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Open help -->
+                <Border BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="14,9">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{DynamicResource Help.Shortcut.Help}" FontSize="13" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBg}" CornerRadius="4" Padding="8,2">
+                            <TextBlock Text="F1" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>

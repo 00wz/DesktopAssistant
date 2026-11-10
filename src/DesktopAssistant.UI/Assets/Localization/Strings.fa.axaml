@@ -1,0 +1,123 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Settings navigation -->
+    <sys:String x:Key="Settings.Title">پیکربندی</sys:String>
+    <sys:String x:Key="Settings.Close">بستن پیکربندی</sys:String>
+    <sys:String x:Key="Settings.Nav.Group.Main">عمومی</sys:String>
+    <sys:String x:Key="Settings.Nav.General">عمومی</sys:String>
+    <sys:String x:Key="Settings.Nav.Profiles">نمایه‌های دستیار</sys:String>
+    <sys:String x:Key="Settings.Nav.ToolApproval">پذیرش خودکار ابزارها</sys:String>
+    <sys:String x:Key="Settings.Nav.Help">راهنما</sys:String>
+
+    <!-- General settings section -->
+    <sys:String x:Key="General.Title">پیکربندی عمومی</sys:String>
+    <sys:String x:Key="General.Language.Label">زبان برنامه</sys:String>
+    <sys:String x:Key="General.Language.Hint">زبان رابط کاربری. تغییرات بی‌درنگ اعمال می‌شوند.</sys:String>
+    <sys:String x:Key="General.Theme.Label">پوسته برنامه</sys:String>
+    <sys:String x:Key="General.Theme.Hint">پوسته رنگی. تغییرات بی‌درنگ اعمال می‌شوند.</sys:String>
+
+    <!-- Profiles section -->
+    <sys:String x:Key="Profiles.Title">نمایه‌های دستیار</sys:String>
+    <sys:String x:Key="Profiles.Create">+ ساخت</sys:String>
+    <sys:String x:Key="Profiles.Empty">هیچ نمایه‌ای نیست. برای افزودن، روی «+ ساخت» بزنید.</sys:String>
+    <sys:String x:Key="Profiles.Badge.Default">پیش‌فرض</sys:String>
+    <sys:String x:Key="Profiles.Badge.Summarization">چکیده‌سازی</sys:String>
+    <sys:String x:Key="Profiles.Badge.ApiKey">کلید API پیکربندی شده</sys:String>
+    <sys:String x:Key="Profiles.Action.SetDefault">تعیین به‌عنوان پیش‌فرض</sys:String>
+    <sys:String x:Key="Profiles.Action.SetSummarization">چکیده‌سازی</sys:String>
+    <sys:String x:Key="Profiles.Action.Edit">ویرایش</sys:String>
+    <sys:String x:Key="Profiles.Action.Delete">زدایش</sys:String>
+
+    <!-- Profile editor -->
+    <sys:String x:Key="ProfileEditor.Title.New">نمایه جدید دستیار</sys:String>
+    <sys:String x:Key="ProfileEditor.Title.Edit">ویرایش نمایه</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.ModelId">شناسه مدل *</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.BaseUrl">نشانی پایه *</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.ApiKey">کلید API</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.Temperature">دما</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.MaxTokens">بیشینه توکن</sys:String>
+    <sys:String x:Key="ProfileEditor.Field.Description">توضیحات</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.ModelId">gpt-4o-mini</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.BaseUrl">https://api.openai.com/v1</sys:String>
+    <sys:String x:Key="ProfileEditor.Button.Cancel">انصراف</sys:String>
+    <sys:String x:Key="ProfileEditor.Button.Save">ذخیره</sys:String>
+    <sys:String x:Key="ProfileEditor.Watermark.Description">دستیار من</sys:String>
+
+    <!-- Tool approval section -->
+    <sys:String x:Key="ToolApproval.Title">پذیرش خودکار ابزارها</sys:String>
+    <sys:String x:Key="ToolApproval.Description">اجرای خودکار ابزارهای مورد اعتماد را روشن کنید. با اتصال یا قطع اتصال سرورهای MCP، فهرست به‌روزرسانی می‌شود.</sys:String>
+    <sys:String x:Key="ToolApproval.Empty">هیچ ابزاری در دسترس نیست. یک سرور MCP متصل کنید یا فهرست را تازه‌سازی کنید.</sys:String>
+    <sys:String x:Key="ToolApproval.AutoApprove.Tooltip">بدون پذیرش به‌صورت خودکار اجرا شود</sys:String>
+
+    <!-- Chat messages -->
+    <sys:String x:Key="Chat.ContextMenu.Summarize">چکیده‌سازی زمینه</sys:String>
+    <sys:String x:Key="Chat.Tooltip.PreviousVersion">نسخه پیشین</sys:String>
+    <sys:String x:Key="Chat.Tooltip.NextVersion">نسخه پسین</sys:String>
+    <sys:String x:Key="Chat.Tooltip.Edit">ویرایش</sys:String>
+    <sys:String x:Key="Chat.Action.Save">ذخیره</sys:String>
+    <sys:String x:Key="Chat.Action.Cancel">انصراف</sys:String>
+    <sys:String x:Key="Chat.Summary">چکیده</sys:String>
+    <sys:String x:Key="Chat.Tooltip.ChatSettings">پیکربندی گفتگو</sys:String>
+    <sys:String x:Key="Chat.Tool.Approve">پذیرش</sys:String>
+    <sys:String x:Key="Chat.Tool.Deny">رد</sys:String>
+    <sys:String x:Key="Chat.AgentResult.Title">خروجی عامل</sys:String>
+
+    <!-- Chat settings panel -->
+    <sys:String x:Key="ChatSettings.Title">پیکربندی گفتگو</sys:String>
+    <sys:String x:Key="ChatSettings.Profile.Label">نمایه:</sys:String>
+    <sys:String x:Key="ChatSettings.Mode.Label">شیوه:</sys:String>
+    <sys:String x:Key="ChatSettings.SystemPrompt.Label">دستور سامانه:</sys:String>
+    <sys:String x:Key="ChatSettings.SystemPrompt.Watermark">دستور سامانه خالی است...</sys:String>
+    <sys:String x:Key="ChatSettings.CanSpawnSubagents.Label">توان ساخت زیرعامل‌ها</sys:String>
+    <sys:String x:Key="ChatSettings.Save">ذخیره</sys:String>
+    <sys:String x:Key="ChatSettings.Saved">ذخیره شد</sys:String>
+
+    <!-- Message input -->
+    <sys:String x:Key="MessageInput.Placeholder">پیام خود را بنویسید...</sys:String>
+    <sys:String x:Key="MessageInput.Resume">ادامه</sys:String>
+
+    <!-- Main window -->
+    <sys:String x:Key="MainWindow.TitleBar.Minimize">کوچک کردن</sys:String>
+    <sys:String x:Key="MainWindow.TitleBar.MaximizeRestore">بزرگ کردن / بازیابی</sys:String>
+    <sys:String x:Key="MainWindow.TitleBar.Close">بستن</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.Title">به دستیار دسکتاپ خوش آمدید!</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.Subtitle">یک گفتگو را از فهرست کناری برگزینید یا گفتگوی تازه‌ای آغاز کنید</sys:String>
+    <sys:String x:Key="MainWindow.Welcome.NewChat">آغاز گفتگوی جدید</sys:String>
+
+    <!-- Sidebar -->
+    <sys:String x:Key="Sidebar.NewChat">گفتگوی جدید</sys:String>
+    <sys:String x:Key="Sidebar.NewChat.Tooltip">آغاز یک گفتگوی جدید</sys:String>
+    <sys:String x:Key="Sidebar.NoConversations">هیچ گفتگوی ذخیره‌شده‌ای نیست</sys:String>
+    <sys:String x:Key="Sidebar.Settings">پیکربندی</sys:String>
+    <sys:String x:Key="Sidebar.Settings.Tooltip">پیکربندی</sys:String>
+
+    <!-- New conversation panel -->
+    <sys:String x:Key="NewConversation.Title">گفتگوی جدید</sys:String>
+    <sys:String x:Key="NewConversation.Profile.Label">نمایه دستیار</sys:String>
+    <sys:String x:Key="NewConversation.Profile.New">+ نمایه جدید</sys:String>
+    <sys:String x:Key="NewConversation.Profile.CancelNew">انصراف</sys:String>
+    <sys:String x:Key="NewConversation.Profile.Empty">هیچ نمایه‌ای نیست. نخستین نمایهٔ خود را بسازید.</sys:String>
+    <sys:String x:Key="NewConversation.Mode.Label">شیوه</sys:String>
+    <sys:String x:Key="NewConversation.SystemPrompt.Label">دستور سامانه (دلبخواه)</sys:String>
+    <sys:String x:Key="NewConversation.SystemPrompt.Placeholder">شما یک دستیار هوش مصنوعی سودمند هستید...</sys:String>
+    <sys:String x:Key="NewConversation.FirstMessage.Label">پیام اول</sys:String>
+    <sys:String x:Key="NewConversation.FirstMessage.Placeholder">نخستین پیام خود را بنویسید...</sys:String>
+    <sys:String x:Key="NewConversation.CanSpawnSubagents.Label">توان ساخت زیرعامل‌ها</sys:String>
+    <sys:String x:Key="NewConversation.Button.Cancel">انصراف</sys:String>
+
+    <!-- Help section -->
+    <sys:String x:Key="Help.Title">میانبرهای صفحه‌کلید</sys:String>
+    <sys:String x:Key="Help.Description">با این میانبرها سریع‌تر در برنامه جابه‌جا شوید.</sys:String>
+    <sys:String x:Key="Help.Column.Action">کنش</sys:String>
+    <sys:String x:Key="Help.Column.Shortcut">میانبر</sys:String>
+    <sys:String x:Key="Help.Shortcut.NewChat">گفتگوی جدید</sys:String>
+    <sys:String x:Key="Help.Shortcut.Settings">باز کردن پیکربندی</sys:String>
+    <sys:String x:Key="Help.Shortcut.General">پیکربندی عمومی</sys:String>
+    <sys:String x:Key="Help.Shortcut.Profiles">نمایه‌های دستیار</sys:String>
+    <sys:String x:Key="Help.Shortcut.ToolApproval">پذیرش خودکار ابزارها</sys:String>
+    <sys:String x:Key="Help.Shortcut.Sidebar">نمایش/پنهان کردن نوار کناری</sys:String>
+    <sys:String x:Key="Help.Shortcut.Help">باز کردن راهنما</sys:String>
+
+</ResourceDictionary>

@@ -128,7 +128,7 @@
         <Setter Property="Background" Value="Transparent"/>
     </Style>
     <Style Selector="Button.nav-btn:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#20000000"/>
+        <Setter Property="Background" Value="{DynamicResource NavHoverOverlay}"/>
     </Style>
     <Style Selector="Button.nav-btn:disabled /template/ ContentPresenter">
         <Setter Property="Background" Value="Transparent"/>

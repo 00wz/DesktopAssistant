@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 
 namespace DesktopAssistant.UI.Localization;
 
@@ -18,6 +19,7 @@ public sealed class LocalizationManager
     {
         new("ru", "Русский"),
         new("en", "English"),
+        new("fa", "فارسی"),
     };
 
     private IResourceDictionary? _currentDict;
@@ -29,6 +31,13 @@ public sealed class LocalizationManager
     public string PendingLanguage { get; set; } = "en";
 
     public string CurrentLanguage { get; private set; } = "en";
+
+    /// <summary>Raised after a new language dictionary has been applied.</summary>
+    public event EventHandler? LanguageChanged;
+
+    /// <summary>The text/layout direction that matches <see cref="CurrentLanguage"/>.</summary>
+    public FlowDirection FlowDirection =>
+        CurrentLanguage == "fa" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
 
     private LocalizationManager() { }
 
@@ -51,6 +60,8 @@ public sealed class LocalizationManager
         merged.Insert(0, newDict);
         _currentDict = newDict;
         CurrentLanguage = languageCode;
+
+        LanguageChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private static string Validate(string code) =>

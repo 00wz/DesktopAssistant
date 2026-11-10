@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using DesktopAssistant.Application.Interfaces;
 using DesktopAssistant.Infrastructure;
 using DesktopAssistant.UI.Localization;
+using DesktopAssistant.UI.Themes;
 using DesktopAssistant.UI.ViewModels;
 
 namespace DesktopAssistant.UI;
@@ -49,10 +50,23 @@ sealed class Program
         // Initialize database
         serviceProvider.InitializeDatabaseAsync().GetAwaiter().GetResult();
 
-        // Load saved language before starting Avalonia
+        // Load saved language and theme before starting Avalonia
         var locService = serviceProvider.GetRequiredService<ILocalizationService>();
-        var savedLanguage = locService.GetSavedLanguageAsync().GetAwaiter().GetResult();
+        var userSettingsService = serviceProvider.GetRequiredService<IUserSettingsService>();
+        var userSettings = userSettingsService.LoadAsync().GetAwaiter().GetResult();
+
+        var savedLanguage = userSettings?.Language;
+        if (string.IsNullOrWhiteSpace(savedLanguage))
+            savedLanguage = locService.GetSavedLanguageAsync().GetAwaiter().GetResult();
+
         LocalizationManager.Instance.PendingLanguage = savedLanguage;
+        ThemeManager.Instance.PendingTheme = string.IsNullOrWhiteSpace(userSettings?.Theme)
+            ? "light"
+            : userSettings.Theme;
+
+        // Create settings.json on first run and keep older language-only installs in sync.
+        if (userSettings is null || string.IsNullOrWhiteSpace(userSettings.Language))
+            userSettingsService.SetLanguageAsync(savedLanguage).GetAwaiter().GetResult();
         
         // Initialize MCP servers (in background, does not block startup)
         InitializeMcpServersAsync(serviceProvider);

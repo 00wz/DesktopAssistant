@@ -8,19 +8,30 @@
              x:Class="DesktopAssistant.UI.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-   <Border Background="White">
+   <Border Background="{DynamicResource PanelBg}">
        <Grid RowDefinitions="Auto,*">
 
            <!-- Header -->
            <Border Grid.Row="0"
-                   Background="#F0F0F0"
+                   Background="{DynamicResource PanelHeaderBg}"
                    Padding="20,12"
-                   BorderBrush="#E0E0E0"
+                   BorderBrush="{DynamicResource PanelBorderBrush}"
                    BorderThickness="0,0,0,1">
-               <TextBlock Text="{DynamicResource Settings.Title}"
-                          FontSize="20"
-                          FontWeight="SemiBold"
-                          VerticalAlignment="Center"/>
+               <Grid ColumnDefinitions="*,Auto">
+                   <TextBlock Text="{DynamicResource Settings.Title}"
+                              FontSize="20"
+                              FontWeight="SemiBold"
+                              VerticalAlignment="Center"/>
+                   <Button Grid.Column="1"
+                           Command="{Binding CloseCommand}"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           Padding="8,6"
+                           VerticalAlignment="Center"
+                           ToolTip.Tip="{DynamicResource Settings.Close}">
+                       <TextBlock Classes="icon" Text="✕" FontSize="12"/>
+                   </Button>
+               </Grid>
            </Border>
 
            <!-- Two-column layout -->
@@ -28,21 +39,21 @@
 
                <!-- Left navigation -->
                <Border Grid.Column="0"
-                       Background="#F8F8F8"
-                       BorderBrush="#E0E0E0"
+                       Background="{DynamicResource PanelSubtleBg}"
+                       BorderBrush="{DynamicResource PanelBorderBrush}"
                        BorderThickness="0,0,1,0"
                        Padding="0,16,0,0">
                    <StackPanel>
                        <TextBlock Text="{DynamicResource Settings.Nav.Group.Main}"
                                   FontSize="10"
-                                  Foreground="#999"
+                                  Foreground="{DynamicResource SubtleFg}"
                                   Margin="16,0,0,8"
                                   FontWeight="SemiBold"
                                   LetterSpacing="1"/>
 
                        <!-- General — navigation item -->
                        <Panel Margin="8,0,8,2">
-                           <Border Background="#E8F0FE"
+                           <Border Background="{DynamicResource PanelSelectedBg}"
                                    CornerRadius="4"
                                    IsVisible="{Binding IsGeneralActive}"/>
                            <Button Command="{Binding ShowGeneralCommand}"
@@ -58,7 +69,7 @@
 
                        <!-- Assistant profiles — navigation item -->
                        <Panel Margin="8,0,8,2">
-                           <Border Background="#E8F0FE"
+                           <Border Background="{DynamicResource PanelSelectedBg}"
                                    CornerRadius="4"
                                    IsVisible="{Binding IsProfilesActive}"/>
                            <Button Command="{Binding ShowProfilesCommand}"
@@ -74,7 +85,7 @@
 
                        <!-- Tool auto-approval — navigation item -->
                        <Panel Margin="8,0,8,2">
-                           <Border Background="#E8F0FE"
+                           <Border Background="{DynamicResource PanelSelectedBg}"
                                    CornerRadius="4"
                                    IsVisible="{Binding IsToolApprovalActive}"/>
                            <Button Command="{Binding ShowToolApprovalCommand}"
@@ -84,6 +95,22 @@
                                    HorizontalContentAlignment="Left"
                                    Padding="12,8">
                                <TextBlock Text="{DynamicResource Settings.Nav.ToolApproval}"
+                                          FontSize="13"/>
+                           </Button>
+                       </Panel>
+
+                       <!-- Help — navigation item -->
+                       <Panel Margin="8,0,8,2">
+                           <Border Background="{DynamicResource PanelSelectedBg}"
+                                   CornerRadius="4"
+                                   IsVisible="{Binding IsHelpActive}"/>
+                           <Button Command="{Binding ShowHelpCommand}"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Padding="12,8">
+                               <TextBlock Text="{DynamicResource Settings.Nav.Help}"
                                           FontSize="13"/>
                            </Button>
                        </Panel>
@@ -111,6 +138,10 @@
                        <!-- Tool auto-approval section -->
                        <Panel IsVisible="{Binding IsToolApprovalActive}">
                            <views:ToolApprovalSettingsView DataContext="{Binding ToolApprovalSettings}"/>
+                       </Panel>
+                       <!-- Help section -->
+                       <Panel IsVisible="{Binding IsHelpActive}">
+                           <views:HelpSettingsView/>
                        </Panel>
                    </Panel>
                </ScrollViewer>

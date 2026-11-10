@@ -7,7 +7,7 @@
              x:Class="DesktopAssistant.UI.Views.ProfileEditorView"
              x:DataType="vm:ProfileEditorViewModel">
 
-    <Border Background="#EEF2FF"
+    <Border Background="{DynamicResource EditorBg}"
             CornerRadius="8"
             Padding="16">
         <StackPanel Spacing="10">
@@ -28,21 +28,21 @@
             <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <TextBlock Grid.Row="0" Grid.Column="0"
-                           Text="{DynamicResource ProfileEditor.Field.ModelId}" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.ModelId}" FontSize="12" Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="0" Grid.Column="1"
                          Text="{Binding ModelId, Mode=TwoWay}"
                          Watermark="{DynamicResource ProfileEditor.Watermark.ModelId}" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0"
-                           Text="{DynamicResource ProfileEditor.Field.BaseUrl}" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.BaseUrl}" FontSize="12" Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="1" Grid.Column="1"
                          Text="{Binding BaseUrl, Mode=TwoWay}"
                          Watermark="{DynamicResource ProfileEditor.Watermark.BaseUrl}" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0"
-                           Text="{DynamicResource ProfileEditor.Field.ApiKey}" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.ApiKey}" FontSize="12" Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="2" Grid.Column="1"
                          Text="{Binding ApiKey, Mode=TwoWay}"
@@ -51,7 +51,7 @@
                          Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="3" Grid.Column="0"
-                           Text="{DynamicResource ProfileEditor.Field.Temperature}" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.Temperature}" FontSize="12" Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <NumericUpDown Grid.Row="3" Grid.Column="1"
                                Value="{Binding Temperature, Mode=TwoWay}"
@@ -59,7 +59,7 @@
                                FormatString="F1" Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="4" Grid.Column="0"
-                           Text="{DynamicResource ProfileEditor.Field.MaxTokens}" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.MaxTokens}" FontSize="12" Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <NumericUpDown Grid.Row="4" Grid.Column="1"
                                Value="{Binding MaxTokens, Mode=TwoWay}"
@@ -67,7 +67,7 @@
                                Margin="0,0,0,6"/>
 
                 <TextBlock Grid.Row="5" Grid.Column="0"
-                           Text="{DynamicResource ProfileEditor.Field.Description}" FontSize="12" Foreground="#555"
+                           Text="{DynamicResource ProfileEditor.Field.Description}" FontSize="12" Foreground="{DynamicResource LabelFg}"
                            VerticalAlignment="Center" Margin="0,0,8,6"/>
                 <TextBox Grid.Row="5" Grid.Column="1"
                          Text="{Binding Description, Mode=TwoWay}"
@@ -80,12 +80,12 @@
             </Grid>
 
             <!-- Error -->
-            <Border Background="#FFE0E0"
+            <Border Background="{DynamicResource ErrorBg}"
                     Padding="10"
                     CornerRadius="4"
                     IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <TextBlock Text="{Binding ErrorMessage}"
-                           Foreground="#CC0000"
+                           Foreground="{DynamicResource ErrorFg}"
                            TextWrapping="Wrap"/>
             </Border>
 

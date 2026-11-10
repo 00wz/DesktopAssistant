@@ -143,13 +143,45 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
+            CloseOverlays();
             var vm = _serviceProvider.GetRequiredService<SettingsViewModel>();
+            vm.OnClose = CloseSettings;
             await vm.ProfilesSettings.LoadProfilesAsync();
             SettingsView = vm;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error opening settings");
+        }
+    }
+
+    private void CloseSettings()
+    {
+        SettingsView = null;
+    }
+
+    /// <summary>
+    /// Opens the settings panel on the requested section. Used by keyboard shortcuts.
+    /// </summary>
+    public async Task OpenSettingsSectionAsync(SettingsSection section)
+    {
+        await OpenSettingsAsync();
+        if (SettingsView is null) return;
+
+        switch (section)
+        {
+            case SettingsSection.General:
+                SettingsView.ShowGeneralCommand.Execute(null);
+                break;
+            case SettingsSection.Profiles:
+                SettingsView.ShowProfilesCommand.Execute(null);
+                break;
+            case SettingsSection.ToolApproval:
+                SettingsView.ShowToolApprovalCommand.Execute(null);
+                break;
+            case SettingsSection.Help:
+                SettingsView.ShowHelpCommand.Execute(null);
+                break;
         }
     }
 

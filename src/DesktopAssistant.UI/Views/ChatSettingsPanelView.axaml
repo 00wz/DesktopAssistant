@@ -7,9 +7,9 @@
              x:Class="DesktopAssistant.UI.Views.ChatSettingsPanelView"
              x:DataType="vm:ChatSettingsPanelViewModel">
 
-   <Border Background="#F8F8FF"
+   <Border Background="{DynamicResource ChatSettingsBg}"
            Padding="12"
-           BorderBrush="#DDEEFF"
+           BorderBrush="{DynamicResource ChatSettingsBorderBrush}"
            BorderThickness="0,0,0,1">
        <StackPanel Spacing="10">
            <TextBlock Text="{DynamicResource ChatSettings.Title}"
@@ -21,7 +21,7 @@
                <TextBlock Grid.Column="0"
                           Text="{DynamicResource ChatSettings.Profile.Label}"
                           FontSize="12"
-                          Foreground="#555"
+                          Foreground="{DynamicResource LabelFg}"
                           VerticalAlignment="Center"/>
                <ComboBox Grid.Column="1"
                          ItemsSource="{Binding AvailableProfiles}"
@@ -32,7 +32,7 @@
                            <StackPanel Orientation="Horizontal" Spacing="6">
                                <TextBlock Text="{Binding ModelId}" FontWeight="SemiBold"/>
                                <TextBlock Text="{Binding Description}"
-                                          Foreground="#888"
+                                          Foreground="{DynamicResource MutedFg}"
                                           FontSize="11"
                                           VerticalAlignment="Center"
                                           MaxWidth="200"
@@ -48,7 +48,7 @@
                <TextBlock Grid.Column="0"
                           Text="{DynamicResource ChatSettings.Mode.Label}"
                           FontSize="12"
-                          Foreground="#555"
+                          Foreground="{DynamicResource LabelFg}"
                           VerticalAlignment="Center"/>
                <ComboBox Grid.Column="1"
                          ItemsSource="{Binding AvailableModes}"
@@ -62,7 +62,7 @@
                      FontSize="12"/>
 
            <!-- System prompt -->
-           <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="#555"/>
+           <TextBlock Text="{DynamicResource ChatSettings.SystemPrompt.Label}" FontSize="12" Foreground="{DynamicResource LabelFg}"/>
            <TextBox Text="{Binding SystemPrompt, Mode=TwoWay}"
                     AcceptsReturn="True"
                     TextWrapping="Wrap"
@@ -72,12 +72,12 @@
 
            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                <TextBlock Text="{Binding ErrorMessage}"
-                          Foreground="Red"
+                          Foreground="{DynamicResource ErrorFg}"
                           FontSize="11"
                           VerticalAlignment="Center"
                           IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                <TextBlock Text="{DynamicResource ChatSettings.Saved}"
-                          Foreground="#2E7D32"
+                          Foreground="{DynamicResource SuccessFg}"
                           FontSize="11"
                           VerticalAlignment="Center"
                           IsVisible="{Binding IsSaved}"/>
