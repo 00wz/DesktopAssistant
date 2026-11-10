@@ -18,6 +18,7 @@ public sealed class LocalizationManager
     {
         new("ru", "Русский"),
         new("en", "English"),
+        new("fa", "فارسی"),
     };
 
     private IResourceDictionary? _currentDict;
