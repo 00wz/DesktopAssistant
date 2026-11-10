@@ -12,6 +12,7 @@ namespace DesktopAssistant.UI.ViewModels;
 public partial class GeneralSettingsViewModel : ObservableObject
 {
     private readonly ILocalizationService _localizationService;
+    private readonly IUserSettingsService _userSettingsService;
 
     public IReadOnlyList<LanguageOption> AvailableLanguages { get; } =
         LocalizationManager.AvailableLanguages;
@@ -25,9 +26,12 @@ public partial class GeneralSettingsViewModel : ObservableObject
     [ObservableProperty]
     private ThemeOption? _selectedTheme;
 
-    public GeneralSettingsViewModel(ILocalizationService localizationService)
+    public GeneralSettingsViewModel(
+        ILocalizationService localizationService,
+        IUserSettingsService userSettingsService)
     {
         _localizationService = localizationService;
+        _userSettingsService = userSettingsService;
 
         _selectedLanguage = AvailableLanguages
             .FirstOrDefault(l => l.Code == LocalizationManager.Instance.CurrentLanguage)
@@ -44,6 +48,7 @@ public partial class GeneralSettingsViewModel : ObservableObject
 
         LocalizationManager.Instance.LoadLanguage(value.Code);
         _ = _localizationService.SetLanguageAsync(value.Code);
+        _ = _userSettingsService.SetLanguageAsync(value.Code);
     }
 
     partial void OnSelectedThemeChanged(ThemeOption? value)
@@ -51,5 +56,6 @@ public partial class GeneralSettingsViewModel : ObservableObject
         if (value is null) return;
 
         ThemeManager.Instance.LoadTheme(value.Code);
+        _ = _userSettingsService.SetThemeAsync(value.Code);
     }
 }

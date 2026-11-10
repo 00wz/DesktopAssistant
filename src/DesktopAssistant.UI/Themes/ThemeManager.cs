@@ -23,6 +23,12 @@ public sealed class ThemeManager
 
     private IResourceDictionary? _currentDict;
 
+    /// <summary>
+    /// The theme that will be loaded when <see cref="LoadTheme"/> is called
+    /// during application initialization.
+    /// </summary>
+    public string PendingTheme { get; set; } = "light";
+
     public string CurrentTheme { get; private set; } = "light";
 
     private ThemeManager() { }

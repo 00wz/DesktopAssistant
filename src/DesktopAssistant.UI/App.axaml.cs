@@ -25,7 +25,7 @@ public partial class App : Avalonia.Application
         // Load the color palette after AvaloniaXamlLoader.Load so that the Application.Resources
         // object is already initialized by the XAML loader and we can safely add to its
         // MergedDictionaries without replacing the localization dictionary inserted above.
-        ThemeManager.Instance.LoadTheme(ThemeManager.Instance.CurrentTheme);
+        ThemeManager.Instance.LoadTheme(ThemeManager.Instance.PendingTheme);
     }
 
     public override void OnFrameworkInitializationCompleted()
